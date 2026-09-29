@@ -1,1 +1,1 @@
-- [Talent Bridge demo honesty](talent-bridge-demo-honesty.md) — label simulated activity and never claim a hiring action was sent until a real service confirms it.
+- [Qodia demo honesty](talent-bridge-demo-honesty.md) — label fictional metrics, stories, affiliations, and hiring activity; never present an unverified demo as real proof.

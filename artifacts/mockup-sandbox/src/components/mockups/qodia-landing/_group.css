@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.qodia-current {
+  min-height: 100dvh;
+  background: #0a0a0a;
+  color: #eae9e1;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+.qodia-current, .qodia-current * { box-sizing: border-box; }
+.qodia-current::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: .12;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.23'/%3E%3C/svg%3E");
+}
+.qodia-current button, .qodia-current input, .qodia-current textarea, .qodia-current select { font: inherit; }
+.qodia-current a { color: inherit; text-decoration: none; }
+.qodia-current ::selection { background: #22c55e; color: #0a0a0a; }
+.qodia-current :focus-visible { outline: 2px solid #22c55e; outline-offset: 3px; }
+.qodia-current .mono { font-family: 'IBM Plex Mono', monospace; direction: ltr; unicode-bidi: isolate; }
+.qodia-current .shell { width: min(1180px, calc(100% - 48px)); margin-inline: auto; }
+.qodia-current .eyebrow { color: #22c55e; font-size: 11px; font-weight: 700; letter-spacing: .13em; }
+.qodia-current .muted { color: #999a93; }
+.qodia-current .panel { background: #111211; border: 1px solid #2b2d2b; border-radius: 18px; }
+.qodia-current .btn { min-height: 52px; padding: 12px 22px; display: inline-flex; justify-content: center; align-items: center; gap: 10px; border-radius: 9px; font-weight: 700; transition: transform .22s ease, opacity .22s ease; }
+.qodia-current .btn:hover:not(:disabled) { transform: translateY(-2px); }
+.qodia-current .btn-primary { background: #22c55e; color: #07130b; border: 1px solid #22c55e; }
+.qodia-current .btn-primary:hover:not(:disabled) { background: #4ade80; }
+.qodia-current .btn-outline { border: 1px solid #404440; background: #151715; color: #eeeee9; }
+.qodia-current .btn-outline:hover:not(:disabled) { border-color: #a6aca5; background: #1c201c; }
+.qodia-current .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 23px; font-weight: 700; letter-spacing: -.04em; }
+.qodia-current .brand-mark { width: 31px; height: 31px; border: 2px solid #22c55e; border-radius: 8px; color: #22c55e; display: inline-grid; place-items: center; font: 700 20px 'IBM Plex Mono', monospace; transform: rotate(-8deg); }
+.qodia-current .site-header { height: 82px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #252825; }
+.qodia-current .site-nav { display: flex; align-items: center; gap: 26px; font-size: 14px; }
+.qodia-current .hero { min-height: 720px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 7%; align-items: center; padding-block: 80px 110px; position: relative; }
+.qodia-current .hero h1 { font-size: clamp(56px, 7.8vw, 110px); font-weight: 700; letter-spacing: -.065em; line-height: 1.12; margin: 26px 0 22px; }
+.qodia-current .hero h1 em { color: #22c55e; font-style: normal; }
+.qodia-current .hero p { font-size: 18px; line-height: 1.95; color: #aaa; max-width: 530px; }
+.qodia-current .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 35px; }
+.qodia-current .hero-note { margin-top: 55px; display: flex; align-items: center; gap: 12px; color: #757e75; font-size: 12px; }
+.qodia-current .hero-note i { width: 38px; height: 1px; background: #22c55e; }
+.qodia-current .preview { position: relative; background: #111411; border: 1px solid #333b32; border-radius: 17px; padding: 0 26px 28px; box-shadow: 22px 25px 0 #0e140f, 22px 25px 0 1px #2b352d; transform: rotate(-2deg); }
+.qodia-current .preview-top { display: flex; justify-content: space-between; align-items: center; height: 62px; border-bottom: 1px solid #2b352d; color: #939b91; font-size: 11px; }
+.qodia-current .preview-dot { height: 8px; width: 8px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 0 5px #203624; }
+.qodia-current .preview-question { font-size: clamp(25px, 3vw, 39px); line-height: 1.45; font-weight: 600; letter-spacing: -.04em; margin: 52px 0 35px; }
+.qodia-current .preview-choice { padding: 17px 19px; border: 1px solid #353a35; border-radius: 9px; margin-top: 10px; color: #a7aaa4; display: flex; justify-content: space-between; }
+.qodia-current .preview-choice.active { color: #e8f9e9; border-color: #22c55e; background: #14241a; }
+.qodia-current .section-divider { border-top: 1px solid #292b29; }
+.qodia-current .section-kicker { color: #22c55e; font: 500 12px 'IBM Plex Mono', monospace; letter-spacing: .1em; }
+.qodia-current .section-title { font-size: clamp(32px, 4.6vw, 60px); font-weight: 600; line-height: 1.3; letter-spacing: -.045em; }
+.qodia-current .steps-grid { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid #2a302a; border-radius: 15px; overflow: hidden; }
+.qodia-current .step-cell { padding: 30px 23px 38px; min-height: 230px; border-left: 1px solid #2a302a; background: #111411; }
+.qodia-current .step-cell:last-child { border-left: 0; }
+.qodia-current .step-cell .num { font: 500 13px 'IBM Plex Mono', monospace; color: #5c9c71; }
+.qodia-current .step-cell h3 { font-size: 23px; margin: 36px 0 7px; }
+.qodia-current .step-cell p { color: #919890; font-size: 13px; line-height: 1.8; margin: 0; }
+.qodia-current .statement { padding: 100px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10%; align-items: center; }
+.qodia-current .statement .quote { border-right: 2px solid #22c55e; padding-right: 26px; font-size: clamp(26px, 3.5vw, 43px); line-height: 1.55; letter-spacing: -.035em; }
+.qodia-current .mini-terminal { padding: 27px; background: #111411; border: 1px solid #333b32; border-radius: 14px; color: #9faaa0; font: 12px/2 'IBM Plex Mono', monospace; direction: ltr; text-align: left; }
+.qodia-current .mini-terminal strong { color: #22c55e; font-weight: 500; }
+.qodia-current .cta-block { text-align: center; padding: 100px 24px; background: radial-gradient(ellipse at 50% 100%, #132a1a 0%, #101711 40%, #0e100e 80%); border: 1px solid #2e4434; border-radius: 20px; }
+.qodia-current .footer { display: flex; justify-content: space-between; gap: 20px; padding: 33px 0; font-size: 12px; color: #737a73; }
+
+@media (max-width: 900px) {
+  .qodia-current .hero { grid-template-columns: 1fr; padding-block: 65px 100px; min-height: 0; }
+  .qodia-current .preview { max-width: 590px; margin: 25px auto 0; width: 90%; }
+  .qodia-current .steps-grid { grid-template-columns: repeat(2, 1fr); }
+  .qodia-current .step-cell { border-bottom: 1px solid #2a302a; }
+}
+@media (max-width: 767px) {
+  .qodia-current .shell { width: min(100% - 36px, 600px); }
+  .qodia-current .site-header { height: 70px; }
+  .qodia-current .site-nav { gap: 10px; }
+  .qodia-current .site-nav .nav-secondary { display: none; }
+  .qodia-current .hero { gap: 30px; padding-block: 60px 95px; }
+  .qodia-current .hero h1 { font-size: clamp(55px, 12vw, 80px); }
+  .qodia-current .preview { transform: rotate(-1deg); box-shadow: 10px 12px 0 #0e140f, 10px 12px 0 1px #2b352d; padding-inline: 18px; }
+  .qodia-current .steps-grid { grid-template-columns: 1fr; }
+  .qodia-current .step-cell { min-height: 0; padding: 22px; border-left: 0; }
+  .qodia-current .step-cell h3 { margin-top: 15px; }
+  .qodia-current .statement { grid-template-columns: 1fr; padding: 75px 0; }
+  .qodia-current .footer { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qodia-current *, .qodia-current *::before, .qodia-current *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
