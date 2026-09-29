@@ -1,44 +1,56 @@
-import { type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { getGetCurrentUserQueryKey, useGetCurrentUser } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ErrorState, LoadingState } from '@/components/qodia-ui';
+import Landing from '@/pages/landing';
+import AuthPage from '@/pages/auth';
+import Onboarding from '@/pages/onboarding';
+import Dashboard from '@/pages/dashboard';
+import Session from '@/pages/session';
 import NotFound from '@/pages/not-found';
-import {
-  Route,
-  Switch,
-  useLocation,
-  Router as WouterRouter,
-} from 'wouter';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 60_000, refetchOnWindowFocus: false } } });
+const pageMetadata: Record<string, { title: string; description: string }> = {
+  '/': { title: 'قُوديا — لا ترسب في المناقشة', description: 'تدرّب على فهم مشروع تخرجك والدفاع عن قراراتك التقنية بخمس لمسات عربية.' },
+  '/signup': { title: 'أنشئ حسابك | قُوديا', description: 'ابدأ تدريبك على مناقشة مشروع التخرج مع قُوديا.' },
+  '/login': { title: 'تسجيل الدخول | قُوديا', description: 'ارجع إلى تدريبك وتقدّمك في قُوديا.' },
+  '/onboarding': { title: 'عرّفنا على مشروعك | قُوديا', description: 'أخبر قُوديا عن مشروعك والتقنية التي تستخدمها لتبدأ التدريب.' },
+  '/dashboard': { title: 'لوحة تقدّمك | قُوديا', description: 'تابع نقاط الخبرة وسلسلة التدريب وجلساتك السابقة في قُوديا.' },
+  '/session': { title: 'تدريب المناقشة | قُوديا', description: 'تدرّب على Django ForeignKey و on_delete عبر خمس لمسات تفاعلية.' },
+};
 
-function Home() {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Replit Agent is building...
-        </h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Your app will appear here once it's ready.
-        </p>
-      </div>
-    </div>
-  );
+function RouteMetadata() {
+  const [location] = useLocation();
+  useEffect(() => {
+    const details = pageMetadata[location] ?? { title: 'الصفحة غير موجودة | قُوديا', description: 'ارجع إلى قُوديا لتبدأ تدريبك على مناقشة مشروع التخرج.' };
+    document.title = details.title;
+    for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
+      document.querySelector(selector)?.setAttribute('content', details.description);
+    }
+    for (const selector of ['meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+      document.querySelector(selector)?.setAttribute('content', details.title);
+    }
+    document.querySelector('meta[name="robots"]')?.setAttribute('content', location === '/' ? 'index, follow' : 'noindex, follow');
+  }, [location]);
+  return null;
 }
 
-function Router() {
-  return (
-    // Keep a shared shell (sidebar, navbar) outside the boundary so it
-    // survives a page crash.
-    <RoutedErrorBoundary>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route component={NotFound} />
-      </Switch>
-    </RoutedErrorBoundary>
-  );
+function Guard({ children, onboarding = false }: { children: ReactNode; onboarding?: boolean }) {
+  const [, navigate] = useLocation();
+  const current = useGetCurrentUser({ query: { queryKey: getGetCurrentUserQueryKey(), retry: false } });
+  const unauthorized = current.isError && (current.error as Error & { status?: number })?.status === 401;
+  useEffect(() => {
+    if (unauthorized) navigate('/login');
+    else if (current.data?.user && !onboarding && !current.data.user.project_name) navigate('/onboarding');
+    else if (current.data?.user?.project_name && onboarding) navigate('/dashboard');
+  }, [unauthorized, current.data?.user, onboarding, navigate]);
+  if (current.isLoading || unauthorized || current.data?.user && ((!onboarding && !current.data.user.project_name) || (onboarding && !!current.data.user.project_name))) return <LoadingState label="نجهّز طريقك للتدريب..." />;
+  if (current.isError || !current.data?.user) return <ErrorState retry={() => { void current.refetch(); }} text="ما قدرنا نتأكد من حسابك. تأكد من اتصالك وحاول مرة ثانية." />;
+  return <>{children}</>;
 }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
@@ -46,17 +58,21 @@ function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
+function AppRoutes() {
+  return <RoutedErrorBoundary><Switch>
+    <Route path="/" component={Landing} />
+    <Route path="/signup">{() => <AuthPage mode="signup" />}</Route>
+    <Route path="/login">{() => <AuthPage mode="login" />}</Route>
+    <Route path="/onboarding">{() => <Guard onboarding><Onboarding /></Guard>}</Route>
+    <Route path="/dashboard">{() => <Guard><Dashboard /></Guard>}</Route>
+    <Route path="/session">{() => <Guard><Session /></Guard>}</Route>
+    <Route component={NotFound} />
+  </Switch></RoutedErrorBoundary>;
+}
+
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
+  useEffect(() => { document.documentElement.dir = 'rtl'; document.documentElement.lang = 'ar'; document.documentElement.classList.add('dark'); }, []);
+  return <QueryClientProvider client={queryClient}><TooltipProvider><WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><RouteMetadata /><AppRoutes /></WouterRouter><Toaster /></TooltipProvider></QueryClientProvider>;
 }
 
 export default App;

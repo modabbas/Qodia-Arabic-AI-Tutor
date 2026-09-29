@@ -1,23 +1,15 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { Link } from 'wouter';
+import { Brand } from '@/components/qodia-ui';
 
 export default function NotFound() {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          <div className="flex mb-4 gap-2">
-            <AlertCircle className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900">
-              404 Page Not Found
-            </h1>
-          </div>
-
-          <p className="mt-4 text-sm text-gray-600">
-            Did you forget to add the page to the router?
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <div className="min-h-[100dvh] shell" style={{ display: 'flex', flexDirection: 'column' }}>
+    <header className="site-header"><Brand /></header>
+    <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'start', justifyContent: 'center', paddingBlock: 80 }}>
+      <span className="mono" style={{ color: '#22c55e', fontSize: 17 }}>404 / NOT FOUND</span>
+      <h1 className="section-title" style={{ margin: '22px 0 10px' }}>هالصفحة مش من أسئلة المناقشة.</h1>
+      <p className="muted" style={{ fontSize: 17, lineHeight: 1.8 }}>الرابط اللي طلبته مش موجود. خلّينا نرجع للمكان الصح.</p>
+      <Link href="/" className="btn btn-primary" style={{ marginTop: 20 }} data-testid="link-return-home"><ArrowRight size={17} /> الرجوع للرئيسية</Link>
+    </main>
+  </div>;
 }
