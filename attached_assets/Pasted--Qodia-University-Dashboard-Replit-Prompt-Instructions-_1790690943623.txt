@@ -1,0 +1,151 @@
+# Qodia University Dashboard - Replit Prompt
+
+## Instructions for Replit Agent (Use Extended Thinking ON)
+
+Build a comprehensive University Dashboard at `/university-dashboard` that shows analytics, student tracking, leaderboards, and learning insights.
+
+## Design Requirements
+
+**Style: EXACT match to the existing /session page**
+- Background: `#0a0a0a`
+- Card backgrounds: `#121212`  
+- Border: `1px solid #272727`
+- Text primary: `#f2f2f2`
+- Text secondary: `#8c8c8c`
+- Accent green: `#22c55e`
+- Warning: `#f5b84a`
+- Danger: `#f2545b`
+- Success rows: green shade `#22c55e`
+- Failing rows: red shade `#f2545b`
+- Font: IBM Plex Sans Arabic
+- Direction: RTL throughout
+- Card border-radius: 12px
+- No gradients, no shadows
+
+## Page Structure
+
+### 1. Header (top)
+- University name (right): "جامعة دمشق · كلية المعلوماتية"
+- Subtitle: "لوحة تحكم المشرف · الفصل الأول 2026"
+- Buttons (left):
+  - "تصدير تقرير" (secondary button)
+  - "دعوة طلاب" (primary green button)
+
+### 2. Stats Cards Row (4 columns)
+Each card shows:
+- Label (small, gray, top)
+- Big number (26px, semi-bold)
+- Change indicator (small, colored)
+
+Cards:
+1. إجمالي الطلاب: 342 | ↑ 28 هذا الأسبوع (green)
+2. جلسات مكتملة: 1,847 | ↑ 9% مقابل الأسبوع الماضي (green)
+3. متوسط الجاهزية: 64% | ↑ 4 نقاط (green)
+4. جاهزون للتوظيف: 12 | Talent Bridge Ready
+
+### 3. Two-Column Section (grid of 2)
+
+**Left Card: "المفاهيم الأصعب"**
+- Subtitle: "أعلى نسبة أخطاء"
+- 4 concepts with:
+  - Name (monospace, colored)
+  - Error percentage (colored - red if >65%, amber if 45-65%)
+  - Progress bar showing error %
+- Bottom insight box (amber-tinted):
+  "💡 توصية: أضيفوا محاضرة إضافية عن on_delete في المنهج"
+
+Data:
+- on_delete=CASCADE: 73% (amber name, red bar)
+- Middleware Order: 68% (purple name, red bar)
+- JWT Refresh Tokens: 54% (blue name, amber bar)
+- Async/Await Errors: 47% (teal name, amber bar)
+
+**Right Card: "المتصدرون · العالم العربي"**
+- Subtitle: "3 من جامعتك في القمة" (green text)
+- List of top 5 students with:
+  - Rank number (circular badge - gold/silver/bronze for top 3)
+  - Name
+  - University + points
+  - 🏆 emoji for #1
+- Highlight students from THIS university with amber-tinted background
+
+Data:
+1. لينا الأحمد - جامعة دمشق - 4,230 نقطة 🏆
+2. عمر الخالد - الملك سعود - 3,910 نقطة
+3. أحمد ياسين - جامعة دمشق - 3,840 نقطة (highlighted)
+4. مريم العلي - الملك عبدالعزيز - 3,620
+5. خالد الحسن - جامعة دمشق - 3,540 (highlighted)
+
+### 4. Full-Width Card: "تتبع الطلاب الفرديّين"
+
+Header:
+- Title (right)
+- Search input + Filter dropdown (left)
+
+Table columns:
+- الطالب (with colored avatar circle showing first letter)
+- المشروع
+- التقنية (colored badge: Django=blue, Node.js=amber, React=purple, Flutter=blue)
+- الجلسات (number)
+- جاهزية (progress bar 60px wide + percentage, colored by value)
+- آخر نشاط
+
+Data (4 rows):
+1. لينا الأحمد | حجز عيادات | Django | 32 | 87% (green) | قبل ساعة
+2. أحمد ياسين | متجر إلكتروني | Node.js | 28 | 78% (green) | قبل 3 ساعات
+3. خالد الحسن | إدارة مهام | React | 24 | 62% (amber) | قبل يوم
+4. محمد الشامي | تطبيق طقس | Flutter | 6 | 24% (red) | قبل أسبوع
+
+Footer:
+"عرض 4 من 342 طالب · شاهد الكل →" (green link)
+
+## Data Source
+
+For NOW (MVP demo), use HARDCODED mock data as above. This is fine for the competition demo.
+
+Later we'll connect this to real data from Replit DB.
+
+## Access Control
+
+For demo: make this page accessible at `/university-dashboard` without auth (public route).
+
+For real: only users with role="university_admin" should access it. Add a note in code comment.
+
+## Interactive Elements
+
+- Stats cards: hover effect (slight brightness increase)
+- Table rows: hover effect (background darkens slightly)
+- "شاهد الكل" link: cursor pointer
+- Buttons: standard hover states
+
+## Route Setup
+
+Create at: `app/university-dashboard/page.tsx`
+
+Add a link from the main dashboard to `/university-dashboard` labeled: "لوحة الجامعة" (small, in the header/nav).
+
+## Critical Requirements
+
+1. ALL Arabic text must be RTL correct
+2. Numbers should use Arabic numerals (٠١٢٣٤٥٦٧٨٩) - convert English digits
+3. Match the EXACT visual style of the existing /session page - dark, minimal, focused
+4. No emojis except 🏆 (for winner) and 💡 (for insight)
+5. Use CSS variables so it works in the app's design system
+6. Fully responsive on tablets/phones
+
+## Do NOT
+
+- Do NOT create new database tables yet
+- Do NOT add fake API endpoints - just hardcode data
+- Do NOT change any existing pages
+- Do NOT add auth checks that block access (add as comment for later)
+
+## Result Expected
+
+A single beautiful page at /university-dashboard that:
+- Looks pixel-perfect matching Qodia's design language
+- Loads instantly (hardcoded data)
+- Impresses judges as a "real B2B product"
+- Can be shown in demo video as proof of vision
+
+Take your time. This page is the MOST IMPORTANT for the competition impact.
