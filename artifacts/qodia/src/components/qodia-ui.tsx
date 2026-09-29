@@ -38,6 +38,7 @@ export function AppHeader({ active }: { active?: 'dashboard' | 'session' }) {
       <Link href="/dashboard" className={active === 'dashboard' ? 'current' : ''} data-testid="link-dashboard">لوحتي</Link>
       <Link href="/session" className={active === 'session' ? 'current' : ''} data-testid="link-session">التدريب</Link>
       {active === 'dashboard' && <Link href="/university-dashboard" data-testid="link-university-dashboard">لوحة الجامعة</Link>}
+      {active === 'dashboard' && <Link href="/company-dashboard" data-testid="link-company-dashboard">لوحة الشركات</Link>}
       <button className="btn btn-quiet" style={{ minHeight: 38, padding: '7px 9px' }} disabled={logout.isPending} onClick={() => logout.mutate(undefined, { onSuccess: async () => {
         await queryClient.cancelQueries();
         queryClient.removeQueries({ queryKey: getGetCurrentUserQueryKey() });

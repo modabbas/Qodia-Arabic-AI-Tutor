@@ -12,6 +12,7 @@ import Onboarding from '@/pages/onboarding';
 import Dashboard from '@/pages/dashboard';
 import Session from '@/pages/session';
 import UniversityDashboard from '@/pages/university-dashboard';
+import CompanyDashboard from '@/pages/company-dashboard';
 import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 60_000, refetchOnWindowFocus: false } } });
@@ -23,6 +24,7 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
   '/dashboard': { title: 'لوحة تقدّمك | قُوديا', description: 'تابع نقاط الخبرة وسلسلة التدريب وجلساتك السابقة في قُوديا.' },
   '/session': { title: 'تدريب المناقشة | قُوديا', description: 'تدرّب على Django ForeignKey و on_delete عبر خمس لمسات تفاعلية.' },
   '/university-dashboard': { title: 'لوحة الجامعة | قُوديا', description: 'نظرة تجريبية على تقدم الطلاب وجاهزيتهم للتوظيف في قُوديا.' },
+  '/company-dashboard': { title: 'لوحة الشركات | قُوديا', description: 'استكشف مرشحين تجريبيين ومؤشرات Talent Bridge في قُوديا.' },
 };
 
 function RouteMetadata() {
@@ -70,6 +72,8 @@ function AppRoutes() {
     <Route path="/session">{() => <Guard><Session /></Guard>}</Route>
     {/* Demo only: before connecting real student data, restrict access to university_admin. */}
     <Route path="/university-dashboard" component={UniversityDashboard} />
+    {/* Demo only: require authorized company access before showing real candidate data. */}
+    <Route path="/company-dashboard" component={CompanyDashboard} />
     <Route component={NotFound} />
   </Switch></RoutedErrorBoundary>;
 }

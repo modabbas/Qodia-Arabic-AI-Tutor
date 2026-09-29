@@ -1,0 +1,1 @@
+- [Talent Bridge demo honesty](talent-bridge-demo-honesty.md) — label simulated activity and never claim a hiring action was sent until a real service confirms it.

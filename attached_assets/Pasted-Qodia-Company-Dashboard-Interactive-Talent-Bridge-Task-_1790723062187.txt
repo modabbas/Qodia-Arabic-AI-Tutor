@@ -1,0 +1,276 @@
+Qodia Company Dashboard - Interactive Talent Bridge
+Task for Replit Agent
+IMPORTANT: Enable Extended Thinking (🧠) before starting.
+
+Build a NEW page at /company-dashboard — Qodia's Talent Bridge for tech companies to hire verified Qodia graduates. This dashboard must feel LIVE and INTERACTIVE from the first second.
+
+Vision
+Qodia's second revenue stream: companies pay $500/hire for verified junior developers who completed Qodia's training (vs $5,000 for recruitment agencies). Key differentiator: NO fake resumes. Every candidate has recorded defense videos and verified learning history.
+
+Design Requirements
+Match existing Qodia design EXACTLY:
+
+Background: #0a0a0a
+Card background: #121212
+Border: 1px solid #272727
+Text primary: #f2f2f2
+Text secondary: #8c8c8c
+Accent green: #22c55e
+Warning: #f5b84a
+Danger: #f2545b
+Blue: #7cc7ff, Purple: #c792ea, Teal: #4ec9b0
+Font: IBM Plex Sans Arabic
+Direction: RTL throughout
+Card border-radius: 12px
+Arabic numerals (٠١٢٣٤٥٦٧٨٩)
+Page Structure
+1. Header
+Company name (right): "شركة نون · لوحة التوظيف الذكية"
+Subtitle with PULSING GREEN DOT:
+Dot: 8px × 8px green rounded, pulses opacity 1→0.4→1 over 2s
+Text: "Live Data · Talent Bridge · مطوّرون موثّقون"
+Buttons (left):
+"حفظ البحث" (secondary)
+"نشر وظيفة جديدة" (primary green)
+2. Live Notifications Toast System (Top-Right, floating)
+Create a notification system that runs continuously:
+
+Behavior:
+
+Every 8-15 seconds, a random notification slides in from right
+Auto-dismisses after 5 seconds
+Max 3 notifications visible simultaneously
+Smooth slide-in (transform: translateX(400px) → 0) + fade
+Random notifications pool (rotate through these):
+
+"طالب جديد انضم من جامعة الملك سعود 🎓"
+"أحمد ياسين رفع مستواه للـ ٩٠٪ 📈"
+"شركة تقنية سعودية دخلت للتو 🏢"
+"لينا الأحمد اجتازت اختبار المناقشة ✓"
+"٣ مرشحون جدد جاهزون للتوظيف 🚀"
+"طالب من الأردن أكمل ٥ جلسات اليوم 🔥"
+"شركة نون طلبت مقابلة مع محمد الشامي 📞"
+Toast style:
+
+Background: #121212
+Border: 1px solid #22c55e
+Border-radius: 12px, Padding: 12px 16px
+Shadow: 0 4px 20px rgba(0, 0, 0, 0.5)
+Text: #f2f2f2
+Position: fixed top-right, gap between toasts: 8px
+3. Stats Cards Row (4 columns) with COUNT-UP ANIMATION
+Cards animate from 0 to target on page load (1.5s ease-out):
+
+مرشحون جاهزون: ١٤٧ (↑ ٢٣ هذا الأسبوع - green)
+تطابقون لوظائفك: ٣٢ (in green, "مبني على متطلباتك")
+وقت التوظيف: ١٢ يوم (↑ أسرع بـ ٦٠٪ من LinkedIn - green)
+التكلفة لكل توظيف: $500 (↑ مقابل $5,000 للوكالات - green)
+Live updates:
+
+Every 30 seconds, Card 1 slowly increases: 147 → 149 → 152
+When number changes:
+Brief green flash on the number
+Small "+1" floats up 20px and fades out over 1s
+4. Growth Chart (new section)
+Title: "نمو المنصة" with subtitle "آخر ٣٠ يوم"
+
+Use Chart.js via CDN:
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+Line chart:
+
+Data: 30 points from 47 to 147 (organic growth curve)
+Line color: #22c55e
+Fill under line: rgba(34, 197, 94, 0.1)
+Smooth curve (tension: 0.4)
+No grid lines except subtle horizontal
+Tooltip in Arabic: "اليوم -٥ · ١٣٨ طالب"
+Height: 200px
+Values example: [47, 52, 58, 61, 65, 72, 78, 82, 85, 89, 94, 98, 103, 107, 112, 115, 119, 123, 127, 131, 134, 138, 141, 143, 145, 146, 147, 147, 147, 147]
+
+5. Two-Column Section
+Left Card: "التقنيات الأكثر تعلّماً" Subtitle: "آخر ٣٠ يوم"
+
+Rows with animated progress bars (bars grow from 0% to target on load, 800ms):
+
+Django (blue #7cc7ff) - ٤٢ طالب - ٢٨٪
+Node.js + Express (amber #f5b84a) - ٣٥ طالب - ٢٤٪
+React + Next.js (purple #c792ea) - ٢٨ طالب - ١٩٪
+Flutter (teal #4ec9b0) - ٢٢ طالب - ١٥٪
+Laravel (red #f2545b) - ٢٠ طالب - ١٤٪
+Right Card: "التوزيع الجغرافي" Subtitle: "حسب البلد"
+
+Country rows (flag + name + universities below + count on left + green bar):
+
+🇸🇦 السعودية - "جامعة الملك سعود · جامعة الملك عبدالعزيز" - ٥٨ - 40%
+🇸🇾 سوريا - "جامعة دمشق · جامعة حلب" - ٤١ - 28%
+🇦🇪 الإمارات - "الجامعة الأمريكية · خليفة" - ٢٣ - 16%
+🇪🇬 مصر - "القاهرة · عين شمس" - ١٥ - 10%
+🇯🇴 الأردن - "الأردنية · اليرموك" - ١٠ - 7%
+6. Recommended Candidates Section (Full Width)
+Title: "مرشحون موصى بهم لك" Subtitle (green): "مبني على متطلباتك · Node.js Senior · الرياض"
+
+WORKING FILTERS:
+
+Search input: "بحث بالاسم أو التخصص..." (real-time filter)
+Dropdown 1 (Tech): كل التقنيات / Django / Node.js / React / Flutter / Laravel
+Dropdown 2 (Country): كل البلدان / السعودية / سوريا / الإمارات / مصر / الأردن
+Filters work TOGETHER (AND logic) and update the candidate list in real-time.
+
+Candidate cards data (build all 6, filters will hide/show):
+
+Candidate 1: لينا الأحمد
+- Avatar: "ل" (purple)
+- 🇸🇾 جامعة دمشق · حديثة التخرج
+- Match: 94%
+- Skills: Django (blue), PostgreSQL (amber), Redis (teal)
+- Readiness: 92%
+
+Candidate 2: أحمد ياسين
+- Avatar: "أ" (teal)
+- 🇸🇦 الملك سعود · طالب سنة أخيرة
+- Match: 89%
+- Skills: Node.js (amber), React (purple), MongoDB (blue)
+- Readiness: 87%
+
+Candidate 3: محمد الشامي
+- Avatar: "م" (blue)
+- 🇸🇾 جامعة حلب · حديث التخرج
+- Match: 85%
+- Skills: React (purple), Next.js (purple), Tailwind (teal)
+- Readiness: 83%
+
+Candidate 4: خالد الحسن
+- Avatar: "خ" (amber)
+- 🇦🇪 الجامعة الأمريكية · طالب سنة أخيرة
+- Match: 78%
+- Skills: Flutter (teal), Firebase (amber), Dart (blue)
+- Readiness: 75%
+
+Candidate 5: مريم العلي
+- Avatar: "م" (red)
+- 🇸🇦 الملك عبدالعزيز · حديثة التخرج
+- Match: 91%
+- Skills: Django (blue), DRF (blue), PostgreSQL (amber)
+- Readiness: 88%
+
+Candidate 6: عمر خالد
+- Avatar: "ع" (green)
+- 🇯🇴 الأردنية · طالب سنة أخيرة
+- Match: 82%
+- Skills: Laravel (red), MySQL (amber), Vue.js (teal)
+- Readiness: 79%
+Card style:
+
+Background: #1b1b1b, Border: 1px solid #272727
+Border-radius: 10px, Padding: 16px
+Hover: transform: translateY(-4px), transition 0.2s
+Each card contains:
+
+Top row: [Avatar 44px] [Name + location] [Match badge]
+Skills tags (colored by tech)
+Bottom row:
+Left: "جاهزية المناقشة" + percentage + ✓
+Right: "🎥 دفاعها/دفاعه" button + "أرغب بمقابلتها/بمقابلته" green button
+7. Candidate Modal (when card clicked)
+Click any candidate card → Opens modal:
+
+Overlay: black at 70% opacity, fade-in 0.2s Modal:
+
+Max-width: 600px, centered
+Background: #121212, Border: 1px solid #272727
+Border-radius: 16px, Padding: 24px
+Animation: opacity 0→1 + scale 0.9→1
+Modal content:
+
+Header row:
+[Large Avatar 60px] [Name + Location + Status]      [X close]
+
+--- divider ---
+
+نبذة
+"طالبة سنة أخيرة، متخصصة في تطوير backend مع Django. 
+أكملت مشروع نظام حجز عيادات كامل مع authentication و payment."
+
+التقنيات
+[Django] [PostgreSQL] [Redis] [Docker] [Git]
+
+الإحصائيات (3 columns)
+┌────────┬────────┬────────┐
+│ ٣٢     │ ٩٢٪    │ ٥      │
+│ جلسة   │ جاهزية │ مشاريع │
+└────────┴────────┴────────┘
+
+فيديو الدفاع
+[▶] "شاهد الطالبة تدافع عن مشروعها" (button)
+
+[تواصل الآن - primary green] [حفظ للاحقاً - secondary]
+Modal behavior:
+
+Close on: X button, ESC key, click outside modal
+Body scroll locked when open
+8. Empty State for Filters
+When no candidates match filters:
+
+🔍
+لا يوجد مرشحون بهذه المواصفات
+جرّب تغيير الفلاتر
+[إعادة تعيين الفلاتر]
+9. Bottom Insight Box
+Blue-tinted box at the bottom:
+
+Background: rgba(124,199,255,0.08)
+Right border (3px): #7cc7ff
+Border-radius: 8px, Padding: 14px
+Text (color #7cc7ff): "💡 الفرق مع LinkedIn: لا سير ذاتية مزوّرة. كل مرشح اجتاز ٣٠+ جلسة تعلّم موثّقة، ولديه فيديو دفاع مسجّل يمكنك مشاهدته الآن."
+Technical Requirements
+Route: app/company-dashboard/page.tsx
+
+Add link in main dashboard/nav labeled: "لوحة الشركات"
+
+Use:
+
+React hooks: useState, useEffect, useMemo
+Chart.js from CDN
+setInterval for notifications and counter updates (with proper cleanup)
+CSS transitions/animations
+Random array selection for notifications
+Interactive elements:
+
+"أرغب بمقابلته/بمقابلتها" click → alert "تم إرسال طلب المقابلة"
+"🎥 دفاعها/دفاعه" click → alert "سيتم إضافة الفيديو قريباً"
+All hover effects work
+What NOT to do
+Do NOT create new database tables
+Do NOT modify existing pages
+Do NOT add real backend endpoints
+Do NOT add auth checks (add TODO comment)
+Do NOT use external animation libraries
+Testing Checklist
+After building, verify all of these work:
+
+ Live green dot pulses in header
+ Notifications appear every 8-15 seconds top-right
+ All 4 stat numbers count up from 0 on page load
+ Card 1 number increases every 30 seconds with green flash
+ Chart.js growth chart displays and shows tooltip on hover
+ Tech filter works (try Django → shows only Django candidates)
+ Country filter works (try السعودية)
+ Search filter works (try "لينا")
+ Filters work together
+ Clicking candidate card opens modal
+ Modal closes with X, ESC, and outside click
+ All hover effects work (cards, buttons)
+ Progress bars animate on page load
+ Empty state shows when filters return nothing
+The Winning Impact
+When judges see this dashboard:
+
+Green pulsing dot → "This is LIVE"
+Toast notifications appearing → "Real users are active NOW"
+Numbers counting up → "Feels alive"
+Working filters → "Real product, not just design"
+Modal opens → "Full functionality"
+They should think: "This is a real B2B marketplace that could replace LinkedIn Recruiter for junior developer hiring in MENA."
+
+Take your time. Quality over speed.
