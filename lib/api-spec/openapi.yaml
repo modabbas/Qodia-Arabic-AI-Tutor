@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Qodia account, onboarding, progress, and learning-session API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Account and session authentication
+  - name: learning
+    description: Student setup and learning progress
 paths:
   /healthz:
     get:
@@ -24,6 +28,175 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/signup:
+    post:
+      operationId: signUp
+      tags: [auth]
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpInput"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/login:
+    post:
+      operationId: logIn
+      tags: [auth]
+      summary: Sign in to an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid email or password
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/logout:
+    post:
+      operationId: logOut
+      tags: [auth]
+      summary: Sign out
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the signed-in user's profile
+      responses:
+        "200":
+          description: Signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /onboarding:
+    patch:
+      operationId: completeOnboarding
+      tags: [learning]
+      summary: Save graduation-project details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OnboardingInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [learning]
+      summary: Get progress, streak, and recent learning sessions
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /sessions:
+    get:
+      operationId: getSessions
+      tags: [learning]
+      summary: List the signed-in user's recent learning sessions
+      responses:
+        "200":
+          description: Recent sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LearningSession"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createSession
+      tags: [learning]
+      summary: Save completed touches and award XP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionInput"
+      responses:
+        "201":
+          description: Session saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningSession"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -31,6 +204,147 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
-
+      required: [status]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    OkResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      required: [ok]
+    TechStack:
+      type: string
+      enum: [Django, Node.js, React, Flutter]
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        project_name:
+          type: ["string", "null"]
+        tech_stack:
+          anyOf:
+            - $ref: "#/components/schemas/TechStack"
+            - type: "null"
+        created_at:
+          type: string
+          format: date-time
+      required: [id, email, name, project_name, tech_stack, created_at]
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+      required: [user]
+    SignUpInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+      required: [email, password, name]
+    LoginInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+      required: [email, password]
+    OnboardingInput:
+      type: object
+      properties:
+        project_name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        tech_stack:
+          $ref: "#/components/schemas/TechStack"
+      required: [project_name, tech_stack]
+    SessionInput:
+      type: object
+      properties:
+        concept:
+          type: string
+          minLength: 1
+          maxLength: 160
+        touches_completed:
+          type: integer
+          minimum: 0
+          maximum: 5
+        mistakes:
+          type: integer
+          minimum: 0
+        xp_earned:
+          type: integer
+          minimum: 0
+      required: [concept, touches_completed, mistakes, xp_earned]
+    LearningSession:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        concept:
+          type: string
+        touches_completed:
+          type: integer
+        mistakes:
+          type: integer
+        xp_earned:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+      required: [id, user_id, concept, touches_completed, mistakes, xp_earned, timestamp]
+    Progress:
+      type: object
+      properties:
+        total_xp:
+          type: integer
+        level:
+          type: integer
+        streak_days:
+          type: integer
+        last_active:
+          type: ["string", "null"]
+          format: date
+      required: [total_xp, level, streak_days, last_active]
+    Dashboard:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        progress:
+          $ref: "#/components/schemas/Progress"
+        recent_sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/LearningSession"
+        onboarding_complete:
+          type: boolean
+      required: [user, progress, recent_sessions, onboarding_complete]
