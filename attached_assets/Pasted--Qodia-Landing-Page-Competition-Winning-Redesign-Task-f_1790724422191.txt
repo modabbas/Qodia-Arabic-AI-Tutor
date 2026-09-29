@@ -1,0 +1,293 @@
+# Qodia Landing Page — Competition-Winning Redesign
+
+## Task for Replit Agent
+
+**IMPORTANT: Enable Extended Thinking (🧠) before starting.**
+
+Completely redesign the main landing page at `/` to be a competition-winning, professional, conversion-focused page that impresses judges from the first 7 seconds.
+
+## The Goal
+
+When a judge or investor opens Qodia.com, they should immediately think:
+1. "This is a real, serious company" (not a student project)
+2. "I understand exactly what this does" (in 15 seconds)
+3. "I want to try this" (click primary CTA)
+
+## Design Requirements
+
+**Style: EXACT match to existing Qodia design**
+- Background: `#0a0a0a`
+- Card background: `#121212`
+- Border: `1px solid #272727`
+- Text primary: `#f2f2f2`
+- Text secondary: `#8c8c8c`
+- Accent green: `#22c55e`
+- Warning amber: `#f5b84a`
+- Danger red: `#f2545b`
+- Blue: `#7cc7ff`, Purple: `#c792ea`, Teal: `#4ec9b0`
+- Font: IBM Plex Sans Arabic (from Google Fonts)
+- Direction: RTL throughout
+- Arabic numerals throughout (٠١٢٣٤٥٦٧٨٩)
+- Card border-radius: 12px
+- No gradients, no shadows (except subtle glow on primary CTA)
+
+## Page Structure (7 Sections)
+
+### SECTION 1: Hero (Above the Fold)
+
+**Layout:** Two columns on desktop, stacked on mobile
+- Right (60%): Headline + subheadline + CTAs
+- Left (40%): Interactive live demo card
+
+**Right Column:**
+- Small badge above headline (green tint): "🇸🇾 مبني في سوريا · للعالم العربي"
+- **Main headline** (48px on desktop, 32px on mobile, weight 500):
+  "لا ترسب في المناقشة"
+- **Sub-headline** (20px, color secondary):
+  "أول ذكاء اصطناعي عربي يعلّمك مشروع تخرّجك بدل ما يحلّه عنك — بأسلوب الخمس لمسات"
+- **CTA row** (2 buttons):
+  - Primary (green, large): "ابدأ جلستك الأولى مجاناً →" (scale on hover)
+  - Secondary (outlined): "شاهد كيف يعمل ▶"
+- **Trust indicators** (small text row below buttons):
+  "✓ بدون بطاقة ائتمان   ✓ عربي بلهجات محلية   ✓ ١٤٧ طالب يستخدمه الآن"
+
+**Left Column — Live Interactive Demo Card:**
+This is the KEY selling point. Build a mini interactive card that shows a real Qodia session touch:
+
+```
+┌──────────────────────────────────┐
+│ ● Live Demo · اللمسة ١           │  ← small header with pulsing dot
+├──────────────────────────────────┤
+│ مشرفك الافتراضي:                │
+│                                  │
+│ "المريض بالعيادة، كم موعد ممكن  │
+│  يكون إلو؟"                      │
+│                                  │
+│ [ موعد واحد بس ]                │  ← clickable options
+│ [ أكتر من موعد ]                │
+│                                  │
+│ ─────                            │
+│ 🎯 جرّب بدون تسجيل ↓             │
+└──────────────────────────────────┘
+```
+
+**Interactive behavior:**
+- User clicks "موعد واحد بس" → shows red feedback: "فكّر ثاني! المريض يزور الدكتور مرات كثيرة."
+- User clicks "أكتر من موعد" → shows green feedback + confetti animation + text: "🎉 بالضبط! هذي بداية علاقة ForeignKey. سجّل الآن لتكمّل الجلسة"
+- After correct answer, transforms the "🎯 جرّب" text into a link: "أكمل جلستك المجانية →"
+
+**Style:**
+- Card background: `#121212`
+- Border: `1px solid #22c55e` (green to emphasize)
+- Padding: 20px
+- Shadow: subtle green glow `0 0 40px rgba(34, 197, 94, 0.1)`
+
+### SECTION 2: The Problem (Pain Point)
+
+**Full-width dark section, centered content, max-width 800px:**
+
+- Small label (red tint): "المشكلة"
+- Large headline (32px):
+  "٧٠٪ من طلاب التقنية يشترون مشاريع تخرّجهم"
+- Subtext (secondary color, 18px):
+  "يوم المناقشة، الدكتور يسأل سؤال بسيط... ولا يعرفون الجواب. الشهادة تنجح، لكن المهنة تنتهي قبل أن تبدأ."
+
+**Three stat cards below** (grid of 3):
+1. **٧٠٪** | يشترون كودهم من الإنترنت (red accent)
+2. **٥٢٪** | يفشلون في أول مقابلة عمل (amber accent)  
+3. **٠** | أدوات عربية تحل المشكلة قبل Qodia (danger red)
+
+**Bottom line** (italic, secondary, 14px):
+"— دراسة على ٢٠٠ طالب في جامعات دمشق، حلب، والملك سعود ٢٠٢٥"
+
+### SECTION 3: The Solution — Five Touches Method
+
+**Header centered:**
+- Small label (purple tint): "الحل"
+- Headline (32px): "طريقة الخمس لمسات"
+- Subtitle (secondary): "١٥ دقيقة يومياً · فهم عميق مضمون · دفاع قوي في المناقشة"
+
+**Grid of 5 cards** (2 columns on desktop, 1 on mobile):
+
+Each card shows one touch with:
+- Colored number badge (top)
+- Icon
+- Title
+- 2-line description
+- Colored left border
+
+**Card 1: استفزاز** (blue #7cc7ff)
+- "نطرح سؤال بيكشف الفجوة اللي مو منتبه إلها"
+- "يبدأ منك فضول حقيقي"
+
+**Card 2: كشف** (purple #c792ea)
+- "نعلمك المفهوم بشكل نظيف ومركّز"
+- "بلهجتك العربية اللي تفهمها"
+
+**Card 3: بناء** (amber #f5b84a)
+- "نطبّق المفهوم على مشروعك أنت"
+- "مو مثال بعيد — كودك يتحسّن مباشرة"
+
+**Card 4: دفاع** (teal #4ec9b0)
+- "نحاكي أسئلة اللجنة الحقيقية"
+- "لما توصل يوم المناقشة، تكون جربتها قبل"
+
+**Card 5: ترسيخ** (red #f2545b)
+- "نراجع بعد أيام لضمان التذكّر"
+- "معرفة تبقى معك بعد التخرج"
+
+### SECTION 4: Who is Qodia For?
+
+**Header:**
+- Small label (green tint): "لمن Qodia؟"
+- Headline (32px): "ثلاث فئات · منتج واحد ذكي"
+
+**Grid of 3 large cards:**
+
+**Card A: للطلاب** (blue accent)
+- Icon: 🎓
+- Title: "للطلاب"
+- Description: "تعلّم مشروع تخرّجك بعمق. اجتز المناقشة بثقة. احصل على وظيفتك الأولى."
+- Bullet points:
+  - "جلسات تفاعلية بلهجتك"
+  - "بديل عن الغش الذي يُكشف"
+  - "شهادة معتمدة عند التخرج"
+- Button: "ابدأ مجاناً →" (blue outlined)
+
+**Card B: للجامعات** (purple accent)
+- Icon: 🏛️
+- Title: "للجامعات"
+- Description: "تحليلات ذكية عن أداء طلابك. اكتشف المفاهيم الصعبة. حسّن مناهجك."
+- Bullet points:
+  - "داشبورد شامل لكل طالب"
+  - "رؤية المفاهيم الأكثر صعوبة"
+  - "مقارنة أدائك بالجامعات الأخرى"
+- Button: "شاهد داشبورد الجامعة →" (purple outlined) — links to `/university-dashboard`
+
+**Card C: للشركات** (green accent)
+- Icon: 🏢
+- Title: "للشركات"
+- Description: "وظّف مطوّرين موثّقين بتكلفة ١٠٪ من الوكالات. لا سير ذاتية مزوّرة."
+- Bullet points:
+  - "$٥٠٠ لكل توظيف موثّق"
+  - "فيديو دفاع لكل مرشح"
+  - "تطابق ذكي بمتطلباتك"
+- Button: "استكشف Talent Bridge →" (green outlined) — links to `/company-dashboard`
+
+### SECTION 5: Live Numbers (Social Proof)
+
+**Full-width section with pulsing "Live" dot in header:**
+
+- Small text with pulsing green dot: "● تحديث مباشر"
+- Headline (28px): "Qodia الآن"
+
+**Grid of 4 large numbers** (count-up animation on scroll into view):
+
+1. **١٤٧** | طالب نشط
+2. **٥** | جامعات عربية
+3. **٩٤٪** | نجحوا في المناقشة
+4. **١٢** | جاهز للتوظيف
+
+**Below:** Small row of university logos as text (styled as chips):
+"جامعة دمشق · جامعة حلب · الملك سعود · الملك عبدالعزيز · الجامعة الأمريكية بالإمارات"
+
+### SECTION 6: Testimonials
+
+**Header:**
+- Small label (blue tint): "قصص نجاح"
+- Headline (32px): "ماذا يقول طلابنا"
+
+**Grid of 3 testimonial cards:**
+
+**Testimonial 1:**
+- Avatar (purple, "ل"): 
+- Name: "لينا الأحمد"
+- Location: "جامعة دمشق · خريجة ٢٠٢٥"
+- Quote: "كنت خايفة من المناقشة موت. مع Qodia، حسيت إني عم أحكي مع مشرف حقيقي بلهجتي. المناقشة صارت أسهل مما توقعت."
+- Star rating: ★★★★★
+
+**Testimonial 2:**
+- Avatar (teal, "أ"):
+- Name: "أحمد ياسين"
+- Location: "الملك سعود · طالب سنة أخيرة"
+- Quote: "الخمس لمسات فكرة عبقرية. مو مجرد سؤال وجواب. حسيت إني فعلاً فهمت الـ Node.js لأول مرة."
+- Star rating: ★★★★★
+
+**Testimonial 3:**
+- Avatar (green, "م"):
+- Name: "د. محمد البشير"
+- Location: "أستاذ في كلية المعلوماتية"
+- Quote: "استخدمت داشبورد Qodia مع طلابي. اكتشفت أن ٧٣٪ منهم لا يفهمون on_delete. عدّلت المنهج بناءً على ذلك."
+- Star rating: ★★★★★
+
+### SECTION 7: Final CTA + Footer
+
+**Full-width CTA section (dark card with green border):**
+- Headline (32px, centered): "جاهز تبدأ رحلتك؟"
+- Subtext: "جلستك الأولى مجانية · لا حاجة لبطاقة ائتمان"
+- Large CTA button (centered): "ابدأ الآن مجاناً →" (large green, scale on hover)
+- Small text below: "أو سجّل دخول إذا كان لديك حساب"
+
+**Footer (below):**
+- 3 columns:
+  - Column 1: Logo "Qodia" + tagline "لا ترسب في المناقشة"
+  - Column 2: Links: "الطلاب / الجامعات / الشركات / تواصل معنا"
+  - Column 3: "🇸🇾 مبني في سوريا · للعالم العربي"
+- Bottom line (centered): "© ٢٠٢٦ Qodia · جميع الحقوق محفوظة"
+
+## Technical Requirements
+
+**Route:** Update `app/page.tsx`
+
+**Interactive elements:**
+- Live demo in Hero must work (React state)
+- Stats count up when scrolled into view (Intersection Observer)
+- Pulsing "Live" dot animation
+- Smooth scroll to sections when clicking any anchor
+- All buttons and cards have hover states
+- Mobile responsive (single column on <768px)
+
+**Confetti library** (for demo correct answer):
+```javascript
+// Use simple CSS confetti or a lightweight library
+// Or just show 5-10 emoji divs that animate up and fade
+```
+
+**Performance:**
+- Font loaded via Google Fonts
+- No heavy images (use emoji/SVG)
+- Chart-free page (fast load)
+
+## What NOT to do
+
+- Do NOT change other pages
+- Do NOT modify database
+- Do NOT change authentication
+- Do NOT add complex libraries
+- Do NOT include placeholder text like "Lorem ipsum"
+
+## Testing Checklist
+
+After building, verify:
+- [ ] Page loads in under 2 seconds
+- [ ] Live demo in Hero works (both wrong and right answers)
+- [ ] Confetti appears when demo answer correct
+- [ ] All CTAs link correctly (/session for "ابدأ", /university-dashboard, /company-dashboard)
+- [ ] Numbers count up when scrolling to Section 5
+- [ ] Pulsing dot animates continuously
+- [ ] All hover effects work
+- [ ] Mobile responsive (test at 375px width)
+- [ ] Arabic text is RTL correct
+- [ ] Testimonials look natural (not fake)
+
+## The Winning Impact
+
+When a judge opens Qodia:
+1. **Second 1-3:** Sees clean, professional hero — "This looks serious"
+2. **Second 4-10:** Reads "لا ترسب في المناقشة" — "I understand the problem"
+3. **Second 11-30:** Tries the live demo, gets confetti — "This actually works!"
+4. **Second 31-60:** Scrolls, sees three audiences — "This is a real business"
+5. **Second 61-90:** Sees testimonials + numbers — "People trust this"
+6. **Result:** Clicks "ابدأ مجاناً" — that's your win.
+
+Take your time. This is the most important page in the entire product.
