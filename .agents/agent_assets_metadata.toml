@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "eH6Jlcbza2dBJYKdLcvoh"
+uri = "file://exports/qodia-project-source.zip"
+type = "unspecified"
+title = "ملفات مشروع قُوديا"
+description = "ملف ZIP يضم مصدر واجهة قُوديا، خادم API، المكتبات المحلية وملفات إعداد التشغيل؛ بدون الحزم المثبتة أو ملفات الأسرار."
+logical_id = "2ad8aa47-c33a-4b63-9102-d26da9b582b4"
+content_hash = "sha256:c22bc1af58abbd172ed1e87332e92e18969ae7eb7ed54788597786fefa3b3199"
+size = 187831
+mtime_ms = 1790678467770
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:66777f32-6886-4ed3-9640-b1843113b369/2ad8aa47-c33a-4b63-9102-d26da9b582b4/2b0e3e23-2b6b-4dc7-9a94-2252fee77962"
+storage_version_token = "1790678474436494"
+content_type = "application/octet-stream"
