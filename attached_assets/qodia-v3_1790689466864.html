@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Qodia — جلسة الخمس لمسات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a;--s:#121212;--s2:#1b1b1b;--s3:#252525;--ln:#272727;--tx:#f2f2f2;--mt:#8c8c8c;--mt2:#6b6b6b;
+  --g:#22c55e;--gs:rgba(34,197,94,.13);
+  --blue:#7cc7ff;--bluel:rgba(124,199,255,.13);
+  --purple:#c792ea;--purplel:rgba(199,146,234,.13);
+  --teal:#4ec9b0;--teall:rgba(78,201,176,.13);
+  --amber:#f5b84a;--amberl:rgba(245,184,74,.13);
+  --red:#f2545b;--redl:rgba(242,84,91,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--bg);color:var(--tx);font:16px/1.75 'IBM Plex Sans Arabic','Segoe UI',sans-serif;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+code{font-family:'JetBrains Mono',Consolas,monospace}
+
+/* شريط علوي */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:14px 22px;background:var(--bg);border-bottom:1px solid var(--ln)}
+.logo{display:flex;align-items:center}
+.rail{flex:1;display:flex;gap:5px;max-width:280px;margin:0 auto}
+.seg{flex:1;height:5px;border-radius:3px;background:var(--s2);border:1px solid var(--ln);transition:all .4s}
+.seg.done{background:var(--g);border-color:var(--g)}
+.seg.now{background:var(--gs);border:1.5px solid var(--g)}
+.meta{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--mt)}
+.streak{white-space:nowrap}
+.xpbox{display:flex;align-items:center;gap:6px;transition:transform .3s}
+.xpbox.pulse{transform:scale(1.12)}
+.lvl{width:22px;height:22px;border-radius:50%;border:2px solid var(--g);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.xpbar{width:60px;height:5px;border-radius:3px;background:var(--s2);overflow:hidden}
+.xpbar i{display:block;height:100%;background:var(--g);transition:width .6s cubic-bezier(.3,1.4,.5,1)}
+.xpnum{font-variant-numeric:tabular-nums;color:var(--tx);min-width:34px}
+
+/* المسرح */
+.stage{max-width:640px;margin:0 auto;padding:40px 24px 100px}
+.slide{animation:rise .45s cubic-bezier(.2,.8,.3,1) both}
+.touchlabel{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;margin-bottom:16px}
+.who{font-size:14px;color:var(--mt);margin-bottom:8px}
+.say{font-size:20px;line-height:1.7;margin-bottom:24px;max-width:580px}
+
+.card{background:var(--s);border:1px solid var(--ln);border-radius:18px;padding:24px}
+.q{font-size:18px;font-weight:600;margin-bottom:20px;line-height:1.6}
+
+.opts{display:grid;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:1.5px solid var(--ln);background:var(--s2);color:var(--tx);text-align:right;transition:all .2s}
+.opt:hover:not(:disabled){border-color:var(--mt);transform:translateX(-2px)}
+.opt:active:not(:disabled){transform:scale(.985)}
+.opt.right{border-color:var(--g);background:var(--gs)}
+.opt.wrong{border-color:var(--red);background:var(--redl);animation:shake .35s}
+.opt:disabled{cursor:default}
+.key{flex:none;width:26px;height:26px;border-radius:8px;border:1px solid var(--ln);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--mt)}
+.opt.right .key{background:var(--g);border-color:var(--g);color:#04210f}
+
+.fb{display:flex;gap:10px;align-items:flex-start;margin-top:16px;padding:13px 15px;border-radius:12px;font-size:15px;animation:pop .3s}
+.fb.ok{background:var(--gs)}
+.fb.no{background:var(--redl)}
+.fbi{flex:none;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-top:2px}
+.fb.ok .fbi{background:var(--g);color:#04210f}
+.fb.no .fbi{background:var(--red);color:#fff}
+
+.next{display:flex;align-items:center;gap:14px;margin-top:22px;animation:rise .35s both}
+.btn{padding:12px 24px;border-radius:12px;background:var(--g);color:#04210f;font-weight:700;transition:transform .12s}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.big{padding:14px 32px;font-size:17px;border-radius:14px}
+.btn.ghost{background:var(--s2);color:var(--tx);border:1px solid var(--ln)}
+.small{font-size:13px;color:var(--mt)}
+
+
+
+/* التحقق البسيط بعد الشرح */
+.check{margin-top:20px;padding-top:20px;border-top:1px dashed var(--ln)}
+.check-q{font-size:14px;color:var(--mt);margin-bottom:12px}
+.check-main{font-size:16px;margin-bottom:16px}
+.check-opts{display:flex;flex-wrap:wrap;gap:8px}
+.chip-check{padding:10px 18px;border-radius:22px;border:1.5px solid var(--ln);background:var(--s2);color:var(--tx);font-family:'JetBrains Mono',monospace;font-size:13.5px}
+.chip-check:hover:not(:disabled){border-color:var(--mt)}
+.chip-check.right{border-color:var(--g);background:var(--gs)}
+.chip-check.wrong{border-color:var(--red);background:var(--redl);animation:shake .35s}
+.chip-check:disabled{cursor:default}
+
+/* جدول القيم الأنيق */
+.values{background:var(--bg);border-radius:12px;overflow:hidden;margin:4px 0 4px}
+.value-row{padding:14px 18px;border-bottom:1px solid var(--s2)}
+.value-row:last-child{border-bottom:0}
+.value-name{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--tx);margin-bottom:4px}
+.value-desc{font-size:14px;color:var(--mt);line-height:1.6}
+.intro-text{font-size:16px;line-height:1.8;margin-bottom:16px}
+.intro-text code{background:var(--purplel);color:var(--purple);padding:2px 8px;border-radius:6px;font-size:14px}
+.values-label{font-size:14px;color:var(--mt);margin-bottom:12px}
+
+/* اللمسة الرابعة: محرر */
+.editor{background:#1e1e1e;border:1px solid var(--ln);border-radius:12px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:13.5px;direction:ltr;text-align:left;line-height:2}
+.ln{display:flex;gap:14px}
+.ln .n{color:var(--mt2);width:20px;user-select:none}
+.ln .c{color:var(--mt);flex:1}
+.ln.todo .c{color:var(--amber)}
+.ln.input{background:var(--amberl);margin:0 -14px;padding:0 14px}
+.ln.input .c{color:var(--tx)}
+.caret{background:var(--amber);color:#0a0a0a;padding:0 2px;animation:blink 1.1s infinite}
+.editor-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
+.editor-input{flex:1;min-width:200px;padding:10px 14px;border:1.5px solid var(--ln);border-radius:10px;background:var(--s2);color:var(--tx);font:14px 'JetBrains Mono',monospace;direction:ltr;text-align:left}
+.hint-btn{padding:8px 14px;border-radius:20px;border:1px dashed var(--ln);background:transparent;color:var(--mt);font-size:13px}
+.hint-btn:hover:not(:disabled){border-color:var(--amber);color:var(--amber)}
+.hint-cost{color:var(--amber);margin-right:4px}
+.hint-text{margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--amberl);color:var(--amber);font-size:14px;line-height:1.7;animation:pop .25s}
+.lock{font-size:12px;color:var(--mt)}
+
+/* اللمسة الخامسة: المناقشة */
+.boss{border:2px solid var(--red);box-shadow:0 0 0 4px var(--redl)}
+.bosshead{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.ring{position:relative;width:52px;height:52px;flex:none}
+.ring svg{transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:4}
+.ring .bg{stroke:var(--s2)}
+.ring .fg{stroke:var(--red);stroke-linecap:round;transition:stroke-dashoffset 1s linear}
+.ring span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.hp{flex:1}
+.hpl{display:flex;justify-content:space-between;font-size:13px;color:var(--mt);margin-bottom:4px}
+.hpb{height:8px;background:var(--s2);border-radius:4px;overflow:hidden}
+.hpb i{display:block;height:100%;background:var(--g);transition:width .5s}
+.judge{font-size:13px;color:var(--mt);margin-bottom:6px}
+.follow{margin-top:20px;padding-top:18px;border-top:1px solid var(--ln);animation:rise .35s both}
+
+/* شاشة النتيجة */
+.end{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;animation:rise .5s both}
+.endTitle{font-size:26px;font-weight:600;margin-bottom:6px}
+.endnum{display:flex;align-items:baseline;gap:16px;font-size:60px;font-weight:700;color:var(--g);line-height:1.1;margin:8px 0}
+.endnum .from{font-size:30px;color:var(--mt)}
+.endnum .arrow{font-size:26px;color:var(--mt)}
+.results{list-style:none;padding:0;margin:20px 0;width:100%;max-width:420px;text-align:right}
+.results li{display:flex;align-items:center;gap:14px;padding:12px 4px;border-bottom:1px solid var(--ln)}
+.ri{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:none}
+.results .pass .ri{background:var(--g);color:#04210f}
+.results .soft .ri{background:var(--amber);color:#1a1200}
+.results li .name{flex:1}
+.results li .concept{font-size:13px;color:var(--mt);font-family:'JetBrains Mono',monospace}
+
+/* شاشة اختيار المزاج */
+.moodscreen{max-width:520px;margin:60px auto;padding:0 24px;text-align:center;animation:rise .5s both}
+.moodscreen h1{font-size:26px;font-weight:600;margin-bottom:8px}
+.moodscreen p{color:var(--mt);margin-bottom:32px}
+.moodgrid{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.moodbtn{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 28px;border-radius:18px;border:1.5px solid var(--ln);background:var(--s);min-width:120px;transition:all .2s}
+.moodbtn:hover{border-color:var(--g);transform:translateY(-3px)}
+.moodbtn .emoji{font-size:38px}
+.moodbtn span{font-size:15px}
+
+.music{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--s);border:1px solid var(--ln);border-radius:12px;margin-bottom:20px;animation:rise .4s both}
+.music .note{font-size:20px;animation:wiggle 2.5s infinite}
+.music a{color:var(--g);text-decoration:none;font-weight:600}
+.music a:hover{text-decoration:underline}
+.music .x{margin-inline-start:auto;color:var(--mt);font-size:12px;padding:4px 10px;border-radius:8px;border:1px solid var(--ln);background:transparent}
+
+.float{position:fixed;z-index:60;pointer-events:none;font-weight:700;color:var(--g);font-size:22px;animation:floatUp 1s ease forwards}
+.bit{position:fixed;z-index:60;width:8px;height:8px;border-radius:2px;pointer-events:none}
+
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes wiggle{0%,80%,100%{transform:rotate(0)}85%{transform:rotate(-8deg)}90%{transform:rotate(8deg)}95%{transform:rotate(-4deg)}}
+@keyframes floatUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-60px)}}
+
+@media(max-width:600px){
+  .top{gap:10px;padding:10px 14px}
+  .rail{max-width:none}
+  .xpbar{width:44px}
+  .stage{padding:24px 16px 90px}
+  .say{font-size:18px}
+  .card{padding:20px 18px}
+  .endnum{font-size:44px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top" id="topbar" style="display:none">
+  <div class="logo"><svg width="24" height="24" viewBox="0 0 48 48"><circle cx="24" cy="24" r="18" fill="none" stroke="#f2f2f2" stroke-width="4"/><path d="M19.5 16.5 L29 24 L19.5 31.5" fill="none" stroke="#f2f2f2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="rail" id="rail"></div>
+  <div class="meta">
+    <span class="streak">🔥 <span id="streak">١٤</span></span>
+    <div class="xpbox" id="xpbox"><div class="lvl" id="lvl">٥</div><div class="xpbar"><i id="xpfill"></i></div><span class="xpnum" id="xpnum">١٩٨٠</span></div>
+  </div>
+</header>
+
+<div id="app"></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const ar = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+const app = $('app');
+
+// حالة اللعبة
+let touch = 0, xp = 1980, level = 5, streak = 14, combo = 1, mood = 'normal', musicShown = false;
+const results = [];
+const TOTAL = 5;
+
+const TOUCHES = [
+  { name: 'استفزاز', color: 'blue' },
+  { name: 'كشف', color: 'purple' },
+  { name: 'استكشاف', color: 'teal' },
+  { name: 'بناء', color: 'amber' },
+  { name: 'دفاع', color: 'red' }
+];
+
+const MOOD_INTRO = {
+  hyped: 'يلا نشتغل! اليوم منبني علاقة جدول المواعيد بمشروعك.',
+  normal: 'اليوم منشتغل على جدول المواعيد بمشروعك.',
+  tired: 'ما تقلق، جلسة قصيرة اليوم. منشتغل على جدول المواعيد بس.'
+};
+
+const MUSIC = {
+  hyped: { url: 'https://www.youtube.com/results?search_query=coding+music+energetic+lofi', label: 'موسيقى حماسية' },
+  normal: { url: 'https://www.youtube.com/results?search_query=lofi+hip+hop+study+beats', label: 'لوفاي هادية' },
+  tired: { url: 'https://www.youtube.com/results?search_query=calm+ambient+study+music', label: 'أمبيانت مريحة' }
+};
+
+function updateHud(){
+  $('rail').innerHTML = Array.from({length: TOTAL}, (_, i) => {
+    const cls = i < touch ? 'done' : i === touch ? 'now' : '';
+    return `<div class="seg ${cls}"></div>`;
+  }).join('');
+  $('streak').textContent = ar(streak);
+  $('lvl').textContent = ar(level);
+  $('xpnum').textContent = ar(xp);
+  $('xpfill').style.width = ((xp % 500) / 500 * 100) + '%';
+}
+
+// أصوات
+let audioCtx;
+function tone(kind){
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const notes = {good:[660,880], bad:[220], big:[523,659,784,1047], soft:[440]}[kind] || [440];
+    notes.forEach((f, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime + i * 0.08;
+      o.type = kind === 'bad' ? 'triangle' : 'sine';
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.07, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t);
+      o.stop(t + 0.22);
+    });
+  } catch {}
+}
+
+function floatXP(amount, el){
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const f = document.createElement('div');
+  f.className = 'float';
+  f.textContent = '+' + ar(amount);
+  f.style.left = (r.left + r.width / 2) + 'px';
+  f.style.top = r.top + 'px';
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 1000);
+}
+
+function confetti(el){
+  if (!el || matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const r = el.getBoundingClientRect();
+  const x = r.left + r.width / 2, y = r.top + r.height / 2;
+  const colors = ['#22c55e', '#f5b84a', '#7cc7ff', '#c792ea'];
+  for (let i = 0; i < 24; i++) {
+    const b = document.createElement('div');
+    b.className = 'bit';
+    b.style.background = colors[i % 4];
+    b.style.left = x + 'px';
+    b.style.top = y + 'px';
+    document.body.appendChild(b);
+    const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 100;
+    b.animate(
+      [{transform:'translate(0,0)', opacity:1},
+       {transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d-40}px) rotate(${Math.random()*360}deg)`, opacity:0}],
+      {duration: 900, easing:'cubic-bezier(.2,.8,.3,1)'}
+    ).onfinish = () => b.remove();
+  }
+}
+
+function reward(pts, el, big){
+  xp += pts * combo;
+  if (xp >= level * 500) level++;
+  combo = Math.min(combo + 1, 5);
+  const xpEl = $('xpbox');
+  xpEl.classList.add('pulse');
+  setTimeout(() => xpEl.classList.remove('pulse'), 500);
+  floatXP(pts * combo, el);
+  if (big) confetti(el);
+  tone(big ? 'big' : 'good');
+  updateHud();
+}
+
+function miss(){
+  combo = 1;
+  tone('bad');
+  updateHud();
+}
+
+function render(html){
+  app.innerHTML = '';
+  const slide = document.createElement('div');
+  slide.className = 'slide';
+  slide.innerHTML = html;
+  app.appendChild(slide);
+  window.scrollTo({top: 0, behavior:'smooth'});
+}
+
+function musicBar(){
+  if (musicShown) return '';
+  musicShown = true;
+  const m = MUSIC[mood];
+  return `<div class="music"><span class="note">🎵</span><span>${m.label} —</span><a href="${m.url}" target="_blank" rel="noopener">افتح بلايليست</a><button class="x" onclick="this.parentElement.remove()">إخفاء</button></div>`;
+}
+
+function touchLabel(i){
+  const t = TOUCHES[i];
+  return `<div class="touchlabel" style="background:var(--${t.color}l);color:var(--${t.color})">اللمسة ${ar(i+1)} · ${t.name}</div>`;
+}
+
+function feedback(ok, text){
+  return `<div class="fb ${ok?'ok':'no'}"><span class="fbi">${ok?'✓':'!'}</span><span>${text}</span></div>`;
+}
+
+function nextButton(final){
+  return `<div class="next"><button class="btn big" id="nextbtn" autofocus>${final ? 'شوف نتيجتك' : 'اللمسة الجاية ←'}</button><span class="small">أو اضغط Enter</span></div>`;
+}
+
+// ═══════════════════════════════════════════
+// اللمسة ١ · استفزاز
+// ═══════════════════════════════════════════
+function touch1(){
+  render(`
+    ${touch === 0 ? musicBar() : ''}
+    ${touchLabel(0)}
+    <div class="who">مشرفك</div>
+    <p class="say">${MOOD_INTRO[mood]} سؤال قبل ما نبلش:</p>
+    <section class="card">
+      <div class="q">المريض الواحد بالعيادة، كم موعد ممكن يكون إلو؟</div>
+      <div class="opts">
+        <button class="opt" data-i="0"><span class="key">١</span><span>موعد واحد بس</span></button>
+        <button class="opt" data-i="1"><span class="key">٢</span><span>أكتر من موعد</span></button>
+      </div>
+      <div id="fb"></div>
+    </section>
+  `);
+  const opts = document.querySelectorAll('.opt');
+  const pick = (i, el) => {
+    if (opts[0].disabled) return;
+    if (i === 1){
+      opts.forEach(o => o.disabled = true);
+      el.classList.add('right');
+      $('fb').innerHTML = feedback(true, 'بالضبط. مريض واحد ← مواعيد كتير. هالنوع من العلاقات إلها اسم وقواعد، بنكتشفها هلق.');
+      results[0] = {name: 'استفزاز', concept: 'علاقة كثير-لواحد', passed: true};
+      reward(20, el, false);
+      $('fb').insertAdjacentHTML('afterend', nextButton(false));
+      setupNext();
+    } else {
+      el.classList.add('wrong');
+      el.disabled = true;
+      $('fb').innerHTML = feedback(false, 'فكّر بآخر مرة زرت دكتور. رحت مرة وحدة بس، ولا أكتر؟');
+      miss();
+    }
+  };
+  opts.forEach((b, i) => b.onclick = () => pick(+b.dataset.i, b));
+  setupKeys(opts, pick);
+}
+
+// ═══════════════════════════════════════════
+// اللمسة ٢ · كشف (تعليم + سؤال تحقق بسيط)
+// ═══════════════════════════════════════════
+function touch2(){
+  render(`
+    ${touchLabel(1)}
+    <div class="who">مشرفك</div>
+    <p class="say">زبطها! هلق خليني عرّفلك اسم اللي اكتشفته:</p>
+    <section class="card">
+      <p class="intro-text">
+        هالعلاقة اسمها <code>ForeignKey</code>. أهم شي فيها كلمة <code>on_delete</code>. بتقول لـ Django شو يعمل بمواعيد المريض لو انحذف المريض.
+      </p>
+      <p class="values-label">في ٣ قيم بتقدر تعطيها:</p>
+      <div class="values">
+        <div class="value-row">
+          <div class="value-name">CASCADE</div>
+          <div class="value-desc">المريض راح، مواعيده تروح معه</div>
+        </div>
+        <div class="value-row">
+          <div class="value-name">PROTECT</div>
+          <div class="value-desc">Django بيرفض حذف المريض إذا إلو مواعيد</div>
+        </div>
+        <div class="value-row">
+          <div class="value-name">SET_NULL</div>
+          <div class="value-desc">المريض راح، مواعيده تضل بدون مريض</div>
+        </div>
+      </div>
+      <div class="check">
+        <div class="check-q">قبل ما نكمّل — سؤال سريع:</div>
+        <div class="check-main">أي قيمة تحمي المريض من الحذف إذا إلو مواعيد؟</div>
+        <div class="check-opts">
+          <button class="chip-check" data-w="CASCADE">CASCADE</button>
+          <button class="chip-check" data-w="PROTECT">PROTECT</button>
+          <button class="chip-check" data-w="SET_NULL">SET_NULL</button>
+        </div>
+      </div>
+      <div id="fb"></div>
+    </section>
+  `);
+  const chips = document.querySelectorAll('.chip-check');
+  const pick = (word, el) => {
+    if (chips[0].disabled) return;
+    if (word === 'PROTECT'){
+      chips.forEach(c => c.disabled = true);
+      el.classList.add('right');
+      $('fb').innerHTML = feedback(true, 'مضبوط. PROTECT معناها "احميه" — Django بيرفض الحذف إذا إلو ارتباطات.');
+      results[1] = {name: 'كشف', concept: 'قيم on_delete', passed: true};
+      reward(15, el, false);
+      $('fb').insertAdjacentHTML('afterend', nextButton(false));
+      setupNext();
+    } else {
+      el.classList.add('wrong');
+      el.disabled = true;
+      const hints = {
+        'CASCADE': 'CASCADE بتعمل العكس — المواعيد تنحذف مع المريض. ارجع للجدول.',
+        'SET_NULL': 'SET_NULL بتفصل المواعيد عن المريض. مو حماية، لأن المريض بينحذف.'
+      };
+      $('fb').innerHTML = feedback(false, hints[word] || 'شوف الجدول مرة تانية.');
+      miss();
+    }
+  };
+  chips.forEach(c => c.onclick = () => pick(c.dataset.w, c));
+}
+
+// ═══════════════════════════════════════════
+// اللمسة ٣ · استكشاف
+// ═══════════════════════════════════════════
+function touch3(){
+  render(`
+    ${touchLabel(2)}
+    <div class="who">مشرفك</div>
+    <p class="say">خليني جرّبك بشي بسيط قبل ما تكتب لحالك:</p>
+    <section class="card">
+      <div class="q">شوف نفس الكود، بس مع تعديل. شو رأيك يصير لو استخدمنا <code style="background:var(--teall);color:var(--teal);padding:2px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:14px">PROTECT</code> بدل <code style="background:var(--teall);color:var(--teal);padding:2px 8px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:14px">CASCADE</code>؟</div>
+      <div class="opts">
+        <button class="opt" data-i="0"><span class="key">١</span><span>بيصير نفس الشي، ما بتفرق</span></button>
+        <button class="opt" data-i="1"><span class="key">٢</span><span>Django بيرفض يحذف المريض إذا إلو مواعيد</span></button>
+        <button class="opt" data-i="2"><span class="key">٣</span><span>المواعيد بتنحذف والمريض بيضل</span></button>
+      </div>
+      <div id="fb"></div>
+    </section>
+  `);
+  const opts = document.querySelectorAll('.opt');
+  const nos = [
+    'لو ما بتفرق، ليش في خيارات مختلفة؟ كل قيمة إلها معنى.',
+    null,
+    'العكس. المواعيد تابعة للمريض، مش المريض تابع للمواعيد.'
+  ];
+  const pick = (i, el) => {
+    if (opts[0].disabled) return;
+    if (i === 1){
+      opts.forEach(o => o.disabled = true);
+      el.classList.add('right');
+      $('fb').innerHTML = feedback(true, 'بالضبط. PROTECT معناها "احميه". Django بيرفض الحذف لو في مواعيد مرتبطة، عشان ما تضيع بيانات.');
+      results[2] = {name: 'استكشاف', concept: 'CASCADE vs PROTECT', passed: true};
+      reward(25, el, false);
+      $('fb').insertAdjacentHTML('afterend', nextButton(false));
+      setupNext();
+    } else {
+      el.classList.add('wrong');
+      el.disabled = true;
+      $('fb').innerHTML = feedback(false, nos[i] || 'قريبة، بس مش هيك.');
+      miss();
+    }
+  };
+  opts.forEach((b, i) => b.onclick = () => pick(+b.dataset.i, b));
+  setupKeys(opts, pick);
+}
+
+// ═══════════════════════════════════════════
+// اللمسة ٤ · بناء (المحرر)
+// ═══════════════════════════════════════════
+function touch4(){
+  render(`
+    ${touchLabel(3)}
+    <div class="who">مشرفك</div>
+    <p class="say">دورك. اكتب السطر بنفسك:</p>
+    <section class="card">
+      <div class="q">أضف علاقة بين الموعد والمريض بحيث إذا انحذف المريض، تنحذف مواعيده معه.</div>
+      <div class="editor">
+        <div class="ln"><span class="n">1</span><span class="c">class Appointment(models.Model):</span></div>
+        <div class="ln"><span class="n">2</span><span class="c">&nbsp;&nbsp;&nbsp;&nbsp;date = models.DateTimeField()</span></div>
+        <div class="ln"><span class="n">3</span><span class="c">&nbsp;&nbsp;&nbsp;&nbsp;doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)</span></div>
+        <div class="ln todo"><span class="n">4</span><span class="c">&nbsp;&nbsp;&nbsp;&nbsp;# TODO: اكتب سطر المريض هنا ↓</span></div>
+        <div class="ln input"><span class="n">5</span><span class="c">&nbsp;&nbsp;&nbsp;&nbsp;<span id="preview">patient = models.</span><span class="caret" id="caret">|</span></span></div>
+        <div class="ln"><span class="n">6</span><span class="c">&nbsp;&nbsp;&nbsp;&nbsp;notes = models.TextField(blank=True)</span></div>
+      </div>
+      <div class="editor-actions">
+        <input class="editor-input" id="codeinput" placeholder="ForeignKey(Patient, on_delete=..." autocomplete="off" spellcheck="false">
+        <button class="hint-btn" id="hintbtn">تلميح <span class="hint-cost">−٥</span></button>
+        <button class="btn" id="submitcode">سلّم</button>
+      </div>
+      <div class="lock" style="margin-top:10px">🔒 اللصق مقفول · اكتب الكود بيدك</div>
+      <div id="hintarea"></div>
+      <div id="fb"></div>
+    </section>
+  `);
+  
+  const input = $('codeinput');
+  const preview = $('preview');
+  const caret = $('caret');
+  const submitBtn = $('submitcode');
+  
+  // منع اللصق
+  input.addEventListener('paste', e => {
+    e.preventDefault();
+    $('fb').innerHTML = feedback(false, 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.');
+  });
+  input.addEventListener('drop', e => e.preventDefault());
+  
+  // معاينة حية بالمحرر
+  input.addEventListener('input', () => {
+    preview.textContent = 'patient = models.' + input.value;
+    caret.style.display = 'inline';
+  });
+  
+  input.focus();
+  
+  let hintUsed = false, tries = 0;
+  
+  $('hintbtn').onclick = () => {
+    if (hintUsed) return;
+    hintUsed = true;
+    xp = Math.max(0, xp - 5);
+    updateHud();
+    $('hintarea').innerHTML = `<div class="hint-text">💡 ابدأ بـ <code>ForeignKey(Patient, ...</code> — شو الكلمة الثانية اللازمة بعدها؟ فكّر باللمسة الثانية.</div>`;
+    $('hintbtn').disabled = true;
+    $('hintbtn').style.opacity = '0.4';
+  };
+  
+  const check = () => {
+    const val = input.value.trim().replace(/\s+/g, ' ');
+    // تحقق بسيط: يحتوي ForeignKey و Patient و on_delete و CASCADE
+    const hasFK = /ForeignKey\s*\(/.test(val);
+    const hasPatient = /Patient/.test(val);
+    const hasOnDelete = /on_delete\s*=/.test(val);
+    const hasCascade = /CASCADE/.test(val);
+    
+    if (hasFK && hasPatient && hasOnDelete && hasCascade){
+      input.disabled = true;
+      submitBtn.disabled = true;
+      $('hintbtn').disabled = true;
+      caret.style.display = 'none';
+      $('fb').innerHTML = feedback(true, 'ممتاز! كتبت العلاقة صح. patient بيربط الموعد بجدول المرضى، وCASCADE يعني إذا انحذف المريض تنحذف مواعيده معه.');
+      results[3] = {name: 'بناء', concept: 'كتابة ForeignKey', passed: !hintUsed && tries === 0};
+      reward(hintUsed ? 30 : 50, submitBtn, true);
+      $('fb').insertAdjacentHTML('afterend', nextButton(false));
+      setupNext();
+    } else {
+      tries++;
+      let msg = 'الكود ناقصه شي. ';
+      if (!hasFK) msg += 'وين ForeignKey؟';
+      else if (!hasPatient) msg += 'ما ذكرت اسم الجدول (Patient).';
+      else if (!hasOnDelete) msg += 'ناقصك on_delete.';
+      else if (!hasCascade) msg += 'شو قيمة on_delete اللي بتخلي المواعيد تنحذف مع المريض؟';
+      $('fb').innerHTML = feedback(false, msg);
+      miss();
+    }
+  };
+  
+  submitBtn.onclick = check;
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){
+      e.preventDefault();
+      check();
+    }
+  });
+}
+
+// ═══════════════════════════════════════════
+// اللمسة ٥ · دفاع (المناقشة)
+// ═══════════════════════════════════════════
+function touch5(){
+  const LIMIT = 30;
+  const C = 2 * Math.PI * 20;
+  
+  render(`
+    ${touchLabel(4)}
+    <div class="who">مشرفك</div>
+    <p class="say">خلّصت! هلق دكتور من اللجنة رح يسألك:</p>
+    <section class="card boss">
+      <div class="bosshead">
+        <div class="ring">
+          <svg width="52" height="52" viewBox="0 0 48 48">
+            <circle cx="24" cy="24" r="20" class="bg"/>
+            <circle cx="24" cy="24" r="20" class="fg" id="ringfg" style="stroke-dasharray:${C};stroke-dashoffset:0"/>
+          </svg>
+          <span id="timer">${ar(LIMIT)}</span>
+        </div>
+        <div class="hp">
+          <div class="hpl"><span>ثقتك قدام اللجنة</span><span id="hpval">١٠٠٪</span></div>
+          <div class="hpb"><i id="hpbar" style="width:100%"></i></div>
+        </div>
+      </div>
+      <div class="judge">د. سامر، عضو لجنة المناقشة:</div>
+      <div class="q">ليش حطيت CASCADE بعلاقة المريض؟</div>
+      <div class="opts">
+        <button class="opt" data-i="0"><span class="key">١</span><span>لأن Django طلب مني هيك</span></button>
+        <button class="opt" data-i="1"><span class="key">٢</span><span>لما ينحذف المريض بتنحذف مواعيده، فما بتضل يتيمة</span></button>
+        <button class="opt" data-i="2"><span class="key">٣</span><span>ما في مشكلة، هيك أسرع</span></button>
+      </div>
+      <div id="fb"></div>
+      <div id="followarea"></div>
+    </section>
+  `);
+  
+  let t = LIMIT, hp = 100, over = false;
+  const nos = [
+    'اللجنة ما بتقبل «هيك طلب مني». بدها السبب.',
+    null,
+    '«أسرع» مو سبب. بدو يعرف شو بيصير بالبيانات.'
+  ];
+  
+  const iv = setInterval(() => {
+    if (over) return;
+    t--;
+    $('timer').textContent = ar(Math.max(t, 0));
+    $('ringfg').style.strokeDashoffset = C * (1 - t / LIMIT);
+    if (t <= 0){
+      clearInterval(iv);
+      $('fb').innerHTML = feedback(false, 'خلص الوقت. باللجنة الحقيقية السكوت أسوأ من جواب ناقص.');
+    }
+  }, 1000);
+  
+  // كشف الخروج من التبويب
+  const onVis = () => {
+    if (over || !document.hidden) return;
+    hp = Math.max(hp - 15, 0);
+    $('hpval').textContent = ar(hp) + '٪';
+    $('hpbar').style.width = hp + '%';
+    miss();
+    $('fb').innerHTML = feedback(false, 'شفتك طلعت. باللجنة ما في تبويب تاني.');
+  };
+  document.addEventListener('visibilitychange', onVis);
+  
+  const opts = document.querySelectorAll('.card > .opts .opt');
+  const pick = (i, el) => {
+    if (over || el.disabled) return;
+    if (i === 1){
+      over = true;
+      clearInterval(iv);
+      document.removeEventListener('visibilitychange', onVis);
+      el.classList.add('right');
+      opts.forEach(o => o.disabled = true);
+      $('fb').innerHTML = feedback(true, 'الدكتور هزّ راسه. جواب واثق وفيه سبب.');
+      reward(50, el, true);
+      setTimeout(showFollow, 1200);
+    } else {
+      el.classList.add('wrong');
+      el.disabled = true;
+      hp = Math.max(hp - 35, 0);
+      $('hpval').textContent = ar(hp) + '٪';
+      $('hpbar').style.width = hp + '%';
+      $('fb').innerHTML = feedback(false, nos[i] || 'فكّر بالسبب الحقيقي.');
+      miss();
+    }
+  };
+  
+  opts.forEach((b, i) => b.onclick = () => pick(+b.dataset.i, b));
+  setupKeys(opts, pick);
+  
+  function showFollow(){
+    $('followarea').innerHTML = `
+      <div class="follow">
+        <div class="judge">الدكتور ما اكتفى:</div>
+        <div class="q">وإذا المريض إلو فواتير لازم تنحفظ حتى لو انحذف حسابه؟</div>
+        <div class="opts">
+          <button class="opt" data-i="0"><span class="key">١</span><span>بضل على CASCADE، هي الأفضل</span></button>
+          <button class="opt" data-i="1"><span class="key">٢</span><span>بستخدم PROTECT أو SET_NULL</span></button>
+          <button class="opt" data-i="2"><span class="key">٣</span><span>بحذف الفواتير يدوياً قبل</span></button>
+        </div>
+        <div id="ffb"></div>
+      </div>
+    `;
+    const fopts = $('followarea').querySelectorAll('.opt');
+    const fpick = (i, el) => {
+      fopts.forEach(o => o.disabled = true);
+      if (i === 1){
+        el.classList.add('right');
+        $('ffb').innerHTML = feedback(true, 'هون عرف الدكتور إنك فاهم مش حافظ. كل حالة إلها القيمة المناسبة.');
+        results[4] = {name: 'دفاع', concept: 'CASCADE في المناقشة', passed: true};
+        reward(40, el, true);
+        $('ffb').insertAdjacentHTML('afterend', nextButton(true));
+        setupNext();
+      } else {
+        el.classList.add('wrong');
+        fopts[1].classList.add('right');
+        $('ffb').innerHTML = feedback(false, 'جوابك الأول كان صح، بس سؤال «وإذا؟» كشف نقطة لسا مش واضحة. منبلش فيها الجلسة الجاية.');
+        results[4] = {name: 'دفاع', concept: 'CASCADE في المناقشة', passed: false};
+        setTimeout(() => {
+          $('ffb').insertAdjacentHTML('afterend', nextButton(true));
+          setupNext();
+        }, 2000);
+      }
+    };
+    fopts.forEach((b, i) => b.onclick = () => fpick(+b.dataset.i, b));
+    setupKeys(fopts, fpick);
+  }
+}
+
+// ═══════════════════════════════════════════
+// شاشة النتيجة
+// ═══════════════════════════════════════════
+function showEnd(){
+  const passed = results.filter(r => r && r.passed).length;
+  const readyStart = 18;
+  const readyGain = passed * 3 + results.filter(r => r && !r.passed).length;
+  const readyNow = readyStart + readyGain;
+  
+  render(`
+    <div class="end">
+      <div class="endTitle">خلّصت جلسة اليوم 🎉</div>
+      <div class="small">جدول المواعيد · ForeignKey</div>
+      <div class="endnum">
+        <span class="from">${ar(readyStart)}٪</span>
+        <span class="arrow">←</span>
+        <span>${ar(readyNow)}٪</span>
+      </div>
+      <div class="small">جاهزيتك ليوم المناقشة</div>
+      <div class="small" style="margin-top:6px">+${ar(xp - 1980)} نقطة · متتاليتك: ${ar(streak+1)} يوم 🔥</div>
+      <ul class="results">
+        ${results.filter(Boolean).map(r => `
+          <li class="${r.passed ? 'pass' : 'soft'}">
+            <span class="ri">${r.passed ? '✓' : '↺'}</span>
+            <span class="name">${r.name}</span>
+            <span class="concept">${r.concept}</span>
+          </li>
+        `).join('')}
+      </ul>
+      <button class="btn big" onclick="location.reload()">ابدأ جلسة جديدة</button>
+    </div>
+  `);
+  tone('big');
+}
+
+// ═══════════════════════════════════════════
+// أدوات مشتركة
+// ═══════════════════════════════════════════
+function setupKeys(opts, pick){
+  document.onkeydown = e => {
+    if (e.target.closest('input, textarea')) return;
+    const n = +e.key;
+    if (n >= 1 && n <= opts.length) pick(n - 1, opts[n - 1]);
+  };
+}
+
+function setupNext(){
+  const btn = $('nextbtn');
+  if (!btn) return;
+  btn.focus();
+  btn.onclick = advance;
+  document.onkeydown = e => {
+    if (e.key === 'Enter' && !e.target.closest('input, textarea')){
+      e.preventDefault();
+      advance();
+    }
+  };
+}
+
+function advance(){
+  document.onkeydown = null;
+  touch++;
+  updateHud();
+  if (touch >= TOTAL){ showEnd(); return; }
+  runTouch();
+}
+
+function runTouch(){
+  const fns = [touch1, touch2, touch3, touch4, touch5];
+  fns[touch]();
+}
+
+// ═══════════════════════════════════════════
+// شاشة البداية: اختيار المزاج
+// ═══════════════════════════════════════════
+function moodScreen(){
+  $('topbar').style.display = 'none';
+  app.innerHTML = `
+    <div class="moodscreen">
+      <h1>كيف حالك اليوم؟</h1>
+      <p>رح نظبّط الجلسة على مزاجك</p>
+      <div class="moodgrid">
+        <button class="moodbtn" data-m="hyped"><span class="emoji">🔥</span><span>متحمس</span></button>
+        <button class="moodbtn" data-m="normal"><span class="emoji">😊</span><span>تمام</span></button>
+        <button class="moodbtn" data-m="tired"><span class="emoji">😴</span><span>تعبان</span></button>
+      </div>
+    </div>
+  `;
+  document.querySelectorAll('.moodbtn').forEach(b => {
+    b.onclick = () => {
+      mood = b.dataset.m;
+      $('topbar').style.display = '';
+      updateHud();
+      runTouch();
+    };
+  });
+}
+
+moodScreen();
+</script>
+</body>
+</html>
