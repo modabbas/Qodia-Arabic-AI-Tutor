@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getGetCurrentUserQueryKey, getGetDashboardQueryKey, getGetSessionsQueryKey, useLogOut } from '@workspace/api-client-react';
 
 export function Brand() {
-  return <Link href="/" className="brand" data-testid="link-brand"><span className="brand-mark" aria-hidden="true">q</span><span>قُوديا</span></Link>;
+  return <Link href="/" className="brand" data-testid="link-brand"><span className="brand-mark" aria-hidden="true">k</span><span>كوديا</span></Link>;
 }
 
 export function LoadingState({ label = 'نجهّز مساحتك...' }: { label?: string }) {

@@ -34,10 +34,10 @@ export default function AuthPage({ mode }: { mode: 'signup' | 'login' }) {
     <aside className="auth-aside">
       <Brand />
       <div><span className="eyebrow">من الشاشة إلى قاعة المناقشة</span><blockquote style={{ marginTop: 28 }}>أنت كتبت الكود.<br /><span>حان وقت تدافع عنه.</span></blockquote><p className="muted" style={{ marginTop: 28, maxWidth: 420, lineHeight: 1.9 }}>مدرّبك الشخصي للمفاهيم اللي ممكن تكون الفارق بين إجابة محفوظة وإجابة فاهمها.</p></div>
-      <span className="mono muted" style={{ fontSize: 11 }}>QODIA / PREPARE WITH PURPOSE</span>
+      <span className="mono muted" style={{ fontSize: 11 }}>KODIA / PREPARE WITH PURPOSE</span>
     </aside>
     <main className="auth-main">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span className="eyebrow">قُوديا / {isSignup ? 'حساب جديد' : 'تسجيل الدخول'}</span><Link href="/" className="muted" style={{ fontSize: 13 }} data-testid="link-home">العودة للرئيسية</Link></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span className="eyebrow">كوديا / {isSignup ? 'حساب جديد' : 'تسجيل الدخول'}</span><Link href="/" className="muted" style={{ fontSize: 13 }} data-testid="link-home">العودة للرئيسية</Link></div>
       <div className="auth-form">
         <span className="eyebrow">خطوتك الأولى</span>
         <h1>{isSignup ? 'ابدأ بثقة.' : 'رجعت تتدرّب؟'}</h1>

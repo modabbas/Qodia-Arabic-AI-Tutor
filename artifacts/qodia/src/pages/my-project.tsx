@@ -116,7 +116,7 @@ export default function MyProject() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'qodia-project.zip';
+      link.download = 'kodia-project.zip';
       document.body.append(link);
       link.click();
       link.remove();

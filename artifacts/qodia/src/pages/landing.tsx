@@ -74,7 +74,7 @@ const demoMetrics = [
 const exampleUniversities = ['جامعة دمشق', 'جامعة حلب', 'جامعة الملك سعود', 'جامعة الملك عبدالعزيز', 'الجامعة الأمريكية في الإمارات'];
 
 function Brand({ testId }: { testId: string }) {
-  return <Link className="qp-brand" href="/" aria-label="قُوديا — الصفحة الرئيسية" data-testid={testId}><span className="qp-brand-mark" aria-hidden="true">q</span><span>قُوديا</span></Link>;
+  return <Link className="qp-brand" href="/" aria-label="كوديا — الصفحة الرئيسية" data-testid={testId}><span className="qp-brand-mark" aria-hidden="true">k</span><span>كوديا</span></Link>;
 }
 
 function Counter({ value, suffix, start, testId }: { value: number; suffix: string; start: boolean; testId: string }) {
@@ -164,7 +164,7 @@ function Landing() {
           <Brand testId="link-home-header" />
           <nav className="qp-nav" aria-label="التنقل الرئيسي">
             <a href="#method" data-testid="link-method-nav">الطريقة</a>
-            <a href="#audiences" data-testid="link-audiences-nav">لمن قُوديا؟</a>
+            <a href="#audiences" data-testid="link-audiences-nav">لمن كوديا؟</a>
             <a href="#stories" data-testid="link-stories-nav">أمثلة</a>
           </nav>
           <div className="qp-header-actions">
@@ -179,19 +179,19 @@ function Landing() {
             <span className="qp-origin"><span className="qp-origin-dot" /> تصميم من سوريا · للعالم العربي</span>
             <p className="qp-hero-pretitle">تدريب على الفهم، لا تسليم إجابات جاهزة</p>
             <h1 id="hero-title">لا ترسب في<br /><span>المناقشة.</span></h1>
-            <p className="qp-hero-description">قُوديا يساعدك تفهم مشروع تخرّجك بدل ما يحلّه عنك. تعلّم الفكرة، طبّقها، وتدرّب تشرح قراراتك التقنية بالعربي.</p>
+            <p className="qp-hero-description">كوديا يساعدك تفهم مشروع تخرّجك بدل ما يحلّه عنك. تعلّم الفكرة، طبّقها، وتدرّب تشرح قراراتك التقنية بالعربي.</p>
             <div className="qp-hero-actions">
               <Link className="qp-button" href="/session" data-testid="link-start-hero">ابدأ جلستك الأولى <ArrowLeft size={18} /></Link>
               <a className="qp-button qp-button-quiet" href="#method" data-testid="link-method-hero"><span className="qp-play" aria-hidden="true">▶</span> شوف كيف نشتغل</a>
             </div>
-            <ul className="qp-trust-list" aria-label="مزايا تجربة قُوديا">
+            <ul className="qp-trust-list" aria-label="مزايا تجربة كوديا">
               <li><Check size={15} /> تجربة توضيحية دون تسجيل</li>
               <li><Check size={15} /> عربي بلهجات محلية</li>
             </ul>
             <p className="qp-hero-disclaimer">هذه معاينة للمنتج — لا تعرض بيانات استخدام حقيقية.</p>
           </div>
           <div className="qp-hero-visual">
-            <div className="qp-visual-index"><span>QODIA / PRACTICE</span><span>٠١ — ٠٥</span></div>
+            <div className="qp-visual-index"><span>KODIA / PRACTICE</span><span>٠١ — ٠٥</span></div>
             <DemoCard />
             <div className="qp-visual-caption"><span className="qp-caption-rule" /> فهمك يبدأ بسؤال واحد</div>
           </div>
@@ -207,7 +207,7 @@ function Landing() {
               </div>
               <div className="qp-problem-copy">
                 <p className="qp-big-copy">يوم المناقشة، السؤال مو بس «شو كتبت؟» — السؤال: <strong>ليش اخترت هذا الحل؟</strong></p>
-                <p className="qp-muted">كثير من أدوات التعلّم تعطيك الإجابة بسرعة. قُوديا مبني حول خطوة أبطأ وأهم: إنك تفهمها وتقدر تشرحها بنفسك.</p>
+                <p className="qp-muted">كثير من أدوات التعلّم تعطيك الإجابة بسرعة. كوديا مبني حول خطوة أبطأ وأهم: إنك تفهمها وتقدر تشرحها بنفسك.</p>
               </div>
             </div>
             <div className="qp-problem-ribbon" aria-label="ثلاث نقاط عن تجربة التعلم">
@@ -250,7 +250,7 @@ function Landing() {
         <section className="qp-audiences qp-section" id="audiences" aria-labelledby="audiences-title">
           <div className="qp-shell">
             <div className="qp-section-heading">
-              <span className="qp-kicker kicker-green"><i /> لمن قُوديا؟</span>
+              <span className="qp-kicker kicker-green"><i /> لمن كوديا؟</span>
               <div className="qp-heading-row">
                 <h2 id="audiences-title">مسارات مختلفة.<br /><span>هدف تعلّم واحد.</span></h2>
                 <p>ابدأ كتجربة طالب، أو استكشف النماذج المصمّمة للجامعة والفريق.</p>
@@ -323,7 +323,7 @@ function Landing() {
         <section className="qp-final qp-section" aria-labelledby="final-title">
           <div className="qp-shell">
             <div className="qp-final-panel">
-              <div className="qp-final-orbit" aria-hidden="true"><span>q</span></div>
+              <div className="qp-final-orbit" aria-hidden="true"><span>k</span></div>
               <div className="qp-final-copy">
                 <span className="qp-kicker kicker-green"><i /> ابدأ بفكرة واحدة</span>
                 <h2 id="final-title">خلّي المناقشة<br /><em>خطوة تدربت عليها.</em></h2>
@@ -342,12 +342,12 @@ function Landing() {
         <div className="qp-shell">
           <div className="qp-footer-main">
             <div className="qp-footer-brand"><Brand testId="link-home-footer" /><p>تعلّم مشروعك. دافع عن اختياراتك.</p></div>
-            <nav className="qp-footer-links" aria-label="روابط قُوديا">
+            <nav className="qp-footer-links" aria-label="روابط كوديا">
               <Link href="/session" data-testid="link-footer-students">للطلاب</Link><Link href="/university-dashboard" data-testid="link-footer-universities">للجامعات</Link><Link href="/company-dashboard" data-testid="link-footer-companies">للشركات</Link><a href="#method" data-testid="link-footer-method">طريقة الخمس لمسات</a>
             </nav>
             <div className="qp-footer-origin"><span>سوريا → العالم العربي</span><span>تعليم تقني يبدأ من الفهم</span></div>
           </div>
-          <div className="qp-footer-bottom"><span>© {toArabic(new Date().getFullYear())} قُوديا</span><span>واجهة توضيحية · الأرقام والسيناريوهات المعروضة أمثلة فقط</span><a href="#hero-title" data-testid="link-back-to-top">للأعلى ↑</a></div>
+          <div className="qp-footer-bottom"><span>© {toArabic(new Date().getFullYear())} كوديا</span><span>واجهة توضيحية · الأرقام والسيناريوهات المعروضة أمثلة فقط</span><a href="#hero-title" data-testid="link-back-to-top">للأعلى ↑</a></div>
         </div>
       </footer>
     </div>

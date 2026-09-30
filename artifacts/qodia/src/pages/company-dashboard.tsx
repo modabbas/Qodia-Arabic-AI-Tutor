@@ -271,7 +271,7 @@ export default function CompanyDashboard() {
     <div className={styles.wrap}>
       <header className={styles.masthead}>
         <div className={styles.identity}>
-          <p className={styles.eyebrow}>QODIA / TALENT BRIDGE</p>
+          <p className={styles.eyebrow}>KODIA / TALENT BRIDGE</p>
           <h1>شركة نون · لوحة التوظيف الذكية</h1>
           <p className={styles.subtitle}><span className={styles.liveDot} aria-hidden="true" /><span>Live Data · Talent Bridge · مطوّرون موثّقون</span><span className={styles.demoLabel} data-testid="label-simulated-data">بيانات تجريبية · نشاط محاكى</span></p>
         </div>

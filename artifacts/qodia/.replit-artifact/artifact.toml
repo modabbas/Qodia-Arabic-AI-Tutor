@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Qodia"
+title = "كوديا"
 description = "An Arabic RTL learning app that helps computer science students prepare for their graduation project defense with focused, interactive five-touch sessions."
 version = "1.0.0"
 id = "artifacts/qodia"

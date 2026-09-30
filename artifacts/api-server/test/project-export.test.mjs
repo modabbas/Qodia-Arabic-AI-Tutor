@@ -166,7 +166,7 @@ test("project API keeps two students' saved files separate after reload", { time
       const response = await request("/project-export", own.student.cookie);
       assert.equal(response.status, 200);
       assert.match(response.headers.get("content-type"), /application\/zip/);
-      assert.match(response.headers.get("content-disposition"), /qodia-project\.zip/);
+      assert.match(response.headers.get("content-disposition"), /kodia-project\.zip/);
       assert.match(response.headers.get("cache-control"), /no-store/);
       const archive = unzip(Buffer.from(await response.arrayBuffer()));
       assert.deepEqual(Object.keys(archive).sort(), [".gitignore", "README.md", "package.json", "src/index.js", own.extraPath].sort());

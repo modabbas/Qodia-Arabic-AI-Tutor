@@ -1,4 +1,5 @@
-- [Qodia demo honesty](talent-bridge-demo-honesty.md) — label fictional metrics, stories, affiliations, and hiring activity; never present an unverified demo as real proof.
+- [Kodia demo honesty](talent-bridge-demo-honesty.md) — label fictional metrics, stories, affiliations, and hiring activity; never present an unverified demo as real proof.
 - [Gemini model availability](gemini-model-availability.md) — verify generation with the configured key; a listed model can still reject structured generation.
-- [Historical project code](historical-project-code.md) — past Qodia lessons count as learned concepts, not completed project files when the student's code was not saved.
+- [Historical project code](historical-project-code.md) — past Kodia lessons count as learned concepts, not completed project files when the student's code was not saved.
 - [Student project verification](student-project-verification.md) — parse and bundle saved code without running student scripts; passing syntax is not a full framework build.
+- [Kodia brand identifiers](kodia-brand-identifiers.md) — use كوديا/KODIA publicly; keep existing technical IDs stable to preserve accounts and routes.

@@ -18,21 +18,21 @@ import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 60_000, refetchOnWindowFocus: false } } });
 const pageMetadata: Record<string, { title: string; description: string }> = {
-  '/': { title: 'قُوديا — لا ترسب في المناقشة', description: 'تدرّب على فهم مشروع تخرجك والدفاع عن قراراتك التقنية بخمس لمسات عربية.' },
-  '/signup': { title: 'أنشئ حسابك | قُوديا', description: 'ابدأ تدريبك على مناقشة مشروع التخرج مع قُوديا.' },
-  '/login': { title: 'تسجيل الدخول | قُوديا', description: 'ارجع إلى تدريبك وتقدّمك في قُوديا.' },
-  '/onboarding': { title: 'عرّفنا على مشروعك | قُوديا', description: 'أخبر قُوديا عن مشروعك والتقنية التي تستخدمها لتبدأ التدريب.' },
-  '/dashboard': { title: 'لوحة تقدّمك | قُوديا', description: 'تابع نقاط الخبرة وسلسلة التدريب وجلساتك السابقة في قُوديا.' },
-  '/my-project': { title: 'مشروعي | قُوديا', description: 'راجع ملفات مشروع تخرجك الحقيقية، الكود المحفوظ، وتقدم البناء في قُوديا.' },
-  '/session': { title: 'تدريب المناقشة | قُوديا', description: 'تدرّب على Django ForeignKey و on_delete عبر خمس لمسات تفاعلية.' },
-  '/university-dashboard': { title: 'لوحة الجامعة | قُوديا', description: 'نظرة تجريبية على تقدم الطلاب وجاهزيتهم للتوظيف في قُوديا.' },
-  '/company-dashboard': { title: 'لوحة الشركات | قُوديا', description: 'استكشف مرشحين تجريبيين ومؤشرات Talent Bridge في قُوديا.' },
+  '/': { title: 'كوديا — لا ترسب في المناقشة', description: 'تدرّب على فهم مشروع تخرجك والدفاع عن قراراتك التقنية بخمس لمسات عربية.' },
+  '/signup': { title: 'أنشئ حسابك | كوديا', description: 'ابدأ تدريبك على مناقشة مشروع التخرج مع كوديا.' },
+  '/login': { title: 'تسجيل الدخول | كوديا', description: 'ارجع إلى تدريبك وتقدّمك في كوديا.' },
+  '/onboarding': { title: 'عرّفنا على مشروعك | كوديا', description: 'أخبر كوديا عن مشروعك والتقنية التي تستخدمها لتبدأ التدريب.' },
+  '/dashboard': { title: 'لوحة تقدّمك | كوديا', description: 'تابع نقاط الخبرة وسلسلة التدريب وجلساتك السابقة في كوديا.' },
+  '/my-project': { title: 'مشروعي | كوديا', description: 'راجع ملفات مشروع تخرجك الحقيقية، الكود المحفوظ، وتقدم البناء في كوديا.' },
+  '/session': { title: 'تدريب المناقشة | كوديا', description: 'تدرّب على Django ForeignKey و on_delete عبر خمس لمسات تفاعلية.' },
+  '/university-dashboard': { title: 'لوحة الجامعة | كوديا', description: 'نظرة تجريبية على تقدم الطلاب وجاهزيتهم للتوظيف في كوديا.' },
+  '/company-dashboard': { title: 'لوحة الشركات | كوديا', description: 'استكشف مرشحين تجريبيين ومؤشرات Talent Bridge في كوديا.' },
 };
 
 function RouteMetadata() {
   const [location] = useLocation();
   useEffect(() => {
-    const details = pageMetadata[location] ?? { title: 'الصفحة غير موجودة | قُوديا', description: 'ارجع إلى قُوديا لتبدأ تدريبك على مناقشة مشروع التخرج.' };
+    const details = pageMetadata[location] ?? { title: 'الصفحة غير موجودة | كوديا', description: 'ارجع إلى كوديا لتبدأ تدريبك على مناقشة مشروع التخرج.' };
     document.title = details.title;
     for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
       document.querySelector(selector)?.setAttribute('content', details.description);

@@ -51,7 +51,7 @@ export function assembleProject(files: SourceFile[], tech: ProjectTechStack, pro
   }
   const added = [...output.keys()].filter(path => !files.some(file => file.path === path));
   if (!entries.has("readme.md")) added.push("README.md");
-  add("README.md", `# ${title}\n\nStack: ${tech}\n\nThis export contains ${files.length} saved student-written file(s). The following setup files were added only when absent: ${added.join(", ") || "none"}.\nPlanned files not yet saved are not included. Generated setup files are not student-written code.\n\nInstall the dependencies declared by this project using the appropriate toolchain, then run its checks locally. Qodia's syntax check does not prove that this project builds or runs.\n`);
+  add("README.md", `# ${title}\n\nStack: ${tech}\n\nThis export contains ${files.length} saved student-written file(s). The following setup files were added only when absent: ${added.join(", ") || "none"}.\nPlanned files not yet saved are not included. Generated setup files are not student-written code.\n\nInstall the dependencies declared by this project using the appropriate toolchain, then run its checks locally. Kodia's syntax check does not prove that this project builds or runs.\n`);
   return [...output].map(([path, content]) => ({ path, content }));
 }
 

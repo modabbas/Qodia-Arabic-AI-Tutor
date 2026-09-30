@@ -1,10 +1,10 @@
-# Qodia
+# كوديا
 
 An Arabic RTL practice app that helps computer science students prepare for graduation-project defenses through short, interactive lessons.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/qodia run dev` — frontend (normally started by the managed Qodia workflow)
+- `pnpm --filter @workspace/qodia run dev` — frontend (normally started by the managed كوديا workflow)
 - `pnpm --filter @workspace/api-server run dev` — Express API (normally started by its managed workflow)
 - `pnpm run typecheck` — check all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate client hooks and server validators after OpenAPI changes

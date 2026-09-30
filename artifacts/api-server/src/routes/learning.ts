@@ -174,7 +174,7 @@ router.get("/project-export", async (req, res): Promise<void> => {
     const assembled = assembleProject(files, user.techStack, user.projectName);
     const zip = zipProject(assembled);
     res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", 'attachment; filename="qodia-project.zip"');
+    res.setHeader("Content-Disposition", 'attachment; filename="kodia-project.zip"');
     res.setHeader("Cache-Control", "private, no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.send(zip);

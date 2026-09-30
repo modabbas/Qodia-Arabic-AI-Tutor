@@ -129,7 +129,7 @@ export default function UniversityDashboard() {
       <div className={styles.wrap}>
         <header className={styles.masthead}>
           <div className={styles.identity}>
-            <p className={styles.eyebrow}>قُوديا / مساحة الجامعة</p>
+            <p className={styles.eyebrow}>كوديا / مساحة الجامعة</p>
             <h1 data-testid="text-university-name">جامعة دمشق · كلية المعلوماتية</h1>
             <p className={styles.subtitle}>لوحة تحكم المشرف · الفصل الأول {arabicDigits(2026)}</p>
           </div>
@@ -282,7 +282,7 @@ export default function UniversityDashboard() {
         <div className={styles.overlay} onMouseDown={event => { if (event.target === event.currentTarget) setInviteOpen(false); }}>
           <div ref={dialog} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="invite-title" aria-describedby="invite-description" onKeyDown={handleDialogKeyDown} data-testid="dialog-invite-students">
             <div className={styles.dialogTop}>
-              <h2 id="invite-title">دعوة الطلاب إلى قُوديا</h2>
+              <h2 id="invite-title">دعوة الطلاب إلى كوديا</h2>
               <button className={styles.close} type="button" onClick={() => setInviteOpen(false)} aria-label="إغلاق نافذة الدعوة" data-testid="button-close-invite"><X size={17} aria-hidden="true" /></button>
             </div>
             <p id="invite-description">شارك رابط التسجيل مع طلابك عبر القناة التي تستخدمونها. لا تُرسَل أي دعوات من داخل هذه النسخة التجريبية.</p>
