@@ -23,6 +23,7 @@ import type {
   AuthResponse,
   Dashboard,
   ErrorResponse,
+  GeneratedSession,
   HealthStatus,
   LearningSession,
   LoginInput,
@@ -793,5 +794,156 @@ export const useCreateSession = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateSessionMutationOptions(options));
+    }
+
+export const getGetGeneratedSessionUrl = () => {
+
+
+
+
+  return `/api/generate-session`
+}
+
+/**
+ * @summary Get the signed-in student's cached daily learning session
+ */
+export const getGeneratedSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<GeneratedSession> => {
+
+  return customFetch<GeneratedSession>(getGetGeneratedSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGeneratedSessionQueryKey = () => {
+    return [
+    `/api/generate-session`
+    ] as const;
+    }
+
+
+export const getGetGeneratedSessionQueryOptions = <TData = Awaited<ReturnType<typeof getGeneratedSession>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGeneratedSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGeneratedSessionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGeneratedSession>>> = ({ signal }) => getGeneratedSession({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGeneratedSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGeneratedSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getGeneratedSession>>>
+export type GetGeneratedSessionQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get the signed-in student's cached daily learning session
+ */
+
+export function useGetGeneratedSession<TData = Awaited<ReturnType<typeof getGeneratedSession>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGeneratedSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGeneratedSessionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateGeneratedSessionUrl = () => {
+
+
+
+
+  return `/api/generate-session`
+}
+
+/**
+ * @summary Generate a fresh session using a different concept and replace today's cache
+ */
+export const createGeneratedSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<GeneratedSession> => {
+
+  return customFetch<GeneratedSession>(getCreateGeneratedSessionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateGeneratedSessionMutationKey = () => ['createGeneratedSession'] as const;
+
+export const getCreateGeneratedSessionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGeneratedSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGeneratedSession>>, TError,void, TContext> => {
+
+const mutationKey = getCreateGeneratedSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGeneratedSession>>, void> = () => {
+
+
+          return  createGeneratedSession(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGeneratedSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createGeneratedSession>>>
+
+    export type CreateGeneratedSessionMutationError = ErrorType<ErrorResponse>
+
+
+    /**
+ * @summary Generate a fresh session using a different concept and replace today's cache
+ */
+export const useCreateGeneratedSession = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGeneratedSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createGeneratedSession>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateGeneratedSessionMutationOptions(options));
     }
 

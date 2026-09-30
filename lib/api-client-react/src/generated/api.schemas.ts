@@ -117,3 +117,240 @@ export interface Dashboard {
   onboarding_complete: boolean;
 }
 
+export type GeneratedSessionSource = typeof GeneratedSessionSource[keyof typeof GeneratedSessionSource];
+
+
+export const GeneratedSessionSource = {
+  gemini: 'gemini',
+  fallback: 'fallback',
+} as const;
+
+export interface GeneratedTouch1 {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  question: string;
+  /**
+     * @minItems 2
+     * @maxItems 3
+     * @items.minLength 1
+     * @items.maxLength 300
+     */
+  options: string[];
+  /**
+     * @minimum 0
+     * @maximum 2
+     */
+  correct_index: number;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  feedback_correct: string;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  feedback_wrong: string;
+}
+
+export type GeneratedTouch2ValuesTableItem = {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  code: string;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  meaning: string;
+};
+
+export interface GeneratedTouch2 {
+  /**
+     * @minLength 1
+     * @maxLength 1200
+     */
+  explanation: string;
+  /**
+     * @minItems 2
+     * @maxItems 6
+     */
+  values_table: GeneratedTouch2ValuesTableItem[];
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  verification_question: string;
+  /**
+     * @minItems 2
+     * @maxItems 3
+     * @items.minLength 1
+     * @items.maxLength 300
+     */
+  verification_options: string[];
+  /**
+     * @minimum 0
+     * @maximum 2
+     */
+  correct_index: number;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  feedback_correct: string;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  feedback_wrong: string;
+}
+
+export interface GeneratedTouch3 {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  question: string;
+  /**
+     * @minItems 2
+     * @maxItems 3
+     * @items.minLength 1
+     * @items.maxLength 300
+     */
+  options: string[];
+  /**
+     * @minimum 0
+     * @maximum 2
+     */
+  correct_index: number;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  feedback_correct: string;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  feedback_wrong: string;
+}
+
+export interface GeneratedTouch4 {
+  /**
+     * @minLength 1
+     * @maxLength 700
+     */
+  task_description: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  starter_code: string;
+  /**
+     * @minItems 1
+     * @maxItems 8
+     * @items.minLength 1
+     * @items.maxLength 80
+     */
+  expected_keywords: string[];
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  success_message: string;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  hint: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  code_placeholder: string;
+}
+
+export interface GeneratedTouch5 {
+  /**
+     * @minLength 1
+     * @maxLength 700
+     */
+  committee_question: string;
+  /**
+     * @minItems 2
+     * @maxItems 3
+     * @items.minLength 1
+     * @items.maxLength 400
+     */
+  options: string[];
+  /**
+     * @minimum 0
+     * @maximum 2
+     */
+  correct_index: number;
+  /**
+     * @minLength 1
+     * @maxLength 800
+     */
+  explanation: string;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  feedback_wrong: string;
+  /**
+     * @minLength 1
+     * @maxLength 700
+     */
+  followup_question: string;
+  /**
+     * @minItems 2
+     * @maxItems 3
+     * @items.minLength 1
+     * @items.maxLength 400
+     */
+  followup_options: string[];
+  /**
+     * @minimum 0
+     * @maximum 2
+     */
+  followup_correct_index: number;
+  /**
+     * @minLength 1
+     * @maxLength 800
+     */
+  followup_explanation: string;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  followup_feedback_wrong: string;
+}
+
+export interface GeneratedSession {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  concept_name_en: string;
+  /**
+     * @minLength 1
+     * @maxLength 140
+     */
+  concept_name_ar: string;
+  /**
+     * @minLength 1
+     * @maxLength 400
+     */
+  concept_intro: string;
+  source: GeneratedSessionSource;
+  touch1_provoke: GeneratedTouch1;
+  touch2_reveal: GeneratedTouch2;
+  touch3_explore: GeneratedTouch3;
+  touch4_build: GeneratedTouch4;
+  touch5_defend: GeneratedTouch5;
+}
+

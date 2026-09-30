@@ -197,3 +197,319 @@ export const CreateSessionResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the signed-in student's cached daily learning session
+ */
+export const getGeneratedSessionResponseConceptNameEnMax = 100;
+
+export const getGeneratedSessionResponseConceptNameArMax = 140;
+
+export const getGeneratedSessionResponseConceptIntroMax = 400;
+
+export const getGeneratedSessionResponseTouch1ProvokeQuestionMax = 500;
+
+export const getGeneratedSessionResponseTouch1ProvokeOptionsItemMax = 300;
+
+export const getGeneratedSessionResponseTouch1ProvokeOptionsMin = 2;
+export const getGeneratedSessionResponseTouch1ProvokeOptionsMax = 3;
+
+export const getGeneratedSessionResponseTouch1ProvokeCorrectIndexMin = 0;
+export const getGeneratedSessionResponseTouch1ProvokeCorrectIndexMax = 2;
+
+export const getGeneratedSessionResponseTouch1ProvokeFeedbackCorrectMax = 400;
+
+export const getGeneratedSessionResponseTouch1ProvokeFeedbackWrongMax = 400;
+
+export const getGeneratedSessionResponseTouch2RevealExplanationMax = 1200;
+
+export const getGeneratedSessionResponseTouch2RevealValuesTableItemCodeMax = 160;
+
+export const getGeneratedSessionResponseTouch2RevealValuesTableItemMeaningMax = 400;
+
+export const getGeneratedSessionResponseTouch2RevealValuesTableMin = 2;
+export const getGeneratedSessionResponseTouch2RevealValuesTableMax = 6;
+
+export const getGeneratedSessionResponseTouch2RevealVerificationQuestionMax = 500;
+
+export const getGeneratedSessionResponseTouch2RevealVerificationOptionsItemMax = 300;
+
+export const getGeneratedSessionResponseTouch2RevealVerificationOptionsMin = 2;
+export const getGeneratedSessionResponseTouch2RevealVerificationOptionsMax = 3;
+
+export const getGeneratedSessionResponseTouch2RevealCorrectIndexMin = 0;
+export const getGeneratedSessionResponseTouch2RevealCorrectIndexMax = 2;
+
+export const getGeneratedSessionResponseTouch2RevealFeedbackCorrectMax = 400;
+
+export const getGeneratedSessionResponseTouch2RevealFeedbackWrongMax = 400;
+
+export const getGeneratedSessionResponseTouch3ExploreQuestionMax = 500;
+
+export const getGeneratedSessionResponseTouch3ExploreOptionsItemMax = 300;
+
+export const getGeneratedSessionResponseTouch3ExploreOptionsMin = 2;
+export const getGeneratedSessionResponseTouch3ExploreOptionsMax = 3;
+
+export const getGeneratedSessionResponseTouch3ExploreCorrectIndexMin = 0;
+export const getGeneratedSessionResponseTouch3ExploreCorrectIndexMax = 2;
+
+export const getGeneratedSessionResponseTouch3ExploreFeedbackCorrectMax = 400;
+
+export const getGeneratedSessionResponseTouch3ExploreFeedbackWrongMax = 400;
+
+export const getGeneratedSessionResponseTouch4BuildTaskDescriptionMax = 700;
+
+export const getGeneratedSessionResponseTouch4BuildStarterCodeMax = 2000;
+
+export const getGeneratedSessionResponseTouch4BuildExpectedKeywordsItemMax = 80;
+
+export const getGeneratedSessionResponseTouch4BuildExpectedKeywordsMax = 8;
+
+export const getGeneratedSessionResponseTouch4BuildSuccessMessageMax = 400;
+
+export const getGeneratedSessionResponseTouch4BuildHintMax = 400;
+
+export const getGeneratedSessionResponseTouch4BuildCodePlaceholderMax = 200;
+
+export const getGeneratedSessionResponseTouch5DefendCommitteeQuestionMax = 700;
+
+export const getGeneratedSessionResponseTouch5DefendOptionsItemMax = 400;
+
+export const getGeneratedSessionResponseTouch5DefendOptionsMin = 2;
+export const getGeneratedSessionResponseTouch5DefendOptionsMax = 3;
+
+export const getGeneratedSessionResponseTouch5DefendCorrectIndexMin = 0;
+export const getGeneratedSessionResponseTouch5DefendCorrectIndexMax = 2;
+
+export const getGeneratedSessionResponseTouch5DefendExplanationMax = 800;
+
+export const getGeneratedSessionResponseTouch5DefendFeedbackWrongMax = 400;
+
+export const getGeneratedSessionResponseTouch5DefendFollowupQuestionMax = 700;
+
+export const getGeneratedSessionResponseTouch5DefendFollowupOptionsItemMax = 400;
+
+export const getGeneratedSessionResponseTouch5DefendFollowupOptionsMin = 2;
+export const getGeneratedSessionResponseTouch5DefendFollowupOptionsMax = 3;
+
+export const getGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMin = 0;
+export const getGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMax = 2;
+
+export const getGeneratedSessionResponseTouch5DefendFollowupExplanationMax = 800;
+
+export const getGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax = 400;
+
+
+
+export const GetGeneratedSessionResponse = zod.object({
+  "concept_name_en": zod.string().min(1).max(getGeneratedSessionResponseConceptNameEnMax),
+  "concept_name_ar": zod.string().min(1).max(getGeneratedSessionResponseConceptNameArMax),
+  "concept_intro": zod.string().min(1).max(getGeneratedSessionResponseConceptIntroMax),
+  "source": zod.enum(['gemini', 'fallback']),
+  "touch1_provoke": zod.object({
+  "question": zod.string().min(1).max(getGeneratedSessionResponseTouch1ProvokeQuestionMax),
+  "options": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch1ProvokeOptionsItemMax)).min(getGeneratedSessionResponseTouch1ProvokeOptionsMin).max(getGeneratedSessionResponseTouch1ProvokeOptionsMax),
+  "correct_index": zod.number().int().min(getGeneratedSessionResponseTouch1ProvokeCorrectIndexMin).max(getGeneratedSessionResponseTouch1ProvokeCorrectIndexMax),
+  "feedback_correct": zod.string().min(1).max(getGeneratedSessionResponseTouch1ProvokeFeedbackCorrectMax),
+  "feedback_wrong": zod.string().min(1).max(getGeneratedSessionResponseTouch1ProvokeFeedbackWrongMax)
+}),
+  "touch2_reveal": zod.object({
+  "explanation": zod.string().min(1).max(getGeneratedSessionResponseTouch2RevealExplanationMax),
+  "values_table": zod.array(zod.object({
+  "code": zod.string().min(1).max(getGeneratedSessionResponseTouch2RevealValuesTableItemCodeMax),
+  "meaning": zod.string().min(1).max(getGeneratedSessionResponseTouch2RevealValuesTableItemMeaningMax)
+})).min(getGeneratedSessionResponseTouch2RevealValuesTableMin).max(getGeneratedSessionResponseTouch2RevealValuesTableMax),
+  "verification_question": zod.string().min(1).max(getGeneratedSessionResponseTouch2RevealVerificationQuestionMax),
+  "verification_options": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch2RevealVerificationOptionsItemMax)).min(getGeneratedSessionResponseTouch2RevealVerificationOptionsMin).max(getGeneratedSessionResponseTouch2RevealVerificationOptionsMax),
+  "correct_index": zod.number().int().min(getGeneratedSessionResponseTouch2RevealCorrectIndexMin).max(getGeneratedSessionResponseTouch2RevealCorrectIndexMax),
+  "feedback_correct": zod.string().min(1).max(getGeneratedSessionResponseTouch2RevealFeedbackCorrectMax),
+  "feedback_wrong": zod.string().min(1).max(getGeneratedSessionResponseTouch2RevealFeedbackWrongMax)
+}),
+  "touch3_explore": zod.object({
+  "question": zod.string().min(1).max(getGeneratedSessionResponseTouch3ExploreQuestionMax),
+  "options": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch3ExploreOptionsItemMax)).min(getGeneratedSessionResponseTouch3ExploreOptionsMin).max(getGeneratedSessionResponseTouch3ExploreOptionsMax),
+  "correct_index": zod.number().int().min(getGeneratedSessionResponseTouch3ExploreCorrectIndexMin).max(getGeneratedSessionResponseTouch3ExploreCorrectIndexMax),
+  "feedback_correct": zod.string().min(1).max(getGeneratedSessionResponseTouch3ExploreFeedbackCorrectMax),
+  "feedback_wrong": zod.string().min(1).max(getGeneratedSessionResponseTouch3ExploreFeedbackWrongMax)
+}),
+  "touch4_build": zod.object({
+  "task_description": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildTaskDescriptionMax),
+  "starter_code": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildStarterCodeMax),
+  "expected_keywords": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildExpectedKeywordsItemMax)).min(1).max(getGeneratedSessionResponseTouch4BuildExpectedKeywordsMax),
+  "success_message": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildSuccessMessageMax),
+  "hint": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildHintMax),
+  "code_placeholder": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildCodePlaceholderMax)
+}),
+  "touch5_defend": zod.object({
+  "committee_question": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendCommitteeQuestionMax),
+  "options": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendOptionsItemMax)).min(getGeneratedSessionResponseTouch5DefendOptionsMin).max(getGeneratedSessionResponseTouch5DefendOptionsMax),
+  "correct_index": zod.number().int().min(getGeneratedSessionResponseTouch5DefendCorrectIndexMin).max(getGeneratedSessionResponseTouch5DefendCorrectIndexMax),
+  "explanation": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendExplanationMax),
+  "feedback_wrong": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendFeedbackWrongMax),
+  "followup_question": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendFollowupQuestionMax),
+  "followup_options": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendFollowupOptionsItemMax)).min(getGeneratedSessionResponseTouch5DefendFollowupOptionsMin).max(getGeneratedSessionResponseTouch5DefendFollowupOptionsMax),
+  "followup_correct_index": zod.number().int().min(getGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMin).max(getGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMax),
+  "followup_explanation": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendFollowupExplanationMax),
+  "followup_feedback_wrong": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax)
+})
+})
+
+
+/**
+ * @summary Generate a fresh session using a different concept and replace today's cache
+ */
+export const createGeneratedSessionResponseConceptNameEnMax = 100;
+
+export const createGeneratedSessionResponseConceptNameArMax = 140;
+
+export const createGeneratedSessionResponseConceptIntroMax = 400;
+
+export const createGeneratedSessionResponseTouch1ProvokeQuestionMax = 500;
+
+export const createGeneratedSessionResponseTouch1ProvokeOptionsItemMax = 300;
+
+export const createGeneratedSessionResponseTouch1ProvokeOptionsMin = 2;
+export const createGeneratedSessionResponseTouch1ProvokeOptionsMax = 3;
+
+export const createGeneratedSessionResponseTouch1ProvokeCorrectIndexMin = 0;
+export const createGeneratedSessionResponseTouch1ProvokeCorrectIndexMax = 2;
+
+export const createGeneratedSessionResponseTouch1ProvokeFeedbackCorrectMax = 400;
+
+export const createGeneratedSessionResponseTouch1ProvokeFeedbackWrongMax = 400;
+
+export const createGeneratedSessionResponseTouch2RevealExplanationMax = 1200;
+
+export const createGeneratedSessionResponseTouch2RevealValuesTableItemCodeMax = 160;
+
+export const createGeneratedSessionResponseTouch2RevealValuesTableItemMeaningMax = 400;
+
+export const createGeneratedSessionResponseTouch2RevealValuesTableMin = 2;
+export const createGeneratedSessionResponseTouch2RevealValuesTableMax = 6;
+
+export const createGeneratedSessionResponseTouch2RevealVerificationQuestionMax = 500;
+
+export const createGeneratedSessionResponseTouch2RevealVerificationOptionsItemMax = 300;
+
+export const createGeneratedSessionResponseTouch2RevealVerificationOptionsMin = 2;
+export const createGeneratedSessionResponseTouch2RevealVerificationOptionsMax = 3;
+
+export const createGeneratedSessionResponseTouch2RevealCorrectIndexMin = 0;
+export const createGeneratedSessionResponseTouch2RevealCorrectIndexMax = 2;
+
+export const createGeneratedSessionResponseTouch2RevealFeedbackCorrectMax = 400;
+
+export const createGeneratedSessionResponseTouch2RevealFeedbackWrongMax = 400;
+
+export const createGeneratedSessionResponseTouch3ExploreQuestionMax = 500;
+
+export const createGeneratedSessionResponseTouch3ExploreOptionsItemMax = 300;
+
+export const createGeneratedSessionResponseTouch3ExploreOptionsMin = 2;
+export const createGeneratedSessionResponseTouch3ExploreOptionsMax = 3;
+
+export const createGeneratedSessionResponseTouch3ExploreCorrectIndexMin = 0;
+export const createGeneratedSessionResponseTouch3ExploreCorrectIndexMax = 2;
+
+export const createGeneratedSessionResponseTouch3ExploreFeedbackCorrectMax = 400;
+
+export const createGeneratedSessionResponseTouch3ExploreFeedbackWrongMax = 400;
+
+export const createGeneratedSessionResponseTouch4BuildTaskDescriptionMax = 700;
+
+export const createGeneratedSessionResponseTouch4BuildStarterCodeMax = 2000;
+
+export const createGeneratedSessionResponseTouch4BuildExpectedKeywordsItemMax = 80;
+
+export const createGeneratedSessionResponseTouch4BuildExpectedKeywordsMax = 8;
+
+export const createGeneratedSessionResponseTouch4BuildSuccessMessageMax = 400;
+
+export const createGeneratedSessionResponseTouch4BuildHintMax = 400;
+
+export const createGeneratedSessionResponseTouch4BuildCodePlaceholderMax = 200;
+
+export const createGeneratedSessionResponseTouch5DefendCommitteeQuestionMax = 700;
+
+export const createGeneratedSessionResponseTouch5DefendOptionsItemMax = 400;
+
+export const createGeneratedSessionResponseTouch5DefendOptionsMin = 2;
+export const createGeneratedSessionResponseTouch5DefendOptionsMax = 3;
+
+export const createGeneratedSessionResponseTouch5DefendCorrectIndexMin = 0;
+export const createGeneratedSessionResponseTouch5DefendCorrectIndexMax = 2;
+
+export const createGeneratedSessionResponseTouch5DefendExplanationMax = 800;
+
+export const createGeneratedSessionResponseTouch5DefendFeedbackWrongMax = 400;
+
+export const createGeneratedSessionResponseTouch5DefendFollowupQuestionMax = 700;
+
+export const createGeneratedSessionResponseTouch5DefendFollowupOptionsItemMax = 400;
+
+export const createGeneratedSessionResponseTouch5DefendFollowupOptionsMin = 2;
+export const createGeneratedSessionResponseTouch5DefendFollowupOptionsMax = 3;
+
+export const createGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMin = 0;
+export const createGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMax = 2;
+
+export const createGeneratedSessionResponseTouch5DefendFollowupExplanationMax = 800;
+
+export const createGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax = 400;
+
+
+
+export const CreateGeneratedSessionResponse = zod.object({
+  "concept_name_en": zod.string().min(1).max(createGeneratedSessionResponseConceptNameEnMax),
+  "concept_name_ar": zod.string().min(1).max(createGeneratedSessionResponseConceptNameArMax),
+  "concept_intro": zod.string().min(1).max(createGeneratedSessionResponseConceptIntroMax),
+  "source": zod.enum(['gemini', 'fallback']),
+  "touch1_provoke": zod.object({
+  "question": zod.string().min(1).max(createGeneratedSessionResponseTouch1ProvokeQuestionMax),
+  "options": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch1ProvokeOptionsItemMax)).min(createGeneratedSessionResponseTouch1ProvokeOptionsMin).max(createGeneratedSessionResponseTouch1ProvokeOptionsMax),
+  "correct_index": zod.number().int().min(createGeneratedSessionResponseTouch1ProvokeCorrectIndexMin).max(createGeneratedSessionResponseTouch1ProvokeCorrectIndexMax),
+  "feedback_correct": zod.string().min(1).max(createGeneratedSessionResponseTouch1ProvokeFeedbackCorrectMax),
+  "feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch1ProvokeFeedbackWrongMax)
+}),
+  "touch2_reveal": zod.object({
+  "explanation": zod.string().min(1).max(createGeneratedSessionResponseTouch2RevealExplanationMax),
+  "values_table": zod.array(zod.object({
+  "code": zod.string().min(1).max(createGeneratedSessionResponseTouch2RevealValuesTableItemCodeMax),
+  "meaning": zod.string().min(1).max(createGeneratedSessionResponseTouch2RevealValuesTableItemMeaningMax)
+})).min(createGeneratedSessionResponseTouch2RevealValuesTableMin).max(createGeneratedSessionResponseTouch2RevealValuesTableMax),
+  "verification_question": zod.string().min(1).max(createGeneratedSessionResponseTouch2RevealVerificationQuestionMax),
+  "verification_options": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch2RevealVerificationOptionsItemMax)).min(createGeneratedSessionResponseTouch2RevealVerificationOptionsMin).max(createGeneratedSessionResponseTouch2RevealVerificationOptionsMax),
+  "correct_index": zod.number().int().min(createGeneratedSessionResponseTouch2RevealCorrectIndexMin).max(createGeneratedSessionResponseTouch2RevealCorrectIndexMax),
+  "feedback_correct": zod.string().min(1).max(createGeneratedSessionResponseTouch2RevealFeedbackCorrectMax),
+  "feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch2RevealFeedbackWrongMax)
+}),
+  "touch3_explore": zod.object({
+  "question": zod.string().min(1).max(createGeneratedSessionResponseTouch3ExploreQuestionMax),
+  "options": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch3ExploreOptionsItemMax)).min(createGeneratedSessionResponseTouch3ExploreOptionsMin).max(createGeneratedSessionResponseTouch3ExploreOptionsMax),
+  "correct_index": zod.number().int().min(createGeneratedSessionResponseTouch3ExploreCorrectIndexMin).max(createGeneratedSessionResponseTouch3ExploreCorrectIndexMax),
+  "feedback_correct": zod.string().min(1).max(createGeneratedSessionResponseTouch3ExploreFeedbackCorrectMax),
+  "feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch3ExploreFeedbackWrongMax)
+}),
+  "touch4_build": zod.object({
+  "task_description": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildTaskDescriptionMax),
+  "starter_code": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildStarterCodeMax),
+  "expected_keywords": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildExpectedKeywordsItemMax)).min(1).max(createGeneratedSessionResponseTouch4BuildExpectedKeywordsMax),
+  "success_message": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildSuccessMessageMax),
+  "hint": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildHintMax),
+  "code_placeholder": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildCodePlaceholderMax)
+}),
+  "touch5_defend": zod.object({
+  "committee_question": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendCommitteeQuestionMax),
+  "options": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendOptionsItemMax)).min(createGeneratedSessionResponseTouch5DefendOptionsMin).max(createGeneratedSessionResponseTouch5DefendOptionsMax),
+  "correct_index": zod.number().int().min(createGeneratedSessionResponseTouch5DefendCorrectIndexMin).max(createGeneratedSessionResponseTouch5DefendCorrectIndexMax),
+  "explanation": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendExplanationMax),
+  "feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFeedbackWrongMax),
+  "followup_question": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupQuestionMax),
+  "followup_options": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupOptionsItemMax)).min(createGeneratedSessionResponseTouch5DefendFollowupOptionsMin).max(createGeneratedSessionResponseTouch5DefendFollowupOptionsMax),
+  "followup_correct_index": zod.number().int().min(createGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMin).max(createGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMax),
+  "followup_explanation": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupExplanationMax),
+  "followup_feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax)
+})
+})
+
+

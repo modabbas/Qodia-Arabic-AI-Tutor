@@ -2,28 +2,23 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { getGetDashboardQueryKey, getGetSessionsQueryKey, useCreateSession, useGetDashboard, type SessionInput } from '@workspace/api-client-react';
+import { getGetDashboardQueryKey, getGetGeneratedSessionQueryKey, getGetSessionsQueryKey, useCreateGeneratedSession, useCreateSession, useGetDashboard, useGetGeneratedSession, type GeneratedSession, type SessionInput } from '@workspace/api-client-react';
 import s from './Session.module.css';
 
-const arabic = (value: number) => String(value).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[Number(digit)]);
-const touches = [
-  { name: 'استفزاز', color: s.blue, concept: 'علاقة كثير-لواحد' },
-  { name: 'كشف', color: s.purple, concept: 'قيم on_delete' },
-  { name: 'استكشاف', color: s.teal, concept: 'CASCADE vs PROTECT' },
-  { name: 'بناء', color: s.amber, concept: 'كتابة ForeignKey' },
-  { name: 'دفاع', color: s.red, concept: 'CASCADE في المناقشة' },
-];
 type Mood = 'hyped' | 'normal' | 'tired';
 type Result = { name: string; concept: string; passed: boolean };
+const touches = [
+  { name: 'استفزاز', color: s.blue },
+  { name: 'كشف', color: s.purple },
+  { name: 'استكشاف', color: s.teal },
+  { name: 'بناء', color: s.amber },
+  { name: 'دفاع', color: s.red },
+];
+const arabic = (value: number) => String(value).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[Number(digit)]);
 const music: Record<Mood, { url: string; label: string }> = {
   hyped: { url: 'https://www.youtube.com/results?search_query=coding+music+energetic+lofi', label: 'موسيقى حماسية' },
   normal: { url: 'https://www.youtube.com/results?search_query=lofi+hip+hop+study+beats', label: 'لوفاي هادية' },
   tired: { url: 'https://www.youtube.com/results?search_query=calm+ambient+study+music', label: 'أمبيانت مريحة' },
-};
-const intro: Record<Mood, string> = {
-  hyped: 'يلا نشتغل! اليوم منبني علاقة جدول المواعيد بمشروعك. سؤال قبل ما نبلش:',
-  normal: 'اليوم منشتغل على جدول المواعيد بمشروعك. سؤال قبل ما نبلش:',
-  tired: 'ما تقلق، جلسة قصيرة اليوم. منشتغل على جدول المواعيد بس. سؤال قبل ما نبلش:',
 };
 
 function playTone(kind: 'good' | 'bad' | 'big', enabled: boolean) {
@@ -48,10 +43,38 @@ function playTone(kind: 'good' | 'bad' | 'big', enabled: boolean) {
   } catch { /* Audio is optional. */ }
 }
 
+function validateSession(value: unknown): GeneratedSession {
+  if (!value || typeof value !== 'object') throw new Error('Invalid session response');
+  const session = value as GeneratedSession;
+  const validOptions = (options: unknown, index: unknown) =>
+    Array.isArray(options) && options.length >= 2 && options.length <= 3 &&
+    Number.isInteger(index) && (index as number) >= 0 && (index as number) < options.length &&
+    options.every(option => typeof option === 'string');
+  if (
+    typeof session.concept_name_en !== 'string' || typeof session.concept_name_ar !== 'string' ||
+    typeof session.concept_intro !== 'string' ||
+    !validOptions(session.touch1_provoke?.options, session.touch1_provoke?.correct_index) ||
+    !validOptions(session.touch2_reveal?.verification_options, session.touch2_reveal?.correct_index) ||
+    !Array.isArray(session.touch2_reveal?.values_table) ||
+    !validOptions(session.touch3_explore?.options, session.touch3_explore?.correct_index) ||
+    !Array.isArray(session.touch4_build?.expected_keywords) ||
+    !validOptions(session.touch5_defend?.options, session.touch5_defend?.correct_index) ||
+    !validOptions(session.touch5_defend?.followup_options, session.touch5_defend?.followup_correct_index)
+  ) throw new Error('Invalid session response');
+  return session;
+}
+
 export default function Session() {
   const dashboard = useGetDashboard();
+  const generatedSession = useGetGeneratedSession({ query: { enabled: !!dashboard.data, queryKey: getGetGeneratedSessionQueryKey() } });
   const queryClient = useQueryClient();
   const create = useCreateSession();
+  const freshSession = useCreateGeneratedSession();
+  const session = generatedSession.data;
+  const sessionLoading = !!dashboard.data && generatedSession.isLoading;
+  const sessionError = generatedSession.isError;
+  const [freshPending, setFreshPending] = useState(false);
+  const [freshError, setFreshError] = useState(false);
   const [touch, setTouch] = useState(0);
   const [mood, setMood] = useState<Mood>('normal');
   const [musicVisible, setMusicVisible] = useState(true);
@@ -109,7 +132,7 @@ export default function Session() {
 
   useEffect(() => {
     if (touch === 4 && !correct) inputRef.current?.focus();
-  }, [touch]);
+  }, [touch, correct]);
   useEffect(() => {
     if (correct) nextRef.current?.focus();
   }, [correct, phase]);
@@ -138,14 +161,18 @@ export default function Session() {
   function record(index: number, passed: boolean) {
     setResults(value => {
       const copy = [...value];
-      copy[index] = { name: touches[index].name, concept: touches[index].concept, passed };
+      copy[index] = {
+        name: touches[index].name,
+        concept: index === 0 ? session?.concept_name_ar ?? '' : index === 1 ? session?.concept_name_en ?? '' : ['استفزاز', 'كشف', 'استكشاف', 'بناء', 'دفاع'][index],
+        passed,
+      };
       return copy;
     });
   }
-  function answer(index: number, expected: number, explanation: string, errors: string[], event: MouseEvent<HTMLButtonElement>) {
+  function answer(index: number, expected: number, explanation: string, error: string, event: MouseEvent<HTMLButtonElement>) {
     if (correct || wrongChoices.includes(index) || (touch === 5 && seconds === 0)) return;
     if (index !== expected) {
-      miss(index, errors[index] || 'فكّر بالسبب الحقيقي.', touch === 5 ? 35 : 0);
+      miss(index, error || 'فكّر بالسبب الحقيقي.', touch === 5 ? 35 : 0);
       return;
     }
     setSelected(index);
@@ -180,14 +207,14 @@ export default function Session() {
     });
   }
   function next() {
-    if (!correct || create.isPending) return;
+    if (!correct || create.isPending || !session) return;
     if (touch === 5 && phase === 'first') {
       setPhase('followup');
       setSeconds(30);
       timedOutRef.current = false;
       resetChoice();
     } else if (touch === 5) {
-      const payload: SessionInput = { concept: 'Django ForeignKey + on_delete', touches_completed: 5, mistakes, xp_earned: 110 };
+      const payload: SessionInput = { concept: `${session.concept_name_en} — ${session.concept_name_ar}`, touches_completed: 5, mistakes, xp_earned: 110 };
       setSavePayload(payload);
       save(payload);
     } else {
@@ -196,29 +223,43 @@ export default function Session() {
     }
   }
   function checkCode(event?: MouseEvent<HTMLButtonElement>) {
-    if (correct) return;
-    const val = code.trim().replace(/\s+/g, ' ');
-    const hasFK = /ForeignKey\s*\(/.test(val);
-    const hasPatient = /Patient/.test(val);
-    const hasOnDelete = /on_delete\s*=/.test(val);
-    const hasCascade = /CASCADE/.test(val);
-    if (hasFK && hasPatient && hasOnDelete && hasCascade) {
+    if (correct || !session) return;
+    const value = code.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+    const missing = session.touch4_build.expected_keywords.filter(keyword => !value.includes(keyword.toLocaleLowerCase()));
+    if (value && missing.length === 0) {
       setCorrect(true);
-      setFeedback({ ok: true, text: 'ممتاز! كتبت العلاقة صح. patient بيربط الموعد بجدول المرضى، وCASCADE يعني إذا انحذف المريض تنحذف مواعيده معه.' });
+      setFeedback({ ok: true, text: session.touch4_build.success_message });
       record(3, !hint && codeTries === 0);
       award(20, event, true);
     } else {
-      setCodeTries(value => value + 1);
-      miss(null, `الكود ناقصه شي. ${!hasFK ? 'وين ForeignKey؟' : !hasPatient ? 'ما ذكرت اسم الجدول (Patient).' : !hasOnDelete ? 'ناقصك on_delete.' : 'شو قيمة on_delete اللي بتخلي المواعيد تنحذف مع المريض؟'}`);
+      setCodeTries(count => count + 1);
+      miss(null, `الكود ناقصه شي. ${missing.length ? `تأكد من وجود: ${missing.join('، ')}` : 'اكتب إجابتك قبل التسليم.'}`);
     }
   }
-  function restart() {
+  function resetForSession() {
     setTouch(0); setMood('normal'); setMusicVisible(true); resetChoice();
     setMistakes(0); setEarned(0); setFloat(null); setConfetti(null);
     setCode(''); setHint(false); setCodeTries(0); setPhase('first');
     setSeconds(30); setConfidence(100); setComplete(false); setResults([]);
     setSavePayload(null); timedOutRef.current = false; savingRef.current = false;
     baselineRef.current = null; create.reset();
+  }
+  async function startFresh() {
+    if (freshPending) return;
+    setFreshPending(true);
+    setFreshError(false);
+    try {
+      const nextSession = validateSession(await freshSession.mutateAsync());
+      queryClient.setQueryData(getGetGeneratedSessionQueryKey(), nextSession);
+      resetForSession();
+    } catch {
+      setFreshError(true);
+    } finally {
+      setFreshPending(false);
+    }
+  }
+  async function retrySession() {
+    await generatedSession.refetch();
   }
 
   useEffect(() => {
@@ -237,12 +278,12 @@ export default function Session() {
     return () => document.removeEventListener('keydown', onKey);
   });
 
-  const choices = (labels: string[], expected: number, success: string, errors: string[], verification = false) =>
+  const choices = (labels: string[], expected: number, success: string, error: string, verification = false) =>
     <div className={verification ? s.checkopts : s.opts}>
-      {labels.map((label, index) => <button key={label} type="button" data-session-option="" data-testid={verification ? `button-verify-${label}` : `button-answer-${touch}-${phase}-${index}`}
+      {labels.map((label, index) => <button key={`${index}-${label}`} type="button" data-session-option="" data-testid={verification ? `button-verify-${index}` : `button-answer-${touch}-${phase}-${index}`}
         className={`${verification ? s.chip : s.opt} ${selected === index ? (correct ? s.right : s.wrong) : ''}`}
         disabled={correct || wrongChoices.includes(index) || (touch === 5 && seconds === 0)}
-        onClick={event => answer(index, expected, success, errors, event)}>
+        onClick={event => answer(index, expected, success, error, event)}>
         {!verification && <span className={s.key}>{arabic(index + 1)}</span>}<span>{label}</span>
       </button>)}
     </div>;
@@ -252,10 +293,17 @@ export default function Session() {
   const readiness = readinessStart + results.reduce((sum, result) => sum + (result?.passed ? 3 : 1), 0);
   const baseXP = baselineRef.current ?? dashboard.data?.progress.total_xp ?? 0;
   const hudXP = baseXP + earned;
+  const build = session?.touch4_build;
+  const defense = session?.touch5_defend;
 
   return <div className={s.session}>
-    {dashboard.isLoading ? <main className={s.stage} role="status" data-testid="status-loading"><div className={s.loading} style={{ width: 180, marginBottom: 24 }} /><div className={s.loading} style={{ width: '70%', height: 36, marginBottom: 30 }} /><div className={s.loading} style={{ height: 180 }} /></main>
+    {dashboard.isLoading || sessionLoading ? <main className={s.stage} role="status" data-testid="status-loading" style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+      <div aria-hidden="true" style={{ width: 38, height: 38, border: '3px solid #252525', borderTopColor: '#22c55e', borderRadius: '50%', animation: 'session-spin .8s linear infinite', marginBottom: 20 }} />
+      <div style={{ fontSize: 18 }}>مشرفك يحضّر جلستك المخصصة... 🎯</div>
+      <div className={s.small} style={{ marginTop: 6 }} data-testid="text-session-project">بناءً على مشروع {dashboard.data?.user.project_name || 'مشروعك'}</div>
+    </main>
       : dashboard.isError || !dashboard.data ? <main className={s.stage} role="alert" data-testid="status-error"><div className={s.card}><div className={s.q}>ما قدرنا نحمّل تقدّمك.</div><button className={s.btn} onClick={() => { void dashboard.refetch(); }} data-testid="button-retry-dashboard">حاول مجدداً</button></div></main>
+      : sessionError || !session ? <main className={s.stage} role="alert" data-testid="status-session-error"><div className={s.card}><div className={s.q}>ما قدرنا نحمّل جلستك. تأكد من اتصالك وحاول مرة ثانية.</div><button className={s.btn} onClick={() => { void retrySession(); }} data-testid="button-retry-session">حاول مجدداً</button></div></main>
       : <>
         {touch > 0 && <header className={s.top}>
           <Link href="/dashboard" className={s.logo} aria-label="العودة إلى اللوحة" data-testid="link-dashboard"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18" fill="none" stroke="#f2f2f2" strokeWidth="4" /><path d="M19.5 16.5 L29 24 L19.5 31.5" fill="none" stroke="#f2f2f2" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg></Link>
@@ -269,27 +317,30 @@ export default function Session() {
             {!complete && <>
               {touch === 1 && musicVisible && <div className={s.music}><span className={s.note}>🎵</span><span>{music[mood].label} —</span><a href={music[mood].url} target="_blank" rel="noopener noreferrer" data-testid="link-music">افتح بلايليست</a><button className={s.x} onClick={() => setMusicVisible(false)} data-testid="button-dismiss-music">إخفاء</button></div>}
               <div className={`${s.touchlabel} ${touches[touch - 1].color}`}>اللمسة {arabic(touch)} · {touches[touch - 1].name}</div>
-              <div className={s.who}>مشرفك</div>
-              <p className={s.say}>{touch === 1 ? intro[mood] : touch === 2 ? 'زبطها! هلق خليني عرّفلك اسم اللي اكتشفته:' : touch === 3 ? 'خليني جرّبك بشي بسيط قبل ما تكتب لحالك:' : touch === 4 ? 'دورك. اكتب السطر بنفسك:' : 'خلّصت! هلق دكتور من اللجنة رح يسألك:'}</p>
+              <div className={s.who}>مشرفك · <span data-testid="text-session-concept">{session.concept_name_ar} ({session.concept_name_en})</span></div>
+              <p className={s.say}>{touch === 1
+                ? `${mood === 'hyped' ? 'يلا نشتغل! ' : mood === 'tired' ? 'ما تقلق، ' : ''}${session.concept_intro} سؤال قبل ما نبلش:`
+                : touch === 2 ? 'خلينا نكشف الفكرة ونرتّب خياراتها:'
+                  : touch === 3 ? 'خليني جرّبك بشي بسيط قبل ما تكتب لحالك:'
+                    : touch === 4 ? 'دورك. طبّق الفكرة واكتبها بنفسك:'
+                      : 'هلق دكتور من اللجنة رح يسألك:'}</p>
             </>}
-            {!complete && touch === 1 && <section className={s.card}><div className={s.q}>المريض الواحد بالعيادة، كم موعد ممكن يكون إلو؟</div>
-              {choices(['موعد واحد بس', 'أكتر من موعد'], 1, 'بالضبط. مريض واحد ← مواعيد كتير. هالنوع من العلاقات إلها اسم وقواعد، بنكتشفها هلق.', ['فكّر بآخر مرة زرت دكتور. رحت مرة وحدة بس، ولا أكتر؟'])}{feedbackNode}{nextNode}</section>}
-            {!complete && touch === 2 && <section className={s.card}><p className={s.introtext}>هالعلاقة اسمها <code>ForeignKey</code>. أهم شي فيها كلمة <code>on_delete</code>. بتقول لـ Django شو يعمل بمواعيد المريض لو انحذف المريض.</p><p className={s.valueslabel}>في ٣ قيم بتقدر تعطيها:</p><div className={s.values}>{[['CASCADE', 'المريض راح، مواعيده تروح معه'], ['PROTECT', 'Django بيرفض حذف المريض إذا إلو مواعيد'], ['SET_NULL', 'المريض راح، مواعيده تضل بدون مريض']].map(([name, description]) => <div className={s.valuerow} key={name}><div className={s.valuename}>{name}</div><div className={s.valuedesc}>{description}</div></div>)}</div><div className={s.check}><div className={s.checkq}>قبل ما نكمّل — سؤال سريع:</div><div className={s.checkmain}>أي قيمة تحمي المريض من الحذف إذا إلو مواعيد؟</div>{choices(['CASCADE', 'PROTECT', 'SET_NULL'], 1, 'مضبوط. PROTECT معناها "احميه" — Django بيرفض الحذف إذا إلو ارتباطات.', ['CASCADE بتعمل العكس — المواعيد تنحذف مع المريض. ارجع للجدول.', '', 'SET_NULL بتفصل المواعيد عن المريض. مو حماية، لأن المريض بينحذف.'], true)}</div>{feedbackNode}{nextNode}</section>}
-            {!complete && touch === 3 && <section className={s.card}><div className={s.q}>شوف نفس الكود، بس مع تعديل. شو رأيك يصير لو استخدمنا <code className={s.inlinecode}>PROTECT</code> بدل <code className={s.inlinecode}>CASCADE</code>؟</div>{choices(['بيصير نفس الشي، ما بتفرق', 'Django بيرفض يحذف المريض إذا إلو مواعيد', 'المواعيد بتنحذف والمريض بيضل'], 1, 'بالضبط. PROTECT معناها "احميه". Django بيرفض الحذف لو في مواعيد مرتبطة، عشان ما تضيع بيانات.', ['لو ما بتفرق، ليش في خيارات مختلفة؟ كل قيمة إلها معنى.', '', 'العكس. المواعيد تابعة للمريض، مش المريض تابع للمواعيد.'])}{feedbackNode}{nextNode}</section>}
-            {!complete && touch === 4 && <section className={s.card}><div className={s.q}>أضف علاقة بين الموعد والمريض بحيث إذا انحذف المريض، تنحذف مواعيده معه.</div><div className={s.editor}>
-              <div className={s.ln}><span className={s.n}>1</span><span className={s.c}>class Appointment(models.Model):</span></div>
-              <div className={s.ln}><span className={s.n}>2</span><span className={s.c}>    date = models.DateTimeField()</span></div>
-              <div className={s.ln}><span className={s.n}>3</span><span className={s.c}>    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)</span></div>
-              <div className={`${s.ln} ${s.todo}`}><span className={s.n}>4</span><span className={s.c}>    # TODO: اكتب سطر المريض هنا ↓</span></div>
-              <div className={`${s.ln} ${s.inputline}`}><span className={s.n}>5</span><span className={s.c}>    patient = models.{code}{!correct && <span className={s.caret}>|</span>}</span></div>
-              <div className={s.ln}><span className={s.n}>6</span><span className={s.c}>    notes = models.TextField(blank=True)</span></div>
-            </div><div className={s.editoractions}><input ref={inputRef} className={s.editorinput} value={code} disabled={correct} onChange={event => setCode(event.target.value)} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if (event.key === 'Enter') { event.preventDefault(); checkCode(); } }} placeholder="ForeignKey(Patient, on_delete=..." autoComplete="off" spellCheck={false} data-testid="input-code-answer" /><button className={s.hintbtn} disabled={hint || correct} onClick={() => { setHint(true); setConfidence(value => Math.max(0, value - 5)); }} data-testid="button-hint">تلميح <span className={s.hintcost}>−٥</span></button><button className={s.btn} disabled={correct} onClick={checkCode} data-testid="button-check-code">سلّم</button></div><div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div>{hint && <div className={s.hinttext} data-testid="status-hint">💡 ابدأ بـ <code>ForeignKey(Patient, ...</code> — شو الكلمة الثانية اللازمة بعدها؟ فكّر باللمسة الثانية.</div>}{feedbackNode}{nextNode}</section>}
-            {!complete && touch === 5 && <section className={`${s.card} ${s.boss}`}><div className={s.bosshead}><div className={s.ring}><svg width="52" height="52" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" className={s.ringbg} /><circle cx="24" cy="24" r="20" className={s.ringfg} strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - seconds / 30)} /></svg><span data-testid="text-countdown">{arabic(seconds)}</span></div><div className={s.hp}><div className={s.hpl}><span>ثقتك قدام اللجنة</span><span data-testid="text-confidence">{arabic(confidence)}٪</span></div><div className={s.hpb}><i style={{ width: `${confidence}%` }} /></div></div></div><div className={s.judge}>{phase === 'first' ? 'د. سامر، عضو لجنة المناقشة:' : 'الدكتور ما اكتفى:'}</div>
-              <div className={s.q}>{phase === 'first' ? 'ليش حطيت CASCADE بعلاقة المريض؟' : 'وإذا المريض إلو فواتير لازم تنحفظ حتى لو انحذف حسابه؟'}</div>
-              {phase === 'first' ? choices(['لأن Django طلب مني هيك', 'لما ينحذف المريض بتنحذف مواعيده، فما بتضل يتيمة', 'ما في مشكلة، هيك أسرع'], 1, 'الدكتور هزّ راسه. جواب واثق وفيه سبب.', ['اللجنة ما بتقبل «هيك طلب مني». بدها السبب.', '', '«أسرع» مو سبب. بدو يعرف شو بيصير بالبيانات.']) : choices(['بضل على CASCADE، هي الأفضل', 'بستخدم PROTECT أو SET_NULL', 'بحذف الفواتير يدوياً قبل'], 1, 'هون عرف الدكتور إنك فاهم مش حافظ. كل حالة إلها القيمة المناسبة.', ['CASCADE بتحذف الفواتير معها. فكّر كيف تحتفظ فيها.', '', 'حذف الفواتير بيعكس المطلوب. فكّر بقيمة on_delete مناسبة.'])}
+            {!complete && touch === 1 && <section className={s.card}><div className={s.q}>{session.touch1_provoke.question}</div>
+              {choices(session.touch1_provoke.options, session.touch1_provoke.correct_index, session.touch1_provoke.feedback_correct, session.touch1_provoke.feedback_wrong)}{feedbackNode}{nextNode}</section>}
+            {!complete && touch === 2 && <section className={s.card}><p className={s.introtext}>{session.touch2_reveal.explanation}</p><p className={s.valueslabel}>خيارات ومفاهيم مرتبطة:</p><div className={s.values}>{session.touch2_reveal.values_table.map((row, index) => <div className={s.valuerow} key={`${row.code}-${index}`}><div className={s.valuename}>{row.code}</div><div className={s.valuedesc}>{row.meaning}</div></div>)}</div><div className={s.check}><div className={s.checkq}>قبل ما نكمّل — سؤال سريع:</div><div className={s.checkmain}>{session.touch2_reveal.verification_question}</div>{choices(session.touch2_reveal.verification_options, session.touch2_reveal.correct_index, session.touch2_reveal.feedback_correct, session.touch2_reveal.feedback_wrong, true)}</div>{feedbackNode}{nextNode}</section>}
+            {!complete && touch === 3 && <section className={s.card}><div className={s.q}>{session.touch3_explore.question}</div>{choices(session.touch3_explore.options, session.touch3_explore.correct_index, session.touch3_explore.feedback_correct, session.touch3_explore.feedback_wrong)}{feedbackNode}{nextNode}</section>}
+            {!complete && touch === 4 && build && <section className={s.card}><div className={s.q}>{build.task_description}</div><div className={s.editor}>
+              {build.starter_code.split('\n').map((line, index) => <div className={s.ln} key={`${index}-${line}`}><span className={s.n}>{arabic(index + 1)}</span><span className={s.c}>{line || ' '}</span></div>)}
+              <div className={`${s.ln} ${s.inputline}`}><span className={s.n}>{arabic(build.starter_code.split('\n').length + 1)}</span><span className={s.c}>{code || <span className={s.caret}>|</span>}</span></div>
+            </div><div className={s.editoractions}><input ref={inputRef} className={s.editorinput} value={code} disabled={correct} onChange={event => setCode(event.target.value)} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if (event.key === 'Enter') { event.preventDefault(); checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" /><button className={s.hintbtn} disabled={hint || correct} onClick={() => { setHint(true); setConfidence(value => Math.max(0, value - 5)); }} data-testid="button-hint">تلميح <span className={s.hintcost}>−٥</span></button><button className={s.btn} disabled={correct} onClick={checkCode} data-testid="button-check-code">سلّم</button></div><div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div>{hint && <div className={s.hinttext} data-testid="status-hint">💡 {build.hint}</div>}{feedbackNode}{nextNode}</section>}
+            {!complete && touch === 5 && defense && <section className={`${s.card} ${s.boss}`}><div className={s.bosshead}><div className={s.ring}><svg width="52" height="52" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" className={s.ringbg} /><circle cx="24" cy="24" r="20" className={s.ringfg} strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - seconds / 30)} /></svg><span data-testid="text-countdown">{arabic(seconds)}</span></div><div className={s.hp}><div className={s.hpl}><span>ثقتك قدام اللجنة</span><span data-testid="text-confidence">{arabic(confidence)}٪</span></div><div className={s.hpb}><i style={{ width: `${confidence}%` }} /></div></div></div><div className={s.judge}>{phase === 'first' ? 'عضو لجنة المناقشة:' : 'الدكتور ما اكتفى:'}</div>
+              <div className={s.q}>{phase === 'first' ? defense.committee_question : defense.followup_question}</div>
+              {phase === 'first'
+                ? choices(defense.options, defense.correct_index, defense.explanation, defense.feedback_wrong)
+                : choices(defense.followup_options, defense.followup_correct_index, defense.followup_explanation, defense.followup_feedback_wrong)}
               {feedbackNode}{seconds === 0 && !correct && <button className={`${s.btn} ${s.ghost}`} style={{ marginTop: 16 }} onClick={() => { setSeconds(30); setSelected(null); setFeedback(null); timedOutRef.current = false; }} data-testid="button-retry-defense">جرّب مرة ثانية</button>}{nextNode}</section>}
             {!complete && create.isError && savePayload && <div className={s.error} role="alert" data-testid="status-save-error">خلصت التدريب، بس ما قدرنا نحفظ نتيجتك. <button className={`${s.btn} ${s.ghost}`} onClick={() => save(savePayload)} data-testid="button-retry-save">إعادة المحاولة</button></div>}
-            {complete && <section className={s.end}><div className={s.endtitle}>خلّصت جلسة اليوم 🎉</div><div className={s.small}>جدول المواعيد · ForeignKey</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div><div className={s.small} style={{ marginTop: 6 }}>+{arabic(earned)} نقطة · متتاليتك: {arabic(dashboard.data.progress.streak_days)} يوم 🔥</div><ul className={s.results}>{results.map((result, i) => <li key={i} className={result.passed ? s.pass : s.soft} data-testid={`row-touch-result-${i + 1}`}><span className={s.ri}>{result.passed ? '✓' : '↺'}</span><span className={s.name}>{result.name}</span><span className={s.concept}>{result.concept}</span></li>)}</ul><button className={`${s.btn} ${s.big}`} onClick={restart} data-testid="button-new-session">ابدأ جلسة جديدة</button><Link href="/dashboard" className={s.small} style={{ marginTop: 10 }} data-testid="link-return-dashboard">ارجع للوحتي ←</Link></section>}
+            {complete && <section className={s.end}><div className={s.endtitle}>خلّصت جلستك 🎉</div><div className={s.small} data-testid="text-completed-concept">{session.concept_name_ar} · {session.concept_name_en}</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div><div className={s.small} style={{ marginTop: 6 }}>+{arabic(earned)} نقطة · متتاليتك: {arabic(dashboard.data.progress.streak_days)} يوم 🔥</div><ul className={s.results}>{results.map((result, i) => <li key={i} className={result.passed ? s.pass : s.soft} data-testid={`row-touch-result-${i + 1}`}><span className={s.ri}>{result.passed ? '✓' : '↺'}</span><span className={s.name}>{result.name}</span><span className={s.concept}>{result.concept}</span></li>)}</ul><button className={`${s.btn} ${s.big}`} style={{ background: 'transparent', color: '#22c55e', border: '1px solid #22c55e' }} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-new-session">{freshPending ? 'عم نحضّر جلستك...' : 'جلسة جديدة بمفهوم آخر ↺'}</button>{freshError && <div className={s.error} role="alert" data-testid="status-fresh-error">ما قدرنا نحمّل جلسة جديدة. تقدمك محفوظ؛ حاول مرة ثانية.</div>}{freshError && <button className={`${s.btn} ${s.ghost}`} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-retry-fresh">إعادة المحاولة</button>}<Link href="/dashboard" className={s.small} style={{ marginTop: 10 }} data-testid="link-return-dashboard">ارجع للوحتي ←</Link></section>}
           </div></main>}
       </>}
   </div>;

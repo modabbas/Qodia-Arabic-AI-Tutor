@@ -197,6 +197,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /generate-session:
+    get:
+      operationId: getGeneratedSession
+      tags: [learning]
+      summary: Get the signed-in student's cached daily learning session
+      responses:
+        "200":
+          description: Cached or newly generated learning session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedSession"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Project profile is incomplete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createGeneratedSession
+      tags: [learning]
+      summary: Generate a fresh session using a different concept and replace today's cache
+      responses:
+        "200":
+          description: Fresh learning session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedSession"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Project profile is incomplete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -348,3 +395,101 @@ components:
         onboarding_complete:
           type: boolean
       required: [user, progress, recent_sessions, onboarding_complete]
+    GeneratedSession:
+      type: object
+      additionalProperties: false
+      properties:
+        concept_name_en:
+          type: string
+          minLength: 1
+          maxLength: 100
+        concept_name_ar:
+          type: string
+          minLength: 1
+          maxLength: 140
+        concept_intro:
+          type: string
+          minLength: 1
+          maxLength: 400
+        source:
+          type: string
+          enum: [gemini, fallback]
+        touch1_provoke:
+          $ref: "#/components/schemas/GeneratedTouch1"
+        touch2_reveal:
+          $ref: "#/components/schemas/GeneratedTouch2"
+        touch3_explore:
+          $ref: "#/components/schemas/GeneratedTouch3"
+        touch4_build:
+          $ref: "#/components/schemas/GeneratedTouch4"
+        touch5_defend:
+          $ref: "#/components/schemas/GeneratedTouch5"
+      required: [concept_name_en, concept_name_ar, concept_intro, source, touch1_provoke, touch2_reveal, touch3_explore, touch4_build, touch5_defend]
+    GeneratedTouch1:
+      type: object
+      additionalProperties: false
+      properties:
+        question: { type: string, minLength: 1, maxLength: 500 }
+        options: { type: array, minItems: 2, maxItems: 3, items: { type: string, minLength: 1, maxLength: 300 } }
+        correct_index: { type: integer, minimum: 0, maximum: 2 }
+        feedback_correct: { type: string, minLength: 1, maxLength: 400 }
+        feedback_wrong: { type: string, minLength: 1, maxLength: 400 }
+      required: [question, options, correct_index, feedback_correct, feedback_wrong]
+    GeneratedTouch2:
+      type: object
+      additionalProperties: false
+      properties:
+        explanation: { type: string, minLength: 1, maxLength: 1200 }
+        values_table:
+          type: array
+          minItems: 2
+          maxItems: 6
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              code: { type: string, minLength: 1, maxLength: 160 }
+              meaning: { type: string, minLength: 1, maxLength: 400 }
+            required: [code, meaning]
+        verification_question: { type: string, minLength: 1, maxLength: 500 }
+        verification_options: { type: array, minItems: 2, maxItems: 3, items: { type: string, minLength: 1, maxLength: 300 } }
+        correct_index: { type: integer, minimum: 0, maximum: 2 }
+        feedback_correct: { type: string, minLength: 1, maxLength: 400 }
+        feedback_wrong: { type: string, minLength: 1, maxLength: 400 }
+      required: [explanation, values_table, verification_question, verification_options, correct_index, feedback_correct, feedback_wrong]
+    GeneratedTouch3:
+      type: object
+      additionalProperties: false
+      properties:
+        question: { type: string, minLength: 1, maxLength: 500 }
+        options: { type: array, minItems: 2, maxItems: 3, items: { type: string, minLength: 1, maxLength: 300 } }
+        correct_index: { type: integer, minimum: 0, maximum: 2 }
+        feedback_correct: { type: string, minLength: 1, maxLength: 400 }
+        feedback_wrong: { type: string, minLength: 1, maxLength: 400 }
+      required: [question, options, correct_index, feedback_correct, feedback_wrong]
+    GeneratedTouch4:
+      type: object
+      additionalProperties: false
+      properties:
+        task_description: { type: string, minLength: 1, maxLength: 700 }
+        starter_code: { type: string, minLength: 1, maxLength: 2000 }
+        expected_keywords: { type: array, minItems: 1, maxItems: 8, items: { type: string, minLength: 1, maxLength: 80 } }
+        success_message: { type: string, minLength: 1, maxLength: 400 }
+        hint: { type: string, minLength: 1, maxLength: 400 }
+        code_placeholder: { type: string, minLength: 1, maxLength: 200 }
+      required: [task_description, starter_code, expected_keywords, success_message, hint, code_placeholder]
+    GeneratedTouch5:
+      type: object
+      additionalProperties: false
+      properties:
+        committee_question: { type: string, minLength: 1, maxLength: 700 }
+        options: { type: array, minItems: 2, maxItems: 3, items: { type: string, minLength: 1, maxLength: 400 } }
+        correct_index: { type: integer, minimum: 0, maximum: 2 }
+        explanation: { type: string, minLength: 1, maxLength: 800 }
+        feedback_wrong: { type: string, minLength: 1, maxLength: 400 }
+        followup_question: { type: string, minLength: 1, maxLength: 700 }
+        followup_options: { type: array, minItems: 2, maxItems: 3, items: { type: string, minLength: 1, maxLength: 400 } }
+        followup_correct_index: { type: integer, minimum: 0, maximum: 2 }
+        followup_explanation: { type: string, minLength: 1, maxLength: 800 }
+        followup_feedback_wrong: { type: string, minLength: 1, maxLength: 400 }
+      required: [committee_question, options, correct_index, explanation, feedback_wrong, followup_question, followup_options, followup_correct_index, followup_explanation, followup_feedback_wrong]

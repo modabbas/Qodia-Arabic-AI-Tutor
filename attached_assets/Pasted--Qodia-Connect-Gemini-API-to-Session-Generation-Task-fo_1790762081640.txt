@@ -1,0 +1,264 @@
+# Qodia — Connect Gemini API to Session Generation
+
+## Task for Replit Agent
+
+**IMPORTANT: Enable Extended Thinking (🧠) for this critical task.**
+
+Transform the /session page from hardcoded content to dynamic AI-generated sessions using Gemini API. Each student must see a UNIQUE session based on their project and tech stack.
+
+## Why This Matters
+
+**Currently:** Every student sees the same hardcoded content about Django ForeignKey.  
+**After this:** Each session is generated dynamically based on the student's specific project.
+
+This is the difference between "demo mockup" and "real AI product".
+
+## Prerequisites (Already Done)
+
+- ✅ `GEMINI_API_KEY` exists in Replit Secrets
+- ✅ User signup collects: `project_name`, `tech_stack`
+- ✅ Session page currently shows hardcoded 5 touches
+
+## Implementation Steps
+
+### Step 1: Install Package
+
+```bash
+npm install @google/generative-ai
+```
+
+### Step 2: Create New API Route
+
+**File:** `app/api/generate-session/route.ts` (or `.js`)
+
+**Behavior:**
+1. Read user identity from cookie/session
+2. Fetch user's profile from Replit DB (project_name, tech_stack)
+3. Check cache first (Replit DB key: `session:{user_id}:{date}`)
+4. If cached, return cached session
+5. If not cached, call Gemini to generate fresh session
+6. Cache the result for 24 hours
+7. Return JSON to frontend
+
+### Step 3: Gemini Prompt
+
+Use `gemini-2.0-flash` model (fast + free tier).
+
+**System instruction to send to Gemini:**
+
+```
+أنت مشرف تعليمي عربي محترف في منصة Qodia. تُعلّم طلاب علوم الحاسوب العرب في السنة الأخيرة كيف يفهمون مفاهيم مشاريع تخرّجهم بعمق.
+
+معلومات الطالب:
+- اسم المشروع: {project_name}
+- التقنية المستخدمة: {tech_stack}
+
+مهمتك: توليد جلسة تعلّم كاملة بطريقة "الخمس لمسات" لمفهوم واحد مهم يخص هذه التقنية.
+
+قواعد الخمس لمسات:
+1. استفزاز: سؤال قصير يكشف فجوة في الفهم قبل تعليم المفهوم
+2. كشف: شرح المفهوم بوضوح مع جدول قيم/خيارات
+3. بناء: تطبيق عملي يكتبه الطالب في المحرر
+4. دفاع: محاكاة سؤال من لجنة المناقشة
+5. ترسيخ: مراجعة سريعة لتثبيت المفهوم
+
+قواعد اللغة والأسلوب:
+- استخدم لهجة عربية قريبة من الطلاب (شامية/خليجية بسيطة)
+- تجنّب الفصحى الثقيلة
+- كن ودياً ومشجعاً
+- استخدم أمثلة من مشروع الطالب "{project_name}" إن أمكن
+
+أخرج JSON صافي فقط، بدون markdown ولا شرح، بهذه الصيغة بالضبط:
+
+{
+  "concept_name_en": "اسم المفهوم بالإنجليزي (مثل: ForeignKey, useState)",
+  "concept_name_ar": "اسم المفهوم بالعربي",
+  "concept_intro": "جملة قصيرة تعرّف بالمفهوم",
+  
+  "touch1_provoke": {
+    "question": "السؤال الاستفزازي بالعربي",
+    "options": [
+      "خيار خاطئ",
+      "خيار صحيح"
+    ],
+    "correct_index": 1,
+    "feedback_correct": "تعليق يمهّد للمفهوم بعد الجواب الصحيح",
+    "feedback_wrong": "تعليق يوجّه دون كشف الجواب"
+  },
+  
+  "touch2_reveal": {
+    "explanation": "شرح المفهوم في 2-3 جمل بالعربي",
+    "values_table": [
+      {
+        "code": "الخيار الأول (كود)",
+        "meaning": "معناه بالعربي"
+      },
+      {
+        "code": "الخيار الثاني",
+        "meaning": "معناه"
+      },
+      {
+        "code": "الخيار الثالث",
+        "meaning": "معناه"
+      }
+    ],
+    "verification_question": "سؤال تحقق سريع",
+    "verification_options": ["خيار 1", "خيار 2", "خيار 3"],
+    "correct_index": 0
+  },
+  
+  "touch3_build": {
+    "task_description": "المطلوب من الطالب أن يكتبه",
+    "starter_code": "// كود بداية مع تعليق # TODO",
+    "expected_keywords": ["كلمة1", "كلمة2"],
+    "success_message": "رسالة نجاح مشجعة",
+    "hint": "تلميح إذا احتاج الطالب مساعدة"
+  },
+  
+  "touch4_defend": {
+    "committee_question": "سؤال من دكتور بلجنة المناقشة",
+    "options": [
+      "جواب ضعيف/سطحي",
+      "جواب متوسط",
+      "جواب قوي وعميق"
+    ],
+    "correct_index": 2,
+    "explanation": "شرح لماذا الجواب القوي هو الأفضل"
+  },
+  
+  "touch5_reinforce": {
+    "recap": "ملخص المفهوم في جملة واحدة",
+    "final_question": "سؤال أخير للتأكد من الفهم",
+    "answer_hint": "الإجابة الصحيحة مختصرة"
+  }
+}
+
+مهم:
+- كل النصوص بالعربية اللهجة السورية أو الخليجية البسيطة
+- JSON صافي فقط، بدون ``` أو أي شيء آخر
+- اختر مفهوم أساسي مهم لتقنية {tech_stack}
+- ربط الأسئلة بمشروع "{project_name}" إن أمكن
+```
+
+### Step 4: Update /session Page
+
+Modify the session page to fetch from API instead of using hardcoded data.
+
+**Flow:**
+1. On mount, show loading state: "مشرفك يحضّر جلستك المخصصة... 🎯"
+2. Call `fetch('/api/generate-session')`
+3. Parse the JSON response
+4. Populate all 5 touches with dynamic content
+5. Keep ALL existing UI, animations, colors, mood selection
+
+**Do NOT change:**
+- Visual design
+- Color palette  
+- Animation timing
+- Mood selection screen
+- Progress bar structure
+
+**Loading state design:**
+- Show a centered spinner with the Qodia green color
+- Text: "مشرفك يحضّر جلستك المخصصة..."
+- Sub-text: "بناءً على مشروع {project_name}"
+- Duration: 5-10 seconds
+
+### Step 5: Add "New Session" Button
+
+At the end of the session (after touch 5), add a new button:
+- Text: "جلسة جديدة بمفهوم آخر ↺"
+- Style: outlined green
+- Behavior: clears cache and generates fresh session
+
+## Fallback Strategy (Critical)
+
+If Gemini fails at any point:
+
+```typescript
+try {
+  const response = await gemini.generateContent(prompt);
+  const cleanText = response.text()
+    .replace(/```json/g, '')
+    .replace(/```/g, '')
+    .trim();
+  const session = JSON.parse(cleanText);
+  return session;
+} catch (error) {
+  console.error('Gemini failed:', error);
+  // Return hardcoded Django ForeignKey session (existing content)
+  return HARDCODED_FALLBACK_SESSION;
+}
+```
+
+**User should NEVER see an error.** If AI fails, silently fall back to hardcoded content.
+
+## Caching Implementation
+
+Use Replit DB with keys:
+- `session:{user_id}:{YYYY-MM-DD}` — cached session for the day
+- Clear on "New Session" button click
+- Expire after 24 hours
+
+## Environment Variables Check
+
+In the API route, verify:
+```typescript
+if (!process.env.GEMINI_API_KEY) {
+  console.error('GEMINI_API_KEY missing');
+  return NextResponse.json({ error: 'API key not configured' }, { status: 500 });
+}
+```
+
+## Testing Checklist
+
+After building, test these scenarios:
+
+**Test 1: Different Tech Stacks**
+- Create User A: project="نظام حجز عيادات", tech="Django"
+- Create User B: project="متجر إلكتروني", tech="Node.js"
+- Start sessions
+- Expected: Each sees COMPLETELY different content
+
+**Test 2: Refresh Persistence**
+- Complete a session, refresh page
+- Expected: Same session appears (from cache)
+
+**Test 3: New Session Button**
+- Click "جلسة جديدة"
+- Expected: Different concept appears
+
+**Test 4: Loading State**
+- Watch during first load
+- Expected: Loading message in Arabic, spinner, 5-10 second wait
+
+**Test 5: All 5 Touches Work**
+- Complete all 5 touches
+- Expected: All questions work, code editor works, defense works, all in Arabic
+
+## Success Criteria
+
+You know it works when:
+- [ ] Django user sees Django-specific content
+- [ ] React user sees React-specific content
+- [ ] Cache prevents re-generation on refresh
+- [ ] "New Session" button works
+- [ ] Fallback works if API fails (test by breaking key temporarily)
+- [ ] Loading state shows during generation
+
+## What NOT to Do
+
+- Do NOT modify: landing page, dashboards, other pages
+- Do NOT change session UI/design/animations
+- Do NOT expose API key in frontend code
+- Do NOT skip the caching (drains free tier)
+- Do NOT show error messages to user (silent fallback)
+
+## The Impact
+
+After this integration:
+- Every student sees a unique, personalized session
+- Judges can create 2 accounts → see 2 different sessions → PROOF of real AI
+- Qodia transforms from "static demo" to "AI-powered product"
+
+**This is the single most important change for the competition.**
