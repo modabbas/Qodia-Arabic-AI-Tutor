@@ -1,0 +1,276 @@
+# Cumulative Project Builder — Transform Qodia's Core Value
+
+## Task for Replit Agent
+
+**IMPORTANT: Enable Extended Thinking (🧠) — this is a foundational change.**
+
+Transform Qodia from "isolated concept learning" to "cumulative project building". Every code the student writes in sessions must ACCUMULATE into their actual project files, so by session 30, they have a REAL working project they built themselves.
+
+## The Vision
+
+**Current state:** Student writes a single disconnected line of code in each session's Touch 4, then forgets it.
+
+**New state:** Student's code from each session gets saved into REAL project files. After 30 sessions, they have a complete project (e.g., "منصة إدارة مطار" in Flutter) that they can defend line-by-line because they built every line.
+
+## What Needs to Change
+
+### 1. New Database Structure
+
+Add to Replit DB:
+
+```typescript
+// New collection: project_files
+{
+  user_id: string,
+  project_id: string,        // Same as user_id for now (1 project per user)
+  file_path: string,         // "lib/models/flight.dart"
+  content: string,           // The accumulated code
+  last_updated_session: string,  // Session ID that last modified it
+  is_complete: boolean,      // Marked complete after session finishes
+  created_at: timestamp
+}
+
+// New collection: project_structure
+{
+  user_id: string,
+  files: [
+    {
+      path: "lib/main.dart",
+      status: "complete" | "in_progress" | "planned",
+      session_id: string,    // Which session builds this file
+      day: number            // Day 1, 2, 3...
+    },
+    ...
+  ]
+}
+```
+
+### 2. Update Session Generation (Gemini Prompt)
+
+When generating a session, Gemini must now:
+
+**a)** Consider what files already exist in the student's project
+**b)** Choose a concept that BUILDS on existing files or adds a new file
+**c)** In Touch 4 (Build), ask the student to write code that goes into a SPECIFIC file
+
+**Modified Gemini prompt (add to existing prompt):**
+
+```
+معلومات إضافية عن مشروع الطالب:
+
+الملفات المكتملة سابقاً:
+{list of completed files with their content summary}
+
+الملفات المخطط لها:
+{list of planned files}
+
+قواعد إضافية:
+- اختر مفهوماً يبني على الملفات الموجودة أو يضيف ملفاً جديداً منطقياً
+- في Touch 4، حدد المسار الكامل للملف الذي يُبنى (مثل "lib/models/flight.dart")
+- الكود يجب أن يكون قابلاً للتشغيل ضمن مشروع الطالب الفعلي
+- إذا كان الملف موجوداً، اشرح ما الذي سيُضاف إليه
+
+في JSON، أضف هذين الحقلين لـ touch3_build:
+"target_file": "lib/models/flight.dart",
+"file_action": "create" | "modify",
+"existing_content": "الكود السابق في الملف إن وجد",
+"integration_note": "أين يُضاف الكود الجديد في الملف الحالي"
+```
+
+### 3. New Page: `/my-project`
+
+Create a new page showing the student's project as a REAL project structure.
+
+**Layout:**
+
+```
+[Header]
+منصة إدارة مطار — Flutter
+اكتمال: 40% (12 من 30 ملف)
+[Progress bar - green filling based on completion %]
+
+[Two columns]
+
+Left (30%):
+📁 File Tree
+├── 📄 main.dart              [✓ اليوم 1]
+├── 📁 models/
+│   ├── 📄 flight.dart        [✓ اليوم 3]
+│   └── 📄 passenger.dart     [✓ اليوم 5]
+├── 📁 widgets/
+│   ├── 📄 flight_list.dart   [✓ اليوم 8]
+│   └── 📄 booking_form.dart  [⏳ اليوم 12 - جاري]
+└── 📁 services/
+    └── 📄 api_service.dart   [🔒 اليوم 15]
+
+Right (70%):
+[Selected file content displayed here]
+Syntax-highlighted code
+Read-only viewer
+Label: "كتبت هذا في اليوم 8"
+```
+
+**Status colors:**
+- ✓ Complete: green (`#22c55e`)
+- ⏳ In progress: amber (`#f5b84a`)
+- 🔒 Planned/Locked: gray (`#8c8c8c`)
+
+**Code viewer:**
+- Use a simple syntax highlighter (`prismjs` from CDN)
+- Show file path at top
+- Show which session built this file
+- Read-only (student can VIEW but not edit — code is locked once session completes)
+
+### 4. Update Touch 4 (Build) UI
+
+When student reaches Touch 4:
+
+**Before:**
+```
+"اكتب علاقة ForeignKey للـ patient"
+[Small text area]
+[Submit button]
+```
+
+**After:**
+```
+"اليوم رح تضيف كود لـ:
+📄 lib/models/flight.dart
+
+هذا الكود سيُحفظ في مشروعك الحقيقي.
+
+الملف الحالي:
+[Show existing code from previous sessions if file was modified before]
+
+اكتب الكود المطلوب:
+[Larger code editor with syntax highlighting]
+
+[Submit button - "احفظ في مشروعي"]
+```
+
+After submit:
+- Show success animation: "✓ تم حفظ الكود في lib/models/flight.dart"
+- Show "شاهد مشروعك" button that goes to `/my-project`
+
+### 5. Update Dashboard
+
+Change the "streak/level/XP" section to include:
+
+**New card: "تقدّم مشروعك"**
+```
+منصة إدارة مطار
+[Progress bar: 40%]
+12 من 30 ملف مكتمل
+[زر: شاهد مشروعك →]
+```
+
+### 6. Project Initialization Logic
+
+When a NEW user completes onboarding (chose project + tech stack):
+
+1. Call Gemini to generate the FULL project structure (list of 30 files to be built)
+2. Save to `project_structure` collection
+3. Mark all as "planned"
+4. First session will start building `main.dart` or equivalent entry file
+
+**Gemini prompt for project structure:**
+
+```
+الطالب اختار:
+- المشروع: {project_name}
+- التقنية: {tech_stack}
+
+صمم هيكل مشروع تخرج كامل بـ 30 ملف يُبنى تدريجياً على مدى 30 يوم.
+
+أرجع JSON:
+{
+  "project_summary": "وصف موجز للمشروع",
+  "files": [
+    {
+      "path": "lib/main.dart",
+      "day": 1,
+      "concept": "Flutter App Entry Point",
+      "priority": 1,
+      "description": "نقطة دخول التطبيق"
+    },
+    ... 30 files total
+  ]
+}
+
+القواعد:
+- الترتيب المنطقي: من الأساسيات إلى الميزات المتقدمة
+- كل ملف يبني على السابق
+- 30 ملف يشكل مشروعاً كاملاً وظيفياً
+- المسارات الفعلية للتقنية المختارة (مثل lib/ لـ Flutter، app/ لـ Next.js)
+```
+
+## Data Flow (End-to-End)
+
+1. **Onboarding:** User picks project + tech → Gemini generates 30-file plan → saved to DB
+2. **Dashboard:** Shows project progress (X of 30 files complete)
+3. **Session Start:** Generate session based on NEXT file to build in the plan
+4. **Touch 4 (Build):** Student writes code for target file
+5. **Session End:** Code saved to `project_files`, file marked complete in `project_structure`
+6. **My Project Page:** Student sees growing project
+
+## Fallback for Existing Users
+
+Users who already have sessions but no project structure:
+- On next dashboard load, generate their project structure retroactively
+- Mark files as complete for concepts they already covered
+- New sessions start filling in the remaining files
+
+## Files to Modify
+
+- `app/api/generate-session/route.ts` — Add project context to Gemini prompt
+- `app/session/page.tsx` — Update Touch 4 UI, save code to project_files
+- `app/dashboard/page.tsx` — Add "project progress" card
+- `app/my-project/page.tsx` — NEW file
+- `app/api/project-structure/route.ts` — NEW API for project data
+- `app/api/save-file/route.ts` — NEW API to save code to file
+
+## Testing Checklist
+
+- [ ] New user completes onboarding → 30-file plan generated
+- [ ] First session targets first file in plan
+- [ ] Student writes code in Touch 4 → saved to project_files
+- [ ] `/my-project` shows file tree with correct status
+- [ ] Clicking a completed file shows the code student wrote
+- [ ] Dashboard shows "12 of 30 files" progress
+- [ ] Next session targets next file in plan
+- [ ] Refresh doesn't duplicate files
+- [ ] Existing users get retroactive project structure
+
+## Design Guidelines
+
+- Match existing Qodia design (dark theme, green accents, IBM Plex Sans Arabic)
+- File tree: monospace font for paths
+- Code viewer: syntax highlighting (use prismjs CDN)
+- Progress bars: smooth animations
+- File status icons: emoji-based (📄 for files, 📁 for folders)
+
+## What NOT to Do
+
+- Do NOT allow editing of completed files (integrity of learning journey)
+- Do NOT lose existing session data
+- Do NOT change onboarding flow (still ask for project + tech)
+- Do NOT touch: university-dashboard, company-dashboard, landing page
+
+## The Winning Moment
+
+When judges see:
+1. Student's actual project growing file by file
+2. "This student built THIS code, we can see the whole journey"
+3. Real project structure, not just abstract "sessions completed"
+
+They will understand: **Qodia doesn't just teach concepts — it builds real graduation projects.**
+
+This is a category-defining feature. No competitor has it.
+
+## Time & Cost Estimate
+
+- Extended Thinking: Yes
+- Estimated time: 45-60 minutes  
+- Estimated cost: $12-15
+
+Take your time. This is the most important architectural change to Qodia.
