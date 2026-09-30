@@ -1,0 +1,106 @@
+# Fix Dashboard "Today's Challenge" Card - Make It Dynamic
+
+## The Bug (Critical)
+
+On the main student dashboard (after login), there's a card titled "تحدّي اليوم / مفهوم 01" that currently shows HARDCODED content:
+
+**Currently displayed (WRONG):**
+- Title: "ليش اخترت CASCADE؟"
+- Description: "من علاقة المريض بمواعيده إلى الدفاع عن قرارك في كود Django. خمس لمسات، على إيقاعك."
+
+**The problem:**
+- This user's project is "منصة إدارة مطار" with tech stack "Flutter"
+- The card should show a Flutter-related concept, NOT a Django one
+- The card must dynamically reflect the user's actual project
+
+## What Needs to Happen
+
+The "تحدّي اليوم" card on the dashboard should call the same Gemini generation logic that /session uses, but ONLY to display a preview (concept name + short description).
+
+### Expected Behavior
+
+For a **Flutter** student working on "منصة إدارة مطار":
+- Title: "ليش استخدمت StatefulWidget؟" (or any Flutter concept)
+- Description: "من إدارة حالة الرحلات في تطبيقك إلى الدفاع عن قرارك التقني. خمس لمسات مصممة لك."
+
+For a **React** student working on "متجر إلكتروني":
+- Title: "متى تستخدم useEffect؟" (or any React concept)
+- Description: "من إدارة عربة التسوق في متجرك إلى شرح قرارك للجنة. خمس لمسات على مقاسك."
+
+## Implementation Plan
+
+### Option A (Preferred): Reuse Existing Session API
+
+The `/api/generate-session` endpoint already generates full sessions with concept names. We just need to display a preview of the cached session on the dashboard.
+
+**Steps:**
+1. On dashboard mount, call `/api/generate-session` (returns cached session for today)
+2. Extract from response: `concept_name_ar` and `concept_intro`
+3. Display in the "تحدّي اليوم" card
+4. Keep the existing "ابدأ جلسة اليوم" button linked to `/session`
+
+### Option B: Create Lightweight Preview API
+
+If Option A is expensive (loading full session), create a lightweight endpoint:
+- `/api/session-preview` — returns only `{ concept_name_ar, concept_intro }`
+- Uses same cache as `/api/generate-session`
+- Much faster to load
+
+## Files to Modify
+
+**ONLY modify the dashboard page** (likely `app/dashboard/page.tsx` or `app/page.tsx` for logged-in users).
+
+**DO NOT touch:**
+- The `/session` page (already working)
+- The `/api/generate-session` route (already working)
+- The landing page (already working)
+- Any dashboard (university-dashboard or company-dashboard)
+
+## Loading State
+
+While Gemini is loading (5-10 seconds on first load):
+```
+Title: "مشرفك يحضّر تحدّي اليوم..."
+Description: "خمس لمسات جديدة قادمة"
+```
+
+Show a subtle spinner or shimmer effect instead of the button.
+
+## Fallback
+
+If Gemini fails:
+- Use a generic fallback that mentions the user's tech stack:
+- Title: "تحدّي {tech_stack} اليومي"
+- Description: "٥ لمسات لتقوية فهمك في مشروع {project_name}"
+
+## Success Criteria
+
+Test these scenarios:
+
+**Test 1 (The Bug):**
+- Login as user with project="منصة إدارة مطار", tech="Flutter"
+- Dashboard should show a Flutter concept, NOT Django CASCADE
+
+**Test 2:**
+- Login as user with project="متجر إلكتروني", tech="React"
+- Dashboard should show a React concept
+
+**Test 3:**
+- Refresh page
+- Same concept should appear (from cache)
+
+## Code Quality Notes
+
+- Use React `useState` and `useEffect` for the fetch
+- Add proper loading and error states
+- Ensure the card structure/styling stays IDENTICAL - only the text content changes
+- Keep the current XP, streak, and level cards untouched
+
+## Critical Warnings
+
+1. **Do NOT regenerate the session unnecessarily** - use the cached version
+2. **Do NOT break the existing /session page** - only add to dashboard
+3. **Do NOT change any other dashboards** (university, company)
+4. **Do NOT modify authentication or user data flow**
+
+The goal is a simple, focused fix: make one card dynamic instead of hardcoded.
