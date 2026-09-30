@@ -32,6 +32,7 @@ import type {
   ProjectFileInput,
   ProjectPlanFile,
   ProjectStructure,
+  ProjectVerification,
   SessionInput,
   SignUpInput,
   User
@@ -1016,6 +1017,160 @@ export function useGetProjectStructure<TData = Awaited<ReturnType<typeof getProj
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetProjectStructureQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetProjectVerificationUrl = () => {
+
+
+
+
+  return `/api/project-verification`
+}
+
+/**
+ * @summary Safely check syntax of saved student files without executing project code
+ */
+export const getProjectVerification = async ( options?: Parameters<typeof customFetch>[1]): Promise<ProjectVerification> => {
+
+  return customFetch<ProjectVerification>(getGetProjectVerificationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectVerificationQueryKey = () => {
+    return [
+    `/api/project-verification`
+    ] as const;
+    }
+
+
+export const getGetProjectVerificationQueryOptions = <TData = Awaited<ReturnType<typeof getProjectVerification>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectVerification>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectVerificationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectVerification>>> = ({ signal }) => getProjectVerification({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectVerification>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProjectVerificationQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectVerification>>>
+export type GetProjectVerificationQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Safely check syntax of saved student files without executing project code
+ */
+
+export function useGetProjectVerification<TData = Awaited<ReturnType<typeof getProjectVerification>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectVerification>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProjectVerificationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getExportProjectUrl = () => {
+
+
+
+
+  return `/api/project-export`
+}
+
+/**
+ * @summary Download saved project files and labeled framework scaffolding
+ */
+export const exportProject = async ( options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getExportProjectUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportProjectQueryKey = () => {
+    return [
+    `/api/project-export`
+    ] as const;
+    }
+
+
+export const getExportProjectQueryOptions = <TData = Awaited<ReturnType<typeof exportProject>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportProjectQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportProject>>> = ({ signal }) => exportProject({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportProject>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportProjectQueryResult = NonNullable<Awaited<ReturnType<typeof exportProject>>>
+export type ExportProjectQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Download saved project files and labeled framework scaffolding
+ */
+
+export function useExportProject<TData = Awaited<ReturnType<typeof exportProject>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportProjectQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { ArrowRight, ChevronDown, Clock3, FolderTree, GitCommitHorizontal } from 'lucide-react';
+import { ArrowRight, ChevronDown, Clock3, Download, FolderTree, GitCommitHorizontal, ScanSearch } from 'lucide-react';
 import { Link } from 'wouter';
-import { useGetProjectStructure, type ProjectPlanFile } from '@workspace/api-client-react';
+import { getProjectVerification, useGetProjectStructure, type ProjectPlanFile, type ProjectVerification } from '@workspace/api-client-react';
 import { AppHeader, ErrorState, LoadingState } from '@/components/qodia-ui';
 import './my-project.css';
 
@@ -92,6 +92,39 @@ export default function MyProject() {
   const project = useGetProjectStructure();
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [verification, setVerification] = useState<ProjectVerification | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const check = async () => {
+    setChecking(true);
+    setActionError('');
+    try { setVerification(await getProjectVerification()); }
+    catch { setActionError('تعذر فحص المشروع. تأكد من اتصالك ثم حاول مجدداً.'); }
+    finally { setChecking(false); }
+  };
+  const download = async () => {
+    setDownloading(true);
+    setActionError('');
+    try {
+      const response = await fetch('/api/project-export', { credentials: 'same-origin' });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(body.error ?? 'تعذر تنزيل المشروع. حاول مجدداً.');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'qodia-project.zip';
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'تعذر تنزيل المشروع.');
+    } finally { setDownloading(false); }
+  };
   const files = project.data?.files;
   const tree = useMemo(() => makeTree(files ?? []), [files]);
   if (project.isLoading) return <div className="min-h-[100dvh]"><AppHeader /><LoadingState label="نفتح ملفات مشروعك..." /></div>;
@@ -129,6 +162,22 @@ export default function MyProject() {
         </section>
         <section className="project-summary-card"><strong>عن مشروعك</strong><p data-testid="text-project-summary">{data.project_summary || 'وصف المشروع سيظهر هنا حين يصبح متاحاً.'}</p></section>
       </div>
+
+      <section className="project-delivery" aria-label="تنزيل وفحص المشروع">
+        <div><span className="eyebrow">ملفاتك المحفوظة</span><h2>نزّل مشروعك وافحصه</h2>
+          <p>الملف المضغوط يحتوي على كودك المحفوظ فقط مع ملفات إعداد أساسية عند غيابها. الملفات المخططة لم تُكتب بعد ولن تظهر كأنها من إنجازك.</p></div>
+        <div className="project-delivery-actions">
+          <button type="button" className="btn btn-outline" onClick={() => { void check(); }} disabled={checking || downloading} data-testid="button-project-verify"><ScanSearch size={16} /> {checking ? 'جارٍ الفحص...' : 'افحص الصياغة'}</button>
+          <button type="button" className="btn btn-primary" onClick={() => { void download(); }} disabled={!data.files.some(file => file.content !== null) || downloading} data-testid="button-project-download"><Download size={16} /> {downloading ? 'جارٍ التجهيز...' : 'نزّل ZIP'}</button>
+        </div>
+        {actionError && <p className="project-delivery-error" role="alert">{actionError}</p>}
+        {verification && <div className={`project-verification ${verification.status}`} role="status" data-testid="project-verification">
+          <strong>{verification.status === 'failed' ? 'توجد أخطاء في الصياغة' : verification.status === 'passed' ? 'اجتاز فحص الصياغة' : 'الفحص غير متاح لهذه التقنية'}</strong>
+          <p>{verification.check} · {verification.checked_files} ملف تم فحصه. {verification.note}</p>
+          {verification.issues.length > 0 && <ul dir="ltr">{verification.issues.map((issue, index) => <li key={`${issue.path}-${index}`}><bdi>{issue.path}{issue.line ? `:${issue.line}` : ''}</bdi> — {issue.message}</li>)}</ul>}
+        </div>}
+        <p className="project-delivery-caveat">فحص الصياغة ليس بناءً أو تشغيلًا للمشروع. لم نتحقق من نجاح التجميع أو الاعتماديات؛ شغّل أدوات البناء محلياً بعد التنزيل.</p>
+      </section>
 
       <section className="project-workspace" aria-label="ملفات المشروع">
         <aside className="project-sidebar">

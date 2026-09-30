@@ -26,6 +26,8 @@ import {
   getProjectStructureData,
   isProjectTechStack,
 } from "../lib/project-builder";
+import { assembleProject, verifyProject, zipProject } from "../lib/project-export";
+import { GetProjectVerificationResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -133,6 +135,53 @@ router.get("/project-structure", async (req, res): Promise<void> => {
   }
   const structure = await getProjectStructureData(user.id, user.projectName, user.techStack, req);
   res.json(GetProjectStructureResponse.parse(structure));
+});
+
+async function projectSource(userId: string) {
+  const saved = await db.select({
+    path: projectFilesTable.path,
+    content: projectFilesTable.content,
+  }).from(projectFilesTable).where(eq(projectFilesTable.userId, userId));
+  return saved;
+}
+
+router.get("/project-verification", async (req, res): Promise<void> => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  if (!user.projectName?.trim() || !isProjectTechStack(user.techStack)) {
+    res.status(400).json({ error: "أكمل اسم المشروع واختر التقنية أولاً." });
+    return;
+  }
+  const files = await projectSource(user.id);
+  const report = await verifyProject(files, user.techStack);
+  res.setHeader("Cache-Control", "no-store");
+  res.json(GetProjectVerificationResponse.parse(report));
+});
+
+router.get("/project-export", async (req, res): Promise<void> => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  if (!user.projectName?.trim() || !isProjectTechStack(user.techStack)) {
+    res.status(400).json({ error: "أكمل اسم المشروع واختر التقنية أولاً." });
+    return;
+  }
+  const files = await projectSource(user.id);
+  if (!files.length) {
+    res.status(409).json({ error: "احفظ أول ملف في مشروعك قبل تنزيله." });
+    return;
+  }
+  try {
+    const assembled = assembleProject(files, user.techStack, user.projectName);
+    const zip = zipProject(assembled);
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", 'attachment; filename="qodia-project.zip"');
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.send(zip);
+  } catch (error) {
+    req.log.error({ reason: error instanceof Error ? error.message : "export_failed" }, "Project export failed");
+    res.status(422).json({ error: "تعذر تجهيز الملفات المحفوظة للتنزيل. راجع ملفات مشروعك وحاول لاحقاً." });
+  }
 });
 
 router.post("/save-file", async (req, res): Promise<void> => {

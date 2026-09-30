@@ -6,6 +6,19 @@
 .project-intro p { color: #a7aea6; line-height: 1.85; margin: 0; max-width: 690px; }
 .project-tech { font: 12px var(--app-font-mono); color: #6cda8c; border: 1px solid #34543a; background: #142119; padding: 9px 13px; border-radius: 8px; white-space: nowrap; }
 .project-overview { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(220px, .7fr); gap: 16px; margin-bottom: 20px; }
+.project-delivery { padding: 24px 28px; border: 1px solid #34563b; border-radius: 17px; background: #142019; margin-bottom: 20px; }
+.project-delivery h2 { font-size: 19px; margin: 6px 0; }
+.project-delivery p { color: #aab9ac; font-size: 12px; line-height: 1.8; margin: 0; }
+.project-delivery-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 18px 0; }
+.project-delivery-actions button { display: inline-flex; align-items: center; gap: 8px; }
+.project-delivery-actions button:disabled { opacity: .55; cursor: not-allowed; }
+.project-delivery .project-delivery-error { color: #ffa6a6; margin: 8px 0; }
+.project-verification { border: 1px solid #3e5946; border-radius: 10px; padding: 14px 17px; margin: 12px 0; background: #192a1d; }
+.project-verification.failed { border-color: #794e42; background: #2a1e1a; }
+.project-verification.unavailable { border-color: #665838; background: #27241a; }
+.project-verification strong { font-size: 13px; display: block; margin-bottom: 5px; }
+.project-verification ul { color: #e8c1ae; font: 12px/1.8 var(--app-font-mono); padding-left: 22px; overflow-wrap: anywhere; }
+.project-delivery .project-delivery-caveat { color: #849d88; font-size: 11px; }
 .project-progress { padding: 26px 30px; background: linear-gradient(125deg, #172a1b, #111611 78%); border: 1px solid #34563b; border-radius: 17px; }
 .project-progress-head { display: flex; justify-content: space-between; gap: 15px; align-items: start; }
 .project-progress h2 { font-size: 19px; margin: 7px 0 6px; }

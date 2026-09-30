@@ -275,6 +275,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /project-verification:
+    get:
+      operationId: getProjectVerification
+      tags: [learning]
+      summary: Safely check syntax of saved student files without executing project code
+      responses:
+        "200":
+          description: Syntax check result; passing does not imply a successful build
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectVerification"
+        "400":
+          description: Incomplete project profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /project-export:
+    get:
+      operationId: exportProject
+      tags: [learning]
+      summary: Download saved project files and labeled framework scaffolding
+      responses:
+        "200":
+          description: ZIP of the authenticated student's saved project
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: No saved files yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /save-file:
     post:
       operationId: saveProjectFile
@@ -578,6 +625,23 @@ components:
           items:
             $ref: "#/components/schemas/ProjectPlanFile"
       required: [project_name, tech_stack, project_summary, total_files, completed_files, learned_concepts, files]
+    ProjectVerification:
+      type: object
+      required: [status, check, checked_files, issues, note]
+      properties:
+        status: { type: string, enum: [passed, failed, unavailable] }
+        check: { type: string }
+        checked_files: { type: integer, minimum: 0 }
+        note: { type: string }
+        issues:
+          type: array
+          items:
+            type: object
+            required: [path, line, message]
+            properties:
+              path: { type: string }
+              line: { type: ["integer", "null"] }
+              message: { type: string }
     ProjectPlanFile:
       type: object
       properties:

@@ -427,6 +427,8 @@ export interface ProjectStructure {
   files: ProjectPlanFile[];
 }
 
+export type ProjectVerificationStatus = typeof ProjectVerificationStatus[keyof typeof ProjectVerificationStatus];
+
 export interface ProjectFileInput {
   /**
      * @minLength 1
@@ -443,3 +445,25 @@ export interface ProjectFileInput {
   concept_name_en: string;
 }
 
+
+export interface ProjectVerification {
+  status: ProjectVerificationStatus;
+  check: string;
+  /** @minimum 0 */
+  checked_files: number;
+  note: string;
+  issues: ProjectVerificationIssuesItem[];
+}
+
+export type ProjectVerificationIssuesItem = {
+  path: string;
+  /** @nullable */
+  line: number | null;
+  message: string;
+};
+
+export const ProjectVerificationStatus = {
+  passed: 'passed',
+  failed: 'failed',
+  unavailable: 'unavailable',
+} as const;

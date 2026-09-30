@@ -28,7 +28,6 @@ export const signUpBodyPasswordMax = 128;
 export const signUpBodyNameMax = 80;
 
 
-
 export const SignUpBody = zod.object({
   "email": zod.string().email().max(signUpBodyEmailMax),
   "password": zod.string().min(signUpBodyPasswordMin).max(signUpBodyPasswordMax),
@@ -54,7 +53,6 @@ export const logInBodyEmailMax = 254;
 
 export const logInBodyPasswordMin = 8;
 export const logInBodyPasswordMax = 128;
-
 
 
 export const LogInBody = zod.object({
@@ -101,7 +99,6 @@ export const GetCurrentUserResponse = zod.object({
  * @summary Save graduation-project details
  */
 export const completeOnboardingBodyProjectNameMax = 120;
-
 
 
 export const CompleteOnboardingBody = zod.object({
@@ -178,7 +175,6 @@ export const createSessionBodyTouchesCompletedMax = 5;
 export const createSessionBodyMistakesMin = 0;
 
 export const createSessionBodyXpEarnedMin = 0;
-
 
 
 export const CreateSessionBody = zod.object({
@@ -309,7 +305,6 @@ export const getGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMax = 2;
 export const getGeneratedSessionResponseTouch5DefendFollowupExplanationMax = 800;
 
 export const getGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax = 400;
-
 
 
 export const GetGeneratedSessionResponse = zod.object({
@@ -481,7 +476,6 @@ export const createGeneratedSessionResponseTouch5DefendFollowupExplanationMax = 
 export const createGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax = 400;
 
 
-
 export const CreateGeneratedSessionResponse = zod.object({
   "concept_name_en": zod.string().min(1).max(createGeneratedSessionResponseConceptNameEnMax),
   "concept_name_ar": zod.string().min(1).max(createGeneratedSessionResponseConceptNameArMax),
@@ -556,7 +550,6 @@ export const getProjectStructureResponseFilesItemPathRegExp = new RegExp('^(?!.*
 export const getProjectStructureResponseFilesItemContentMax = 30720;
 
 
-
 export const GetProjectStructureResponse = zod.object({
   "project_name": zod.string(),
   "tech_stack": zod.string(),
@@ -575,6 +568,11 @@ export const GetProjectStructureResponse = zod.object({
 }))
 })
 
+/**
+ * @summary Safely check syntax of saved student files without executing project code
+ */
+export const getProjectVerificationResponseCheckedFilesMin = 0;
+
 
 /**
  * @summary Save a built project file
@@ -586,7 +584,6 @@ export const saveProjectFileBodyFilePathRegExp = new RegExp('^(?!.*(?:^|/)\\.\\.
 export const saveProjectFileBodyContentMax = 30720;
 
 export const saveProjectFileBodyConceptNameEnMax = 100;
-
 
 
 export const SaveProjectFileBody = zod.object({
@@ -603,7 +600,6 @@ export const saveProjectFileResponsePathRegExp = new RegExp('^(?!.*(?:^|/)\\.\\.
 export const saveProjectFileResponseContentMax = 30720;
 
 
-
 export const SaveProjectFileResponse = zod.object({
   "path": zod.string().min(1).max(saveProjectFileResponsePathMax).regex(saveProjectFileResponsePathRegExp),
   "day": zod.number().int().min(1),
@@ -615,3 +611,19 @@ export const SaveProjectFileResponse = zod.object({
 })
 
 
+/**
+ * @summary Download saved project files and labeled framework scaffolding
+ */
+export const ExportProjectResponse = zod.unknown()
+
+export const GetProjectVerificationResponse = zod.object({
+  "status": zod.enum(['passed', 'failed', 'unavailable']),
+  "check": zod.string(),
+  "checked_files": zod.number().int().min(getProjectVerificationResponseCheckedFilesMin),
+  "note": zod.string(),
+  "issues": zod.array(zod.object({
+  "path": zod.string(),
+  "line": zod.number().int().nullable(),
+  "message": zod.string()
+}))
+})
