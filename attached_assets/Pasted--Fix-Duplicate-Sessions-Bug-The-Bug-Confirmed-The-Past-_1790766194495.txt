@@ -1,0 +1,160 @@
+# Fix Duplicate Sessions Bug
+
+## The Bug (Confirmed)
+
+The "جلساتك السابقة" (Past Sessions) list on the dashboard shows duplicate entries.
+
+**Example seen in production:**
+- StreamBuilder Widget — عنصر StreamBuilder للتحديث الحي (Sept 30, 2026)
+- **StreamBuilder Widget — عنصر StreamBuilder للتحديث الحي (Sept 30, 2026)** ← DUPLICATE
+- FutureBuilder Widget — أداة FutureBuilder للبيانات غير المتزامنة (Sept 30, 2026)
+
+Both duplicates have:
+- Same title
+- Same date
+- Same XP (+110)
+- Same completion status (5 من 0 لمسات)
+
+## Root Cause Investigation Needed
+
+Please investigate WHERE and WHEN sessions are being written to the database. Check these locations in order:
+
+### 1. Session Generation API Route
+File: `app/api/generate-session/route.ts` (or `.js`)
+
+**Check:**
+- Does it write to DB on EVERY call, or only when new session is generated?
+- Is there a "should I save this?" check?
+- Is the cache being properly used to prevent re-saves?
+
+### 2. Session Page Component  
+File: `app/session/page.tsx` (or `.js`)
+
+**Check:**
+- Is there a `useEffect` that runs on mount without proper dependencies?
+- Is `React.StrictMode` causing double execution in development?
+- Is the "save session" happening on every render instead of once?
+
+### 3. Session Completion Handler
+File: Wherever the session marks itself as complete
+
+**Check:**
+- Is completion writing a NEW row instead of updating existing?
+- Is the same session being marked complete twice?
+
+## Required Fix
+
+### Fix 1: Prevent Duplicate Writes
+
+Add a unique key check before saving. Session should be identified by:
+- `user_id`
+- `date` (YYYY-MM-DD)
+- `concept_name`
+
+If a session with this combination already exists → UPDATE it, don't create new.
+
+Example logic:
+```typescript
+const sessionKey = `session:${userId}:${today}:${conceptName}`;
+const existing = await db.get(sessionKey);
+
+if (existing) {
+  // Update existing session (e.g., mark as completed, add XP)
+  await db.set(sessionKey, { ...existing, ...updates });
+} else {
+  // Create new session
+  await db.set(sessionKey, newSession);
+}
+```
+
+### Fix 2: Clean Up Existing Duplicates
+
+Create a one-time cleanup script (or run it manually) that:
+1. Fetches all sessions for each user
+2. Groups by (user_id + date + concept_name)
+3. Keeps only ONE per group (the most recent)
+4. Deletes the duplicates
+
+### Fix 3: Fix useEffect Dependencies (if applicable)
+
+If the bug is in React:
+```typescript
+// BAD - runs on every render
+useEffect(() => {
+  saveSession(data);
+});
+
+// GOOD - runs once on mount
+useEffect(() => {
+  saveSession(data);
+}, []);
+
+// BEST - runs only when data actually changes
+useEffect(() => {
+  if (data && !hasBeenSaved) {
+    saveSession(data);
+    setHasBeenSaved(true);
+  }
+}, [data, hasBeenSaved]);
+```
+
+## Testing Requirements
+
+After the fix, test these scenarios:
+
+**Test 1: Refresh Protection**
+1. Start a new session
+2. Refresh the page 5 times
+3. Go back to dashboard
+4. **Expected:** Only ONE session in the list
+
+**Test 2: Complete and Return**
+1. Start a session
+2. Complete it fully
+3. Go to dashboard
+4. Start same session again (should show cached)
+5. **Expected:** Still ONE session in the list
+
+**Test 3: Different Concepts**
+1. Complete a session about StreamBuilder
+2. Refresh and generate a NEW session (about different concept)
+3. Check dashboard
+4. **Expected:** TWO different sessions in the list
+
+## Data Cleanup
+
+For the CURRENT duplicate entries already in the DB:
+
+Option A (Recommended): Add a cleanup button in the admin area
+- Simple button: "Remove Duplicate Sessions"
+- Only visible to logged-in users
+- Removes duplicates keeping the earliest one
+
+Option B: Run a manual cleanup once
+- Add a route: `/api/admin/cleanup-duplicates`
+- Call it once from browser
+- Then remove the route
+
+## What NOT to Do
+
+- **DO NOT** delete the entire sessions collection
+- **DO NOT** change the session UI or gameplay
+- **DO NOT** modify Gemini prompts
+- **DO NOT** change how new sessions are generated
+- **DO NOT** touch other dashboards (university, company)
+
+## Success Criteria
+
+- [ ] No duplicate sessions in "جلساتك السابقة" list
+- [ ] Refreshing /session does not create new database entries
+- [ ] Different concepts appear as separate sessions
+- [ ] Same concept on same day = single entry
+- [ ] Existing duplicates cleaned up
+
+## Priority
+
+**HIGH** - This is visible to judges. If they see 2 identical sessions, it looks broken.
+
+## Estimated Effort
+
+Should be a small, focused fix. No need for Extended Thinking - the bug is well-defined.

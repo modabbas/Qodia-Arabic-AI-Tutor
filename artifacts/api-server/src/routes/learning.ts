@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db, progressTable, sessionsTable, usersTable, type LearningSession } from "@workspace/db";
 import {
   CompleteOnboardingBody,
@@ -112,26 +112,44 @@ router.post("/sessions", async (req, res): Promise<void> => {
       .where(eq(progressTable.userId, user.id)).for("update");
     if (!progress) throw new Error("Progress row missing after insert");
 
-    const totalXp = progress.totalXp + earned;
+    // Locking the progress row serializes concurrent saves for this student.
+    // A replay of the same concept on the same Damascus day must not award XP twice.
+    const concept = parsed.data.concept.trim();
+    const [existing] = await tx.select().from(sessionsTable).where(and(
+      eq(sessionsTable.userId, user.id),
+      eq(sessionsTable.concept, concept),
+      sql`(${sessionsTable.timestamp} AT TIME ZONE 'Asia/Damascus')::date = ${today}::date`,
+    )).orderBy(desc(sessionsTable.timestamp)).limit(1);
+    if (existing && existing.touchesCompleted >= parsed.data.touches_completed) return existing;
+
+    const additionalXp = Math.max(0, earned - (existing?.xpEarned ?? 0));
+    const totalXp = progress.totalXp + additionalXp;
     const streakDays = progress.lastActive === today
       ? progress.streakDays
       : progress.lastActive === yesterday
         ? progress.streakDays + 1
         : 1;
-    const [created] = await tx.insert(sessionsTable).values({
-      userId: user.id,
-      concept: parsed.data.concept.trim(),
-      touchesCompleted: parsed.data.touches_completed,
-      mistakes: parsed.data.mistakes,
-      xpEarned: earned,
-    }).returning();
+    const [saved] = existing
+      ? await tx.update(sessionsTable).set({
+        touchesCompleted: parsed.data.touches_completed,
+        mistakes: parsed.data.mistakes,
+        xpEarned: Math.max(existing.xpEarned, earned),
+        timestamp: new Date(),
+      }).where(eq(sessionsTable.id, existing.id)).returning()
+      : await tx.insert(sessionsTable).values({
+        userId: user.id,
+        concept,
+        touchesCompleted: parsed.data.touches_completed,
+        mistakes: parsed.data.mistakes,
+        xpEarned: earned,
+      }).returning();
     await tx.update(progressTable).set({
       totalXp,
       level: Math.floor(totalXp / 100) + 1,
       streakDays,
       lastActive: today,
     }).where(eq(progressTable.userId, user.id));
-    return created;
+    return saved;
   });
 
   res.status(201).json(CreateSessionResponse.parse(sessionResponse(session)));
