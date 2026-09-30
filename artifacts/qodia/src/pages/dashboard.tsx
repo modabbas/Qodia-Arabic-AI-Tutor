@@ -1,11 +1,13 @@
 import { ArrowLeft, ArrowUpLeft, CalendarDays, Flame, Layers3, LoaderCircle, Sparkles } from 'lucide-react';
 import { Link } from 'wouter';
-import { getGetGeneratedSessionQueryKey, useGetDashboard, useGetGeneratedSession, useGetSessions } from '@workspace/api-client-react';
+import { getGetGeneratedSessionQueryKey, useGetDashboard, useGetGeneratedSession, useGetProjectStructure, useGetSessions } from '@workspace/api-client-react';
 import { AppHeader, ErrorState, LoadingState } from '@/components/qodia-ui';
+import './my-project.css';
 
 export default function Dashboard() {
   const dashboard = useGetDashboard();
   const sessions = useGetSessions();
+  const project = useGetProjectStructure();
   const challenge = useGetGeneratedSession({ query: { enabled: !!dashboard.data, queryKey: getGetGeneratedSessionQueryKey() } });
   if (dashboard.isLoading || sessions.isLoading) return <><AppHeader active="dashboard" /><LoadingState /></>;
   if (dashboard.isError || sessions.isError || !dashboard.data) return <><AppHeader active="dashboard" /><ErrorState retry={() => { dashboard.refetch(); sessions.refetch(); }} /></>;
@@ -27,6 +29,15 @@ export default function Dashboard() {
           <div className="panel stat" style={{ gridColumn: '1 / -1', minHeight: 125, flexDirection: 'row', alignItems: 'center' }}><div><div className="stat-label">مستواك الحالي</div><div className="stat-value" data-testid="text-level">{String(progress.level).padStart(2, '0')}</div></div><Layers3 size={31} color="#a8bba9" /></div>
         </div>
       </div>
+      <section className="dashboard-project-card" aria-label="تقدم مشروعك">
+        <div><span className="eyebrow">ملفات مشروعك الحقيقية</span><h2>مشروعك يكبر مع كل جلسة.</h2><p>شوف ملفاتك المكتوبة، الكود المحفوظ، والخطوة الجاية في خطة مشروعك.</p>
+          {project.isLoading ? <div className="skeleton" style={{ width: 220, height: 6, marginTop: 13 }} role="status" aria-label="جارٍ تحميل تقدم المشروع" /> : project.isError ? <p role="alert" data-testid="status-dashboard-project-error">تعذّر تحميل التقدّم. <button type="button" onClick={() => { void project.refetch(); }} style={{ color: '#74d78e', textDecoration: 'underline' }} data-testid="button-retry-project">حاول مجدداً</button></p> : project.data && <div className="project-progress-track" role="progressbar" aria-label="تقدم المشروع" aria-valuemin={0} aria-valuemax={project.data.total_files || 30} aria-valuenow={project.data.completed_files}><div className="project-progress-fill" style={{ width: `${Math.min(100, Math.max(0, project.data.completed_files / (project.data.total_files || 30) * 100))}%` }} /></div>}
+        </div>
+        <div className="dashboard-project-action">
+          <span className="dashboard-project-count" data-testid="text-dashboard-project-progress">{project.isLoading ? <span className="skeleton" style={{ display: 'block', width: 76, height: 22 }} /> : project.data ? `${project.data.completed_files} / ${project.data.total_files || 30}` : '— / 30'}</span>
+          <Link href="/my-project" className="btn btn-outline" data-testid="link-my-project">افتح مشروعي <ArrowLeft size={16} /></Link>
+        </div>
+      </section>
       <section style={{ marginTop: 68 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', marginBottom: 12 }}><div><span className="eyebrow">سجلّك</span><h2 style={{ fontSize: 27, letterSpacing: '-.04em', margin: '9px 0' }}>جلساتك السابقة</h2></div><span className="muted" style={{ fontSize: 12 }}>{history.length} جلسة</span></div>
         {history.length ? <div className="panel" style={{ padding: '8px 26px' }}>{history.map(item => <div className="history-row" key={item.id} data-testid={`row-session-${item.id}`}><div><strong style={{ fontSize: 15 }}>{item.concept}</strong><div className="muted" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}><CalendarDays size={13} />{new Date(item.timestamp).toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric' })}</div></div><div style={{ textAlign: 'left' }}><span className="mono" style={{ color: '#22c55e', fontSize: 14 }}>+{item.xp_earned} XP</span><div className="muted" style={{ fontSize: 11, marginTop: 5 }}>{item.touches_completed} من ٥ لمسات</div></div></div>)}</div> : <div className="panel" style={{ padding: '45px 30px', display: 'flex', flexDirection: 'column', alignItems: 'start', gap: 12 }} data-testid="status-empty-sessions"><span className="eyebrow">البداية من هنا</span><h3 style={{ fontSize: 23, margin: 0 }}>أول جلسة رح تظهر هون.</h3><p className="muted" style={{ margin: 0 }}>ابدأ التدريب وخلّي تقدّمك يحكي عنك.</p><Link href="/session" style={{ color: '#22c55e', display: 'flex', alignItems: 'center', gap: 7, marginTop: 10 }} data-testid="link-empty-start">ابدأ الآن <ArrowUpLeft size={16} /></Link></div>}
       </section>

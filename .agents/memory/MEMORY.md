@@ -1,2 +1,3 @@
 - [Qodia demo honesty](talent-bridge-demo-honesty.md) — label fictional metrics, stories, affiliations, and hiring activity; never present an unverified demo as real proof.
 - [Gemini model availability](gemini-model-availability.md) — verify generation with the configured key; a listed model can still reject structured generation.
+- [Historical project code](historical-project-code.md) — past Qodia lessons count as learned concepts, not completed project files when the student's code was not saved.

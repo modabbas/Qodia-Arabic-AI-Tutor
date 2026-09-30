@@ -9,9 +9,14 @@
 export interface SessionInput {
   /**
      * @minLength 1
-     * @maxLength 160
+     * @maxLength 250
      */
   concept: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  concept_name_en: string;
   /**
      * @minimum 0
      * @maximum 5

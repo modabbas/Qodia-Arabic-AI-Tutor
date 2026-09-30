@@ -1,0 +1,88 @@
+.project-page { padding-bottom: 100px; }
+.project-back { display: inline-flex; align-items: center; gap: 8px; color: #a5b5a7; font-size: 13px; margin-top: 34px; transition: color .2s; }
+.project-back:hover { color: #71dc90; }
+.project-intro { display: flex; justify-content: space-between; align-items: end; gap: 32px; padding: 30px 0 35px; }
+.project-intro h1 { font-size: clamp(36px, 5vw, 62px); letter-spacing: -.055em; line-height: 1.3; margin: 8px 0 6px; }
+.project-intro p { color: #a7aea6; line-height: 1.85; margin: 0; max-width: 690px; }
+.project-tech { font: 12px var(--app-font-mono); color: #6cda8c; border: 1px solid #34543a; background: #142119; padding: 9px 13px; border-radius: 8px; white-space: nowrap; }
+.project-overview { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(220px, .7fr); gap: 16px; margin-bottom: 20px; }
+.project-progress { padding: 26px 30px; background: linear-gradient(125deg, #172a1b, #111611 78%); border: 1px solid #34563b; border-radius: 17px; }
+.project-progress-head { display: flex; justify-content: space-between; gap: 15px; align-items: start; }
+.project-progress h2 { font-size: 19px; margin: 7px 0 6px; }
+.project-progress p { font-size: 12px; color: #9ba99d; margin: 0; line-height: 1.8; }
+.project-progress-number { font: 500 32px var(--app-font-mono); color: #e8ede6; direction: ltr; white-space: nowrap; }
+.project-progress-number small { font-size: 15px; color: #869688; }
+.project-progress-track { height: 7px; border-radius: 12px; background: #2a392d; overflow: hidden; margin-top: 25px; }
+.project-progress-fill { height: 100%; background: #22c55e; border-radius: inherit; }
+.project-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 20px; margin-top: 19px; font-size: 11px; color: #a0aaa1; }
+.project-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.project-summary-card { padding: 25px; border: 1px solid #2b332c; background: #111511; border-radius: 17px; }
+.project-summary-card strong { display: block; font-size: 13px; margin-bottom: 10px; }
+.project-summary-card p { color: #a8b2a9; font-size: 13px; line-height: 1.9; margin: 0; }
+.project-workspace { display: grid; grid-template-columns: minmax(230px, .34fr) minmax(0, 1fr); border: 1px solid #303831; border-radius: 17px; min-height: 530px; overflow: hidden; background: #101310; }
+.project-sidebar { border-left: 1px solid #303831; min-width: 0; background: #121712; }
+.project-sidebar-head { padding: 20px 20px 14px; border-bottom: 1px solid #293329; }
+.project-sidebar-head h2 { font-size: 14px; margin: 0 0 5px; }
+.project-sidebar-head p { color: #89988b; font-size: 11px; margin: 0; }
+.project-tree { padding: 10px 9px 26px; max-height: 680px; overflow-y: auto; }
+.project-tree-folder, .project-tree-file { width: 100%; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 7px; background: transparent; color: #c2c9c0; text-align: right; min-height: 35px; padding: 6px 9px; font-size: 12px; cursor: pointer; }
+.project-tree-folder:hover, .project-tree-file:hover { background: #202a21; }
+.project-tree-file.is-selected { background: #1c3423; color: #e8f6ea; }
+.project-tree-file-name { direction: ltr; unicode-bidi: plaintext; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; font: 12px var(--app-font-mono); }
+.project-tree-folder-name { direction: ltr; unicode-bidi: plaintext; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; font: 12px var(--app-font-mono); }
+.project-tree-emoji { font-size: 13px; flex: none; }
+.project-tree-chevron { flex: none; color: #839487; transition: transform .2s; }
+.project-tree-chevron.is-closed { transform: rotate(90deg); }
+.project-tree-status { font-size: 11px; flex: none; }
+.project-detail { min-width: 0; }
+.project-file-head { padding: 22px 26px 20px; border-bottom: 1px solid #303831; }
+.project-file-top { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.project-file-head h2 { font: 500 17px var(--app-font-mono); direction: ltr; text-align: left; overflow-wrap: anywhere; margin: 8px 0 0; }
+.project-file-desc { color: #aab4aa; font-size: 13px; line-height: 1.8; margin: 12px 0 0; }
+.project-file-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: #92a195; font-size: 11px; margin-top: 17px; }
+.project-file-meta span { display: inline-flex; gap: 5px; align-items: center; min-width: 0; }
+.project-file-meta .mono { direction: ltr; unicode-bidi: plaintext; }
+.project-status { display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; padding: 6px 9px; font-size: 11px; white-space: nowrap; }
+.project-status.complete { color: #7ce49a; background: #18321f; }
+.project-status.in_progress { color: #edbd85; background: #362819; }
+.project-status.planned { color: #a7b0a8; background: #252b25; }
+.project-code-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 11px 24px; background: #151a15; border-bottom: 1px solid #283128; color: #91a193; font: 11px var(--app-font-mono); gap: 10px; }
+.project-code-toolbar span:last-child { color: #738275; }
+.project-code { direction: ltr; text-align: left; margin: 0; padding: 17px 0 28px; overflow: auto; max-height: 580px; font: 12px/1.9 var(--app-font-mono); tab-size: 2; color: #d2dbd0; }
+.project-code-line { display: flex; width: max-content; min-width: 100%; padding-right: 22px; }
+.project-line-number { position: sticky; left: 0; min-width: 54px; padding-right: 16px; color: #667469; text-align: right; user-select: none; background: #101310; border-right: 1px solid #263027; margin-right: 19px; }
+.project-code-line code { white-space: pre; font: inherit; }
+.project-token-comment { color: #789681; }
+.project-token-string { color: #dfbf8b; }
+.project-token-keyword { color: #8fc8ad; }
+.project-token-number { color: #c2a7cf; }
+.project-token-tag { color: #99c9be; }
+.project-code-empty { min-height: 285px; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 34px; color: #a8b3a9; }
+.project-code-empty strong { color: #e5eae2; font-size: 16px; margin-bottom: 8px; }
+.project-code-empty p { font-size: 13px; line-height: 1.8; margin: 0; max-width: 390px; }
+.project-history { margin-top: 26px; padding: 23px 27px; border-radius: 16px; border: 1px solid #2d342d; background: #121512; }
+.project-history h2 { margin: 7px 0 3px; font-size: 19px; }
+.project-history p { color: #8f9d90; font-size: 12px; margin: 0 0 15px; line-height: 1.8; }
+.project-history-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.project-history-tags span { border: 1px solid #344038; background: #1a211b; padding: 7px 10px; border-radius: 7px; color: #bec9bd; font-size: 12px; }
+.dashboard-project-card { margin-top: 22px; padding: 25px 28px; border: 1px solid #344d38; border-radius: 18px; background: linear-gradient(110deg, #142019, #111511 70%); display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+.dashboard-project-card h2 { margin: 8px 0 6px; font-size: 24px; }
+.dashboard-project-card p { margin: 0; color: #a6b1a7; font-size: 13px; line-height: 1.8; }
+.dashboard-project-count { font: 500 20px var(--app-font-mono); color: #e8f0e6; direction: ltr; white-space: nowrap; }
+.dashboard-project-card .project-progress-track { margin-top: 13px; max-width: 300px; height: 5px; }
+.dashboard-project-action { display: flex; align-items: center; gap: 14px; flex: none; }
+.dashboard-project-action a { white-space: nowrap; }
+@media (max-width: 800px) {
+  .project-overview, .project-workspace { grid-template-columns: 1fr; }
+  .project-sidebar { border-left: 0; border-bottom: 1px solid #303831; }
+  .project-tree { max-height: 310px; }
+  .project-intro { align-items: start; flex-direction: column; gap: 16px; }
+}
+@media (max-width: 600px) {
+  .project-progress, .project-summary-card { padding: 20px; }
+  .project-progress-number { font-size: 25px; }
+  .project-file-head { padding: 18px; }
+  .project-file-top { flex-wrap: wrap; }
+  .dashboard-project-card { align-items: stretch; flex-direction: column; padding: 21px; }
+  .dashboard-project-action { justify-content: space-between; }
+}

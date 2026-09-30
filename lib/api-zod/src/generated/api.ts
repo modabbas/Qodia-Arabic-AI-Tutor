@@ -168,7 +168,9 @@ export const GetSessionsResponse = zod.array(GetSessionsResponseItem)
 /**
  * @summary Save completed touches and award XP
  */
-export const createSessionBodyConceptMax = 160;
+export const createSessionBodyConceptMax = 250;
+
+export const createSessionBodyConceptNameEnMax = 100;
 
 export const createSessionBodyTouchesCompletedMin = 0;
 export const createSessionBodyTouchesCompletedMax = 5;
@@ -181,6 +183,7 @@ export const createSessionBodyXpEarnedMin = 0;
 
 export const CreateSessionBody = zod.object({
   "concept": zod.string().min(1).max(createSessionBodyConceptMax),
+  "concept_name_en": zod.string().min(1).max(createSessionBodyConceptNameEnMax),
   "touches_completed": zod.number().int().min(createSessionBodyTouchesCompletedMin).max(createSessionBodyTouchesCompletedMax),
   "mistakes": zod.number().int().min(createSessionBodyMistakesMin),
   "xp_earned": zod.number().int().min(createSessionBodyXpEarnedMin)
@@ -271,6 +274,14 @@ export const getGeneratedSessionResponseTouch4BuildHintMax = 400;
 
 export const getGeneratedSessionResponseTouch4BuildCodePlaceholderMax = 200;
 
+export const getGeneratedSessionResponseTouch4BuildTargetFileMax = 240;
+
+
+export const getGeneratedSessionResponseTouch4BuildTargetFileRegExp = new RegExp('^(?!.*(?:^|/)\\.\\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$');
+export const getGeneratedSessionResponseTouch4BuildExistingContentMax = 30720;
+
+export const getGeneratedSessionResponseTouch4BuildIntegrationNoteMax = 700;
+
 export const getGeneratedSessionResponseTouch5DefendCommitteeQuestionMax = 700;
 
 export const getGeneratedSessionResponseTouch5DefendOptionsItemMax = 400;
@@ -338,7 +349,11 @@ export const GetGeneratedSessionResponse = zod.object({
   "expected_keywords": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildExpectedKeywordsItemMax)).min(1).max(getGeneratedSessionResponseTouch4BuildExpectedKeywordsMax),
   "success_message": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildSuccessMessageMax),
   "hint": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildHintMax),
-  "code_placeholder": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildCodePlaceholderMax)
+  "code_placeholder": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildCodePlaceholderMax),
+  "target_file": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildTargetFileMax).regex(getGeneratedSessionResponseTouch4BuildTargetFileRegExp),
+  "file_action": zod.enum(['create', 'modify']),
+  "existing_content": zod.string().max(getGeneratedSessionResponseTouch4BuildExistingContentMax).describe('Existing file content for modify actions; empty for create actions.'),
+  "integration_note": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildIntegrationNoteMax)
 }),
   "touch5_defend": zod.object({
   "committee_question": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendCommitteeQuestionMax),
@@ -429,6 +444,14 @@ export const createGeneratedSessionResponseTouch4BuildHintMax = 400;
 
 export const createGeneratedSessionResponseTouch4BuildCodePlaceholderMax = 200;
 
+export const createGeneratedSessionResponseTouch4BuildTargetFileMax = 240;
+
+
+export const createGeneratedSessionResponseTouch4BuildTargetFileRegExp = new RegExp('^(?!.*(?:^|/)\\.\\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$');
+export const createGeneratedSessionResponseTouch4BuildExistingContentMax = 30720;
+
+export const createGeneratedSessionResponseTouch4BuildIntegrationNoteMax = 700;
+
 export const createGeneratedSessionResponseTouch5DefendCommitteeQuestionMax = 700;
 
 export const createGeneratedSessionResponseTouch5DefendOptionsItemMax = 400;
@@ -496,7 +519,11 @@ export const CreateGeneratedSessionResponse = zod.object({
   "expected_keywords": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildExpectedKeywordsItemMax)).min(1).max(createGeneratedSessionResponseTouch4BuildExpectedKeywordsMax),
   "success_message": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildSuccessMessageMax),
   "hint": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildHintMax),
-  "code_placeholder": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildCodePlaceholderMax)
+  "code_placeholder": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildCodePlaceholderMax),
+  "target_file": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildTargetFileMax).regex(createGeneratedSessionResponseTouch4BuildTargetFileRegExp),
+  "file_action": zod.enum(['create', 'modify']),
+  "existing_content": zod.string().max(createGeneratedSessionResponseTouch4BuildExistingContentMax).describe('Existing file content for modify actions; empty for create actions.'),
+  "integration_note": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildIntegrationNoteMax)
 }),
   "touch5_defend": zod.object({
   "committee_question": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendCommitteeQuestionMax),
@@ -510,6 +537,81 @@ export const CreateGeneratedSessionResponse = zod.object({
   "followup_explanation": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupExplanationMax),
   "followup_feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax)
 })
+})
+
+
+/**
+ * Previously learned concepts may inform the plan, but files from historical sessions remain planned unless their code was explicitly saved.
+ * @summary Get the student's cumulative project plan and saved file contents
+ */
+export const getProjectStructureResponseTotalFilesMin = 0;
+
+export const getProjectStructureResponseCompletedFilesMin = 0;
+
+export const getProjectStructureResponseFilesItemPathMax = 240;
+
+
+export const getProjectStructureResponseFilesItemPathRegExp = new RegExp('^(?!.*(?:^|/)\\.\\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$');
+
+export const getProjectStructureResponseFilesItemContentMax = 30720;
+
+
+
+export const GetProjectStructureResponse = zod.object({
+  "project_name": zod.string(),
+  "tech_stack": zod.string(),
+  "project_summary": zod.string(),
+  "total_files": zod.number().int().min(getProjectStructureResponseTotalFilesMin),
+  "completed_files": zod.number().int().min(getProjectStructureResponseCompletedFilesMin),
+  "learned_concepts": zod.array(zod.string()),
+  "files": zod.array(zod.object({
+  "path": zod.string().min(1).max(getProjectStructureResponseFilesItemPathMax).regex(getProjectStructureResponseFilesItemPathRegExp),
+  "day": zod.number().int().min(1),
+  "concept": zod.string(),
+  "description": zod.string(),
+  "status": zod.enum(['complete', 'in_progress', 'planned']),
+  "session_id": zod.string().nullable(),
+  "content": zod.string().max(getProjectStructureResponseFilesItemContentMax).nullable().describe('File content is present only for files that have actually been saved.')
+}))
+})
+
+
+/**
+ * @summary Save a built project file
+ */
+export const saveProjectFileBodyFilePathMax = 240;
+
+
+export const saveProjectFileBodyFilePathRegExp = new RegExp('^(?!.*(?:^|/)\\.\\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$');
+export const saveProjectFileBodyContentMax = 30720;
+
+export const saveProjectFileBodyConceptNameEnMax = 100;
+
+
+
+export const SaveProjectFileBody = zod.object({
+  "file_path": zod.string().min(1).max(saveProjectFileBodyFilePathMax).regex(saveProjectFileBodyFilePathRegExp),
+  "content": zod.string().max(saveProjectFileBodyContentMax),
+  "concept_name_en": zod.string().min(1).max(saveProjectFileBodyConceptNameEnMax)
+})
+
+export const saveProjectFileResponsePathMax = 240;
+
+
+export const saveProjectFileResponsePathRegExp = new RegExp('^(?!.*(?:^|/)\\.\\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$');
+
+export const saveProjectFileResponseContentMax = 30720;
+
+
+
+export const SaveProjectFileResponse = zod.object({
+  "path": zod.string().min(1).max(saveProjectFileResponsePathMax).regex(saveProjectFileResponsePathRegExp),
+  "day": zod.number().int().min(1),
+  "concept": zod.string(),
+  "description": zod.string(),
+  "status": zod.enum(['complete', 'in_progress', 'planned']),
+  "session_id": zod.string().nullable(),
+  "content": zod.string().max(saveProjectFileResponseContentMax).nullable().describe('File content is present only for files that have actually been saved.')
 })
 
 

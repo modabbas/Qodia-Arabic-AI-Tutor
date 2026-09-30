@@ -197,6 +197,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Current generated lesson or its required project-file draft does not match
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /generate-session:
     get:
       operationId: getGeneratedSession
@@ -240,6 +246,67 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "400":
           description: Project profile is incomplete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /project-structure:
+    get:
+      operationId: getProjectStructure
+      tags: [learning]
+      summary: Get the student's cumulative project plan and saved file contents
+      description: Previously learned concepts may inform the plan, but files from historical sessions remain planned unless their code was explicitly saved.
+      responses:
+        "200":
+          description: Project structure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectStructure"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Project profile is incomplete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /save-file:
+    post:
+      operationId: saveProjectFile
+      tags: [learning]
+      summary: Save a built project file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectFileInput"
+      responses:
+        "200":
+          description: Saved project file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectPlanFile"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "400":
+          description: Invalid file input or project profile is incomplete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: File is complete or the submitted content conflicts with the saved draft
           content:
             application/json:
               schema:
@@ -337,7 +404,11 @@ components:
         concept:
           type: string
           minLength: 1
-          maxLength: 160
+          maxLength: 250
+        concept_name_en:
+          type: string
+          minLength: 1
+          maxLength: 100
         touches_completed:
           type: integer
           minimum: 0
@@ -348,7 +419,7 @@ components:
         xp_earned:
           type: integer
           minimum: 0
-      required: [concept, touches_completed, mistakes, xp_earned]
+      required: [concept, concept_name_en, touches_completed, mistakes, xp_earned]
     LearningSession:
       type: object
       properties:
@@ -477,7 +548,72 @@ components:
         success_message: { type: string, minLength: 1, maxLength: 400 }
         hint: { type: string, minLength: 1, maxLength: 400 }
         code_placeholder: { type: string, minLength: 1, maxLength: 200 }
-      required: [task_description, starter_code, expected_keywords, success_message, hint, code_placeholder]
+        target_file:
+          type: string
+          minLength: 1
+          maxLength: 240
+          pattern: '^(?!.*(?:^|/)\.\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$'
+        file_action:
+          type: string
+          enum: [create, modify]
+        existing_content:
+          type: string
+          maxLength: 30720
+          description: Existing file content for modify actions; empty for create actions.
+        integration_note: { type: string, minLength: 1, maxLength: 700 }
+      required: [task_description, starter_code, expected_keywords, success_message, hint, code_placeholder, target_file, file_action, existing_content, integration_note]
+    ProjectStructure:
+      type: object
+      properties:
+        project_name: { type: string }
+        tech_stack: { type: string }
+        project_summary: { type: string }
+        total_files: { type: integer, minimum: 0 }
+        completed_files: { type: integer, minimum: 0 }
+        learned_concepts:
+          type: array
+          items: { type: string }
+        files:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectPlanFile"
+      required: [project_name, tech_stack, project_summary, total_files, completed_files, learned_concepts, files]
+    ProjectPlanFile:
+      type: object
+      properties:
+        path:
+          type: string
+          minLength: 1
+          maxLength: 240
+          pattern: '^(?!.*(?:^|/)\.\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$'
+        day: { type: integer, minimum: 1 }
+        concept: { type: string }
+        description: { type: string }
+        status:
+          type: string
+          enum: [complete, in_progress, planned]
+        session_id: { type: ["string", "null"] }
+        content:
+          type: ["string", "null"]
+          maxLength: 30720
+          description: File content is present only for files that have actually been saved.
+      required: [path, day, concept, description, status, session_id, content]
+    ProjectFileInput:
+      type: object
+      properties:
+        file_path:
+          type: string
+          minLength: 1
+          maxLength: 240
+          pattern: '^(?!.*(?:^|/)\.\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$'
+        content:
+          type: string
+          maxLength: 30720
+        concept_name_en:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required: [file_path, content, concept_name_en]
     GeneratedTouch5:
       type: object
       additionalProperties: false

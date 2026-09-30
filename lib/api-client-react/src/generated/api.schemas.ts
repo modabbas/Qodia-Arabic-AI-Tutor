@@ -78,9 +78,14 @@ export interface OnboardingInput {
 export interface SessionInput {
   /**
      * @minLength 1
-     * @maxLength 160
+     * @maxLength 250
      */
   concept: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  concept_name_en: string;
   /**
      * @minimum 0
      * @maximum 5
@@ -238,6 +243,14 @@ export interface GeneratedTouch3 {
   feedback_wrong: string;
 }
 
+export type GeneratedTouch4FileAction = typeof GeneratedTouch4FileAction[keyof typeof GeneratedTouch4FileAction];
+
+
+export const GeneratedTouch4FileAction = {
+  create: 'create',
+  modify: 'modify',
+} as const;
+
 export interface GeneratedTouch4 {
   /**
      * @minLength 1
@@ -271,6 +284,23 @@ export interface GeneratedTouch4 {
      * @maxLength 200
      */
   code_placeholder: string;
+  /**
+     * @minLength 1
+     * @maxLength 240
+     * @pattern ^(?!.*(?:^|/)\.\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$
+     */
+  target_file: string;
+  file_action: GeneratedTouch4FileAction;
+  /**
+     * Existing file content for modify actions; empty for create actions.
+     * @maxLength 30720
+     */
+  existing_content: string;
+  /**
+     * @minLength 1
+     * @maxLength 700
+     */
+  integration_note: string;
 }
 
 export interface GeneratedTouch5 {
@@ -352,5 +382,64 @@ export interface GeneratedSession {
   touch3_explore: GeneratedTouch3;
   touch4_build: GeneratedTouch4;
   touch5_defend: GeneratedTouch5;
+}
+
+export type ProjectPlanFileStatus = typeof ProjectPlanFileStatus[keyof typeof ProjectPlanFileStatus];
+
+
+export const ProjectPlanFileStatus = {
+  complete: 'complete',
+  in_progress: 'in_progress',
+  planned: 'planned',
+} as const;
+
+export interface ProjectPlanFile {
+  /**
+     * @minLength 1
+     * @maxLength 240
+     * @pattern ^(?!.*(?:^|/)\.\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$
+     */
+  path: string;
+  /** @minimum 1 */
+  day: number;
+  concept: string;
+  description: string;
+  status: ProjectPlanFileStatus;
+  /** @nullable */
+  session_id: string | null;
+  /**
+     * File content is present only for files that have actually been saved.
+     * @maxLength 30720
+     * @nullable
+     */
+  content: string | null;
+}
+
+export interface ProjectStructure {
+  project_name: string;
+  tech_stack: string;
+  project_summary: string;
+  /** @minimum 0 */
+  total_files: number;
+  /** @minimum 0 */
+  completed_files: number;
+  learned_concepts: string[];
+  files: ProjectPlanFile[];
+}
+
+export interface ProjectFileInput {
+  /**
+     * @minLength 1
+     * @maxLength 240
+     * @pattern ^(?!.*(?:^|/)\.\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$
+     */
+  file_path: string;
+  /** @maxLength 30720 */
+  content: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  concept_name_en: string;
 }
 

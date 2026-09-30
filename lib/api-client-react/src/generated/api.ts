@@ -29,6 +29,9 @@ import type {
   LoginInput,
   OkResponse,
   OnboardingInput,
+  ProjectFileInput,
+  ProjectPlanFile,
+  ProjectStructure,
   SessionInput,
   SignUpInput,
   User
@@ -945,5 +948,171 @@ export const useCreateGeneratedSession = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateGeneratedSessionMutationOptions(options));
+    }
+
+export const getGetProjectStructureUrl = () => {
+
+
+
+
+  return `/api/project-structure`
+}
+
+/**
+ * Previously learned concepts may inform the plan, but files from historical sessions remain planned unless their code was explicitly saved.
+ * @summary Get the student's cumulative project plan and saved file contents
+ */
+export const getProjectStructure = async ( options?: Parameters<typeof customFetch>[1]): Promise<ProjectStructure> => {
+
+  return customFetch<ProjectStructure>(getGetProjectStructureUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProjectStructureQueryKey = () => {
+    return [
+    `/api/project-structure`
+    ] as const;
+    }
+
+
+export const getGetProjectStructureQueryOptions = <TData = Awaited<ReturnType<typeof getProjectStructure>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectStructure>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProjectStructureQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProjectStructure>>> = ({ signal }) => getProjectStructure({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProjectStructure>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProjectStructureQueryResult = NonNullable<Awaited<ReturnType<typeof getProjectStructure>>>
+export type GetProjectStructureQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get the student's cumulative project plan and saved file contents
+ */
+
+export function useGetProjectStructure<TData = Awaited<ReturnType<typeof getProjectStructure>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProjectStructure>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProjectStructureQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveProjectFileUrl = () => {
+
+
+
+
+  return `/api/save-file`
+}
+
+/**
+ * @summary Save a built project file
+ */
+export const saveProjectFile = async (projectFileInput: ProjectFileInput, options?: Parameters<typeof customFetch>[1]): Promise<ProjectPlanFile> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ProjectPlanFile>(getSaveProjectFileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(projectFileInput)
+  }
+);}
+
+
+
+
+
+export const getSaveProjectFileMutationKey = () => ['saveProjectFile'] as const;
+
+export const getSaveProjectFileMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveProjectFile>>, TError,SaveProjectFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveProjectFile>>, TError,SaveProjectFileMutationVariables, TContext> => {
+
+const mutationKey = getSaveProjectFileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveProjectFile>>, SaveProjectFileMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveProjectFile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveProjectFileMutationResult = NonNullable<Awaited<ReturnType<typeof saveProjectFile>>>
+    export type SaveProjectFileMutationBody = BodyType<ProjectFileInput>
+    export type SaveProjectFileMutationError = ErrorType<ErrorResponse>
+    export type SaveProjectFileMutationVariables = {data: BodyType<ProjectFileInput>}
+
+    /**
+ * @summary Save a built project file
+ */
+export const useSaveProjectFile = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveProjectFile>>, TError,SaveProjectFileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveProjectFile>>,
+        TError,
+        SaveProjectFileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveProjectFileMutationOptions(options));
     }
 

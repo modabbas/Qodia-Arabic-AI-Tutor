@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { getGetDashboardQueryKey, getGetGeneratedSessionQueryKey, getGetSessionsQueryKey, useCreateGeneratedSession, useCreateSession, useGetDashboard, useGetGeneratedSession, type GeneratedSession, type SessionInput } from '@workspace/api-client-react';
+import { getGetDashboardQueryKey, getGetGeneratedSessionQueryKey, getGetProjectStructureQueryKey, getGetSessionsQueryKey, useCreateGeneratedSession, useCreateSession, useGetDashboard, useGetGeneratedSession, useGetProjectStructure, useSaveProjectFile, type GeneratedSession, type SessionInput } from '@workspace/api-client-react';
 import s from './Session.module.css';
 
 type Mood = 'hyped' | 'normal' | 'tired';
@@ -15,6 +15,22 @@ const touches = [
   { name: 'دفاع', color: s.red },
 ];
 const arabic = (value: number) => String(value).replace(/\d/g, digit => '٠١٢٣٤٥٦٧٨٩'[Number(digit)]);
+const codeTokens = /(\/\/[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b(?:import|export|from|const|let|var|function|return|class|extends|if|else|for|while|async|await|def|self|final|void|String|int|bool|true|false|null|None|new|public|private)\b|\b\d+(?:\.\d+)?\b)/g;
+function highlightCode(value: string) {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const match of value.matchAll(codeTokens)) {
+    const index = match.index ?? last;
+    if (index > last) parts.push(value.slice(last, index));
+    const token = match[0];
+    const kind = token.startsWith('//') || token.startsWith('#') || token.startsWith('/*') ? s.codeComment
+      : /^["'`]/.test(token) ? s.codeString : /^\d/.test(token) ? s.codeNumber : s.codeKeyword;
+    parts.push(<span key={index} className={kind}>{token}</span>);
+    last = index + token.length;
+  }
+  if (last < value.length) parts.push(value.slice(last));
+  return parts.length ? parts : ' ';
+}
 const music: Record<Mood, { url: string; label: string }> = {
   hyped: { url: 'https://www.youtube.com/results?search_query=coding+music+energetic+lofi', label: 'موسيقى حماسية' },
   normal: { url: 'https://www.youtube.com/results?search_query=lofi+hip+hop+study+beats', label: 'لوفاي هادية' },
@@ -58,6 +74,8 @@ function validateSession(value: unknown): GeneratedSession {
     !Array.isArray(session.touch2_reveal?.values_table) ||
     !validOptions(session.touch3_explore?.options, session.touch3_explore?.correct_index) ||
     !Array.isArray(session.touch4_build?.expected_keywords) ||
+    typeof session.touch4_build?.target_file !== 'string' ||
+    typeof session.touch4_build?.existing_content !== 'string' ||
     !validOptions(session.touch5_defend?.options, session.touch5_defend?.correct_index) ||
     !validOptions(session.touch5_defend?.followup_options, session.touch5_defend?.followup_correct_index)
   ) throw new Error('Invalid session response');
@@ -69,6 +87,7 @@ export default function Session() {
   const generatedSession = useGetGeneratedSession({ query: { enabled: !!dashboard.data, queryKey: getGetGeneratedSessionQueryKey() } });
   const queryClient = useQueryClient();
   const create = useCreateSession();
+  const saveFile = useSaveProjectFile();
   const freshSession = useCreateGeneratedSession();
   const session = generatedSession.data;
   const sessionLoading = !!dashboard.data && generatedSession.isLoading;
@@ -87,6 +106,8 @@ export default function Session() {
   const [float, setFloat] = useState<{ key: number; x: number; y: number; amount: number } | null>(null);
   const [confetti, setConfetti] = useState<{ key: number; x: number; y: number } | null>(null);
   const [code, setCode] = useState('');
+  const [fileSaved, setFileSaved] = useState(false);
+  const [fileSaveError, setFileSaveError] = useState(false);
   const [hint, setHint] = useState(false);
   const [codeTries, setCodeTries] = useState(0);
   const [phase, setPhase] = useState<'first' | 'followup'>('first');
@@ -97,10 +118,21 @@ export default function Session() {
   const [savePayload, setSavePayload] = useState<SessionInput | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const savingRef = useRef(false);
+  const restoredFileRef = useRef<string | null>(null);
   const timedOutRef = useRef(false);
   const baselineRef = useRef<number | null>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const project = useGetProjectStructure({ query: { queryKey: getGetProjectStructureQueryKey(), enabled: touch === 4 && !!session } });
+
+  useEffect(() => {
+    if (touch !== 4 || !session || !project.data) return;
+    const path = session.touch4_build.target_file;
+    if (restoredFileRef.current === path) return;
+    const draft = project.data.files.find(file => file.path === path && file.status === 'in_progress');
+    if (draft?.content) setCode(current => current || draft.content || '');
+    restoredFileRef.current = path;
+  }, [touch, session, project.data]);
 
   useEffect(() => {
     if (touch !== 5 || complete || correct || seconds <= 0) return;
@@ -140,11 +172,12 @@ export default function Session() {
     if (touch > 0) window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [touch]);
 
-  function award(amount: number, event?: MouseEvent<HTMLElement>, big = false) {
+  function award(amount: number, event?: MouseEvent<HTMLElement> | { x: number; y: number }, big = false) {
     setEarned(value => value + amount);
     if (event) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      const point = { x: rect.left + rect.width / 2, y: rect.top };
+      const point = 'currentTarget' in event
+        ? (() => { const rect = event.currentTarget.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top }; })()
+        : event;
       setFloat({ key: Date.now(), ...point, amount });
       if (big && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) setConfetti({ key: Date.now(), ...point });
     }
@@ -201,6 +234,9 @@ export default function Session() {
         setComplete(true);
         void queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetProjectStructureQueryKey() });
+        // Keep the completed lesson on screen; refetch the next planned file on navigation.
+        void queryClient.invalidateQueries({ queryKey: getGetGeneratedSessionQueryKey(), refetchType: 'none' });
         playTone('big', sound);
       },
       onError: () => { savingRef.current = false; },
@@ -214,7 +250,7 @@ export default function Session() {
       timedOutRef.current = false;
       resetChoice();
     } else if (touch === 5) {
-      const payload: SessionInput = { concept: `${session.concept_name_en} — ${session.concept_name_ar}`, touches_completed: 5, mistakes, xp_earned: 110 };
+       const payload: SessionInput = { concept: `${session.concept_name_en} — ${session.concept_name_ar}`, concept_name_en: session.concept_name_en, touches_completed: 5, mistakes, xp_earned: 110 };
       setSavePayload(payload);
       save(payload);
     } else {
@@ -222,15 +258,30 @@ export default function Session() {
       resetChoice();
     }
   }
-  function checkCode(event?: MouseEvent<HTMLButtonElement>) {
-    if (correct || !session) return;
+  async function checkCode(event?: MouseEvent<HTMLButtonElement>) {
+    if (correct || !session || saveFile.isPending) return;
+    const button = event?.currentTarget.getBoundingClientRect();
+    const animationPoint = button ? { x: button.left + button.width / 2, y: button.top } : undefined;
     const value = code.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
     const missing = session.touch4_build.expected_keywords.filter(keyword => !value.includes(keyword.toLocaleLowerCase()));
     if (value && missing.length === 0) {
-      setCorrect(true);
-      setFeedback({ ok: true, text: session.touch4_build.success_message });
-      record(3, !hint && codeTries === 0);
-      award(20, event, true);
+      setFileSaveError(false);
+      try {
+        await saveFile.mutateAsync({ data: {
+          file_path: session.touch4_build.target_file,
+          content: code.trim(),
+          concept_name_en: session.concept_name_en,
+        } });
+        setFileSaved(true);
+        setCorrect(true);
+        setFeedback({ ok: true, text: `تم حفظ الكود في ${session.touch4_build.target_file}. ${session.touch4_build.success_message}` });
+        record(3, !hint && codeTries === 0);
+        award(20, animationPoint, true);
+        void queryClient.invalidateQueries({ queryKey: getGetProjectStructureQueryKey() });
+      } catch {
+        setFileSaveError(true);
+        setFeedback({ ok: false, text: 'ما قدرنا نحفظ الكود في مشروعك. حاول مرة ثانية قبل المتابعة.' });
+      }
     } else {
       setCodeTries(count => count + 1);
       miss(null, `الكود ناقصه شي. ${missing.length ? `تأكد من وجود: ${missing.join('، ')}` : 'اكتب إجابتك قبل التسليم.'}`);
@@ -240,8 +291,10 @@ export default function Session() {
     setTouch(0); setMood('normal'); setMusicVisible(true); resetChoice();
     setMistakes(0); setEarned(0); setFloat(null); setConfetti(null);
     setCode(''); setHint(false); setCodeTries(0); setPhase('first');
+    setFileSaved(false); setFileSaveError(false); saveFile.reset();
     setSeconds(30); setConfidence(100); setComplete(false); setResults([]);
     setSavePayload(null); timedOutRef.current = false; savingRef.current = false;
+    restoredFileRef.current = null;
     baselineRef.current = null; create.reset();
   }
   async function startFresh() {
@@ -329,10 +382,18 @@ export default function Session() {
               {choices(session.touch1_provoke.options, session.touch1_provoke.correct_index, session.touch1_provoke.feedback_correct, session.touch1_provoke.feedback_wrong)}{feedbackNode}{nextNode}</section>}
             {!complete && touch === 2 && <section className={s.card}><p className={s.introtext}>{session.touch2_reveal.explanation}</p><p className={s.valueslabel}>خيارات ومفاهيم مرتبطة:</p><div className={s.values}>{session.touch2_reveal.values_table.map((row, index) => <div className={s.valuerow} key={`${row.code}-${index}`}><div className={s.valuename}>{row.code}</div><div className={s.valuedesc}>{row.meaning}</div></div>)}</div><div className={s.check}><div className={s.checkq}>قبل ما نكمّل — سؤال سريع:</div><div className={s.checkmain}>{session.touch2_reveal.verification_question}</div>{choices(session.touch2_reveal.verification_options, session.touch2_reveal.correct_index, session.touch2_reveal.feedback_correct, session.touch2_reveal.feedback_wrong, true)}</div>{feedbackNode}{nextNode}</section>}
             {!complete && touch === 3 && <section className={s.card}><div className={s.q}>{session.touch3_explore.question}</div>{choices(session.touch3_explore.options, session.touch3_explore.correct_index, session.touch3_explore.feedback_correct, session.touch3_explore.feedback_wrong)}{feedbackNode}{nextNode}</section>}
-            {!complete && touch === 4 && build && <section className={s.card}><div className={s.q}>{build.task_description}</div><div className={s.editor}>
+            {!complete && touch === 4 && build && <section className={s.card}><div className={s.q}>{build.task_description}</div>
+              <p className={s.fileTarget}>اليوم رح تضيف كود لـ: <span dir="ltr">{build.target_file}</span></p>
+              <p className={s.fileNote}>هذا الكود سيُحفظ في مشروعك الحقيقي. {build.integration_note}</p>
+              {build.existing_content && <div className={s.priorFile}><strong>الملف الحالي (للقراءة فقط):</strong><pre dir="ltr"><code>{highlightCode(build.existing_content)}</code></pre></div>}
+              <div className={s.editor}>
               {build.starter_code.split('\n').map((line, index) => <div className={s.ln} key={`${index}-${line}`}><span className={s.n}>{arabic(index + 1)}</span><span className={s.c}>{line || ' '}</span></div>)}
-              <div className={`${s.ln} ${s.inputline}`}><span className={s.n}>{arabic(build.starter_code.split('\n').length + 1)}</span><span className={s.c}>{code || <span className={s.caret}>|</span>}</span></div>
-            </div><div className={s.editoractions}><input ref={inputRef} className={s.editorinput} value={code} disabled={correct} onChange={event => setCode(event.target.value)} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if (event.key === 'Enter') { event.preventDefault(); checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" /><button className={s.hintbtn} disabled={hint || correct} onClick={() => { setHint(true); setConfidence(value => Math.max(0, value - 5)); }} data-testid="button-hint">تلميح <span className={s.hintcost}>−٥</span></button><button className={s.btn} disabled={correct} onClick={checkCode} data-testid="button-check-code">سلّم</button></div><div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div>{hint && <div className={s.hinttext} data-testid="status-hint">💡 {build.hint}</div>}{feedbackNode}{nextNode}</section>}
+             </div>
+              <div className={s.codeEntry}><pre className={s.syntaxMirror} aria-hidden="true"><code>{highlightCode(code)}</code></pre><textarea ref={inputRef} className={s.codeTextarea} value={code} disabled={correct || saveFile.isPending} onChange={event => setCode(event.target.value)} onScroll={event => { const mirror = event.currentTarget.previousElementSibling; if (mirror) { mirror.scrollTop = event.currentTarget.scrollTop; mirror.scrollLeft = event.currentTarget.scrollLeft; } }} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); void checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" aria-label={`اكتب كود الملف ${build.target_file}`} /></div>
+              <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><button className={s.hintbtn} disabled={hint || correct} onClick={() => { setHint(true); setConfidence(value => Math.max(0, value - 5)); }} data-testid="button-hint">تلميح <span className={s.hintcost}>−٥</span></button><button className={s.btn} disabled={correct || saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? 'عم نحفظ في مشروعك...' : 'احفظ في مشروعي'}</button></div>
+              <div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div>{hint && <div className={s.hinttext} data-testid="status-hint">💡 {build.hint}</div>}{feedbackNode}
+              {fileSaveError && <p className={s.error} role="alert">الكود لم يُحفظ بعد. أعد المحاولة بنفس الزر.</p>}
+              {fileSaved && <Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link>}{nextNode}</section>}
             {!complete && touch === 5 && defense && <section className={`${s.card} ${s.boss}`}><div className={s.bosshead}><div className={s.ring}><svg width="52" height="52" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" className={s.ringbg} /><circle cx="24" cy="24" r="20" className={s.ringfg} strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - seconds / 30)} /></svg><span data-testid="text-countdown">{arabic(seconds)}</span></div><div className={s.hp}><div className={s.hpl}><span>ثقتك قدام اللجنة</span><span data-testid="text-confidence">{arabic(confidence)}٪</span></div><div className={s.hpb}><i style={{ width: `${confidence}%` }} /></div></div></div><div className={s.judge}>{phase === 'first' ? 'عضو لجنة المناقشة:' : 'الدكتور ما اكتفى:'}</div>
               <div className={s.q}>{phase === 'first' ? defense.committee_question : defense.followup_question}</div>
               {phase === 'first'
@@ -340,7 +401,7 @@ export default function Session() {
                 : choices(defense.followup_options, defense.followup_correct_index, defense.followup_explanation, defense.followup_feedback_wrong)}
               {feedbackNode}{seconds === 0 && !correct && <button className={`${s.btn} ${s.ghost}`} style={{ marginTop: 16 }} onClick={() => { setSeconds(30); setSelected(null); setFeedback(null); timedOutRef.current = false; }} data-testid="button-retry-defense">جرّب مرة ثانية</button>}{nextNode}</section>}
             {!complete && create.isError && savePayload && <div className={s.error} role="alert" data-testid="status-save-error">خلصت التدريب، بس ما قدرنا نحفظ نتيجتك. <button className={`${s.btn} ${s.ghost}`} onClick={() => save(savePayload)} data-testid="button-retry-save">إعادة المحاولة</button></div>}
-            {complete && <section className={s.end}><div className={s.endtitle}>خلّصت جلستك 🎉</div><div className={s.small} data-testid="text-completed-concept">{session.concept_name_ar} · {session.concept_name_en}</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div><div className={s.small} style={{ marginTop: 6 }}>+{arabic(earned)} نقطة · متتاليتك: {arabic(dashboard.data.progress.streak_days)} يوم 🔥</div><ul className={s.results}>{results.map((result, i) => <li key={i} className={result.passed ? s.pass : s.soft} data-testid={`row-touch-result-${i + 1}`}><span className={s.ri}>{result.passed ? '✓' : '↺'}</span><span className={s.name}>{result.name}</span><span className={s.concept}>{result.concept}</span></li>)}</ul><button className={`${s.btn} ${s.big}`} style={{ background: 'transparent', color: '#22c55e', border: '1px solid #22c55e' }} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-new-session">{freshPending ? 'عم نحضّر جلستك...' : 'جلسة جديدة بمفهوم آخر ↺'}</button>{freshError && <div className={s.error} role="alert" data-testid="status-fresh-error">ما قدرنا نحمّل جلسة جديدة. تقدمك محفوظ؛ حاول مرة ثانية.</div>}{freshError && <button className={`${s.btn} ${s.ghost}`} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-retry-fresh">إعادة المحاولة</button>}<Link href="/dashboard" className={s.small} style={{ marginTop: 10 }} data-testid="link-return-dashboard">ارجع للوحتي ←</Link></section>}
+            {complete && <section className={s.end}><div className={s.endtitle}>خلّصت جلستك 🎉</div><div className={s.small} data-testid="text-completed-concept">{session.concept_name_ar} · {session.concept_name_en}</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div><div className={s.small} style={{ marginTop: 6 }}>+{arabic(earned)} نقطة · متتاليتك: {arabic(dashboard.data.progress.streak_days)} يوم 🔥</div><ul className={s.results}>{results.map((result, i) => <li key={i} className={result.passed ? s.pass : s.soft} data-testid={`row-touch-result-${i + 1}`}><span className={s.ri}>{result.passed ? '✓' : '↺'}</span><span className={s.name}>{result.name}</span><span className={s.concept}>{result.concept}</span></li>)}</ul><Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link><button className={`${s.btn} ${s.big}`} style={{ background: 'transparent', color: '#22c55e', border: '1px solid #22c55e' }} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-new-session">{freshPending ? 'عم نحضّر جلستك...' : 'جلسة جديدة بمفهوم آخر ↺'}</button>{freshError && <div className={s.error} role="alert" data-testid="status-fresh-error">ما قدرنا نحمّل جلسة جديدة. تقدمك محفوظ؛ حاول مرة ثانية.</div>}{freshError && <button className={`${s.btn} ${s.ghost}`} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-retry-fresh">إعادة المحاولة</button>}<Link href="/dashboard" className={s.small} style={{ marginTop: 10 }} data-testid="link-return-dashboard">ارجع للوحتي ←</Link></section>}
           </div></main>}
       </>}
   </div>;

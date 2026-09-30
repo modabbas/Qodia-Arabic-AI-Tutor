@@ -10,6 +10,7 @@ import Landing from '@/pages/landing';
 import AuthPage from '@/pages/auth';
 import Onboarding from '@/pages/onboarding';
 import Dashboard from '@/pages/dashboard';
+import MyProject from '@/pages/my-project';
 import Session from '@/pages/session';
 import UniversityDashboard from '@/pages/university-dashboard';
 import CompanyDashboard from '@/pages/company-dashboard';
@@ -22,6 +23,7 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
   '/login': { title: 'تسجيل الدخول | قُوديا', description: 'ارجع إلى تدريبك وتقدّمك في قُوديا.' },
   '/onboarding': { title: 'عرّفنا على مشروعك | قُوديا', description: 'أخبر قُوديا عن مشروعك والتقنية التي تستخدمها لتبدأ التدريب.' },
   '/dashboard': { title: 'لوحة تقدّمك | قُوديا', description: 'تابع نقاط الخبرة وسلسلة التدريب وجلساتك السابقة في قُوديا.' },
+  '/my-project': { title: 'مشروعي | قُوديا', description: 'راجع ملفات مشروع تخرجك الحقيقية، الكود المحفوظ، وتقدم البناء في قُوديا.' },
   '/session': { title: 'تدريب المناقشة | قُوديا', description: 'تدرّب على Django ForeignKey و on_delete عبر خمس لمسات تفاعلية.' },
   '/university-dashboard': { title: 'لوحة الجامعة | قُوديا', description: 'نظرة تجريبية على تقدم الطلاب وجاهزيتهم للتوظيف في قُوديا.' },
   '/company-dashboard': { title: 'لوحة الشركات | قُوديا', description: 'استكشف مرشحين تجريبيين ومؤشرات Talent Bridge في قُوديا.' },
@@ -69,6 +71,7 @@ function AppRoutes() {
     <Route path="/login">{() => <AuthPage mode="login" />}</Route>
     <Route path="/onboarding">{() => <Guard onboarding><Onboarding /></Guard>}</Route>
     <Route path="/dashboard">{() => <Guard><Dashboard /></Guard>}</Route>
+    <Route path="/my-project">{() => <Guard><MyProject /></Guard>}</Route>
     <Route path="/session">{() => <Guard><Session /></Guard>}</Route>
     {/* Demo only: before connecting real student data, restrict access to university_admin. */}
     <Route path="/university-dashboard" component={UniversityDashboard} />

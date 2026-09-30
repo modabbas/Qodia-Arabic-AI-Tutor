@@ -5,6 +5,7 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+import type { GeneratedTouch4FileAction } from './generatedTouch4FileAction';
 
 export interface GeneratedTouch4 {
   /**
@@ -39,4 +40,21 @@ export interface GeneratedTouch4 {
      * @maxLength 200
      */
   code_placeholder: string;
+  /**
+     * @minLength 1
+     * @maxLength 240
+     * @pattern ^(?!.*(?:^|/)\.\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$
+     */
+  target_file: string;
+  file_action: GeneratedTouch4FileAction;
+  /**
+     * Existing file content for modify actions; empty for create actions.
+     * @maxLength 30720
+     */
+  existing_content: string;
+  /**
+     * @minLength 1
+     * @maxLength 700
+     */
+  integration_note: string;
 }

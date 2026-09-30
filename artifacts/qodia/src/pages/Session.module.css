@@ -69,6 +69,23 @@
 .caret{background:var(--amber);color:#0a0a0a;padding:0 2px;animation:blink 1.1s infinite}
 .editoractions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 .editorinput{flex:1;min-width:200px;padding:10px 14px;border:1.5px solid var(--ln);border-radius:10px;background:var(--s2);color:var(--tx);font:14px 'JetBrains Mono',monospace;direction:ltr;text-align:left}
+.fileTarget{margin:16px 0 4px;font-weight:600;color:var(--tx)}
+.fileTarget span{display:inline-block;font-family:'JetBrains Mono',monospace;color:var(--amber);overflow-wrap:anywhere}
+.fileNote{font-size:13px;line-height:1.8;color:var(--mt);margin:0 0 16px}
+.priorFile{margin:0 0 16px;color:var(--mt);font-size:13px}
+.priorFile pre{max-height:180px;overflow:auto;background:#1e1e1e;border:1px solid var(--ln);border-radius:10px;padding:14px;color:var(--tx);font:13px/1.7 'JetBrains Mono',monospace;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere}
+.codeEntry{position:relative;min-height:230px;margin-top:14px;border:1.5px solid var(--ln);border-radius:10px;background:#1e1e1e;direction:ltr;text-align:left}
+.codeEntry:focus-within{border-color:var(--amber)}
+.syntaxMirror,.codeTextarea{box-sizing:border-box;width:100%;height:230px;margin:0;padding:14px;font:14px/1.7 'JetBrains Mono',monospace;white-space:pre-wrap;overflow-wrap:anywhere;tab-size:2;text-align:left;direction:ltr}
+.syntaxMirror{overflow:hidden;color:var(--tx);pointer-events:none}
+.codeTextarea{position:absolute;inset:0;display:block;overflow:auto;background:transparent;border:0;outline:0;resize:none;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--tx)}
+.codeTextarea::placeholder{-webkit-text-fill-color:var(--mt2);color:var(--mt2)}
+.codeTextarea::selection{background:#56504a}
+.codeKeyword{color:var(--purple)}
+.codeString{color:var(--g)}
+.codeComment{color:var(--mt)}
+.codeNumber{color:var(--amber)}
+.projectLink{display:inline-flex;align-items:center;color:var(--g);font-size:13px;text-decoration:underline;margin:12px 0}
 .hintbtn{padding:8px 14px!important;border-radius:20px!important;border:1px dashed var(--ln)!important;color:var(--mt)!important;font-size:13px!important}
 .hintbtn:hover:not(:disabled){border-color:var(--amber)!important;color:var(--amber)!important}
 .hintbtn:disabled{opacity:.4!important}.hintcost{color:var(--amber);margin-right:4px}
