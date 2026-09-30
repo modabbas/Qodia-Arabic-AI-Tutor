@@ -29,6 +29,9 @@ async function buildAll() {
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
       "*.node",
+      // esbuild starts its own native service; bundling its JS wrapper breaks
+      // transform/build during project verification in the running API.
+      "esbuild",
       "sharp",
       "better-sqlite3",
       "sqlite3",
