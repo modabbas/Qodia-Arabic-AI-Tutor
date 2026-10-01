@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent, type ReactNode } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetDashboardQueryKey, getGetGeneratedSessionQueryKey, getGetProjectStructureQueryKey, getGetSessionsQueryKey, useCreateGeneratedSession, useCreateSession, useGetDashboard, useGetGeneratedSession, useGetProjectStructure, useSaveProjectFile, type GeneratedSession, type SessionInput } from '@workspace/api-client-react';
 import s from './Session.module.css';
+import { createTypingCounter } from './typing-accounting';
+import { CountUp, FxLayer, IdleMentor, caretPoint, readSound, useFx, useReducedMotion, writeSound } from './session-fx';
 
 type Mood = 'hyped' | 'normal' | 'tired';
 type Result = { name: string; concept: string; passed: boolean };
@@ -41,7 +43,7 @@ function playTone(kind: 'good' | 'bad' | 'big', enabled: boolean) {
   if (!enabled) return;
   try {
     const context = new window.AudioContext();
-    const notes = kind === 'big' ? [523, 659, 784, 1047] : kind === 'bad' ? [220] : [660, 880];
+    const notes = kind === 'big' ? [330, 392, 440, 523] : kind === 'bad' ? [300] : [392, 494];
     notes.forEach((frequency, i) => {
       const oscillator = context.createOscillator();
       const gain = context.createGain();
@@ -49,11 +51,11 @@ function playTone(kind: 'good' | 'bad' | 'big', enabled: boolean) {
       oscillator.type = kind === 'bad' ? 'triangle' : 'sine';
       oscillator.frequency.value = frequency;
       gain.gain.setValueAtTime(.0001, time);
-      gain.gain.exponentialRampToValueAtTime(.07, time + .02);
-      gain.gain.exponentialRampToValueAtTime(.0001, time + .2);
+      gain.gain.exponentialRampToValueAtTime(.025, time + .02);
+      gain.gain.exponentialRampToValueAtTime(.0001, time + .16);
       oscillator.connect(gain).connect(context.destination);
       oscillator.start(time);
-      oscillator.stop(time + .22);
+      oscillator.stop(time + .18);
     });
     window.setTimeout(() => { void context.close(); }, 800);
   } catch { /* Audio is optional. */ }
@@ -103,8 +105,36 @@ export default function Session() {
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const [mistakes, setMistakes] = useState(0);
   const [earned, setEarned] = useState(0);
-  const [float, setFloat] = useState<{ key: number; x: number; y: number; amount: number } | null>(null);
-  const [confetti, setConfetti] = useState<{ key: number; x: number; y: number } | null>(null);
+  const reduced = useReducedMotion();
+  const reducedRef = useRef(reduced);
+  reducedRef.current = reduced;
+  const fx = useFx(reduced);
+  const [streak, setStreak] = useState(0);
+  const [broke, setBroke] = useState(false);
+  const [shaking, setShaking] = useState(false);
+  const [streakMsg, setStreakMsg] = useState<string | null>(null);
+  const [gain, setGain] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  const [overlay, setOverlay] = useState(0);
+  const [glow, setGlow] = useState(-1);
+  const [practice, setPractice] = useState(0);
+  const streakRef = useRef(0);
+  const lockRef = useRef(false);
+  const typingRef = useRef(createTypingCounter());
+  const trailRef = useRef(0);
+  const timers = useRef<number[]>([]);
+  function later(fn: () => void, ms: number) {
+    const id = window.setTimeout(() => { timers.current = timers.current.filter(t => t !== id); fn(); }, ms);
+    timers.current.push(id);
+  }
+  function clearLater() { timers.current.forEach(id => window.clearTimeout(id)); timers.current = []; }
+  useEffect(() => clearLater, []);
+  useEffect(() => {
+    if (touch === 0) return;
+    setOverlay(touch);
+    const id = window.setTimeout(() => setOverlay(0), 300);
+    return () => window.clearTimeout(id);
+  }, [touch]);
   const [code, setCode] = useState('');
   const [fileSaved, setFileSaved] = useState(false);
   const [fileSaveError, setFileSaveError] = useState(false);
@@ -114,15 +144,25 @@ export default function Session() {
   const [seconds, setSeconds] = useState(30);
   const [confidence, setConfidence] = useState(100);
   const [complete, setComplete] = useState(false);
-  const [sound, setSound] = useState(true);
+  const [sound, setSound] = useState(readSound);
+  const soundRef = useRef(sound);
+  soundRef.current = sound;
   const [savePayload, setSavePayload] = useState<SessionInput | null>(null);
   const [results, setResults] = useState<Result[]>([]);
+  useEffect(() => {
+    const index = complete ? 4 : touch - 2;
+    if (index < 0) return;
+    setGlow(index);
+    const id = window.setTimeout(() => setGlow(-1), 1000);
+    return () => window.clearTimeout(id);
+  }, [touch, complete]);
   const savingRef = useRef(false);
   const restoredFileRef = useRef<string | null>(null);
   const timedOutRef = useRef(false);
   const baselineRef = useRef<number | null>(null);
   const nextRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const checkBtnRef = useRef<HTMLButtonElement>(null);
   const project = useGetProjectStructure({ query: { queryKey: getGetProjectStructureQueryKey(), enabled: touch === 4 && !!session } });
 
   useEffect(() => {
@@ -143,20 +183,22 @@ export default function Session() {
   useEffect(() => {
     if (touch !== 5 || seconds !== 0 || correct || timedOutRef.current) return;
     timedOutRef.current = true;
+    breakStreak();
     setMistakes(value => value + 1);
     setConfidence(value => Math.max(0, value - 15));
     setFeedback({ ok: false, text: 'خلص الوقت. باللجنة الحقيقية السكوت أسوأ من جواب ناقص.' });
-    playTone('bad', sound);
+    playTone('bad', soundRef.current);
   }, [touch, seconds, correct, sound]);
 
   useEffect(() => {
     if (touch !== 5 || complete || correct) return;
     const onVisibility = () => {
       if (!document.hidden) return;
+      breakStreak();
       setConfidence(value => Math.max(0, value - 15));
       setMistakes(value => value + 1);
       setFeedback({ ok: false, text: 'شفتك طلعت. باللجنة ما في تبويب تاني.' });
-      playTone('bad', sound);
+      playTone('bad', soundRef.current);
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
@@ -169,27 +211,42 @@ export default function Session() {
     if (correct) nextRef.current?.focus();
   }, [correct, phase]);
   useEffect(() => {
-    if (touch > 0) window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (touch > 0) window.scrollTo({ top: 0, behavior: reducedRef.current ? 'auto' : 'smooth' });
   }, [touch]);
 
+  function breakStreak() {
+    if (streakRef.current >= 2) { setBroke(true); later(() => setBroke(false), 1000); }
+    setShaking(true); later(() => setShaking(false), 400);
+    setStreakMsg(null);
+    streakRef.current = 0;
+    setStreak(0);
+  }
   function award(amount: number, event?: MouseEvent<HTMLElement> | { x: number; y: number }, big = false) {
     setEarned(value => value + amount);
-    if (event) {
-      const point = 'currentTarget' in event
-        ? (() => { const rect = event.currentTarget.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top }; })()
-        : event;
-      setFloat({ key: Date.now(), ...point, amount });
-      if (big && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) setConfetti({ key: Date.now(), ...point });
+    setGain(amount);
+    const point = !event ? null : 'currentTarget' in event
+      ? (() => { const rect = event.currentTarget.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top }; })()
+      : event;
+    const run = streakRef.current + 1;
+    streakRef.current = run;
+    setStreak(run);
+    if (run === 3) { setStreakMsg('إنت شعلة! ٣ ورا بعض'); later(() => setStreakMsg(null), 2200); }
+    if (point) {
+      fx.float(point.x, point.y, `+${arabic(amount)} نقطة`);
+      fx.sparkles(point.x, point.y);
+      if (run === 5) fx.confetti(point.x, point.y, 30);
+      else if (big) fx.confetti(point.x, point.y, 18);
     }
-    playTone(big ? 'big' : 'good', sound);
+    playTone(big ? 'big' : 'good', soundRef.current);
   }
   function miss(index: number | null, text: string, penalty = 0) {
     if (index !== null) setWrongChoices(value => [...value, index]);
     setSelected(index);
+    breakStreak();
     setMistakes(value => value + 1);
     if (penalty) setConfidence(value => Math.max(0, value - penalty));
     setFeedback({ ok: false, text });
-    playTone('bad', sound);
+    playTone('bad', soundRef.current);
   }
   function record(index: number, passed: boolean) {
     setResults(value => {
@@ -224,6 +281,7 @@ export default function Session() {
     setSelected(null);
     setCorrect(false);
     setFeedback(null);
+    setGain(0);
   }
   function save(payload: SessionInput) {
     if (savingRef.current) return;
@@ -237,13 +295,15 @@ export default function Session() {
         void queryClient.invalidateQueries({ queryKey: getGetProjectStructureQueryKey() });
         // Keep the completed lesson on screen; refetch the next planned file on navigation.
         void queryClient.invalidateQueries({ queryKey: getGetGeneratedSessionQueryKey(), refetchType: 'none' });
-        playTone('big', sound);
+        const w = window.innerWidth; const h = window.innerHeight;
+        fx.confetti(w * .2, h * .35, 16); fx.confetti(w * .5, h * .25, 22); fx.confetti(w * .8, h * .35, 16);
+        playTone('big', soundRef.current);
       },
       onError: () => { savingRef.current = false; },
     });
   }
   function next() {
-    if (!correct || create.isPending || !session) return;
+    if (lockRef.current || !correct || create.isPending || !session) return;
     if (touch === 5 && phase === 'first') {
       setPhase('followup');
       setSeconds(30);
@@ -253,15 +313,30 @@ export default function Session() {
        const payload: SessionInput = { concept: `${session.concept_name_en} — ${session.concept_name_ar}`, concept_name_en: session.concept_name_en, touches_completed: 5, mistakes, xp_earned: 110 };
       setSavePayload(payload);
       save(payload);
-    } else {
-      setTouch(value => value + 1);
-      resetChoice();
+    } else if (!lockRef.current) {
+      lockRef.current = true;
+      setLeaving(true);
+      later(() => { setTouch(value => value + 1); resetChoice(); setLeaving(false); lockRef.current = false; }, reduced ? 0 : 300);
     }
+  }
+  function creditTyping(el: HTMLTextAreaElement, gained: number) {
+    if (gained <= 0) return;
+    setPractice(value => value + gained);
+    const point = caretPoint(el);
+    fx.typing(point.x, point.y, `+${arabic(gained)} XP تدريب`);
+  }
+  function onCodeChange(event: ChangeEvent<HTMLTextAreaElement>) {
+    const el = event.currentTarget;
+    const native = event.nativeEvent as InputEvent;
+    const delta = el.value.length - code.length;
+    setCode(el.value);
+    creditTyping(el, typingRef.current.input({ inputType: native.inputType ?? '', data: native.data ?? null, isComposing: native.isComposing }, delta));
   }
   async function checkCode(event?: MouseEvent<HTMLButtonElement>) {
     if (correct || !session || saveFile.isPending) return;
     const button = event?.currentTarget.getBoundingClientRect();
-    const animationPoint = button ? { x: button.left + button.width / 2, y: button.top } : undefined;
+    const fallback = inputRef.current ? caretPoint(inputRef.current) : checkBtnRef.current ? (() => { const b = checkBtnRef.current.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top }; })() : undefined;
+    const animationPoint = button ? { x: button.left + button.width / 2, y: button.top } : fallback;
     const value = code.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
     const missing = session.touch4_build.expected_keywords.filter(keyword => !value.includes(keyword.toLocaleLowerCase()));
     if (value && missing.length === 0) {
@@ -289,7 +364,9 @@ export default function Session() {
   }
   function resetForSession() {
     setTouch(0); setMood('normal'); setMusicVisible(true); resetChoice();
-    setMistakes(0); setEarned(0); setFloat(null); setConfetti(null);
+    clearLater(); fx.clear(); lockRef.current = false; setLeaving(false); typingRef.current.reset(); setPractice(0);
+    streakRef.current = 0; setStreak(0); setStreakMsg(null); setGain(0); setBroke(false); setShaking(false);
+    setMistakes(0); setEarned(0);
     setCode(''); setHint(false); setCodeTries(0); setPhase('first');
     setFileSaved(false); setFileSaveError(false); saveFile.reset();
     setSeconds(30); setConfidence(100); setComplete(false); setResults([]);
@@ -340,12 +417,13 @@ export default function Session() {
         {!verification && <span className={s.key}>{arabic(index + 1)}</span>}<span>{label}</span>
       </button>)}
     </div>;
-  const feedbackNode = feedback && <div className={`${s.fb} ${feedback.ok ? s.ok : s.no}`} role="status" data-testid="status-answer-feedback"><span className={s.fbi}>{feedback.ok ? '✓' : '!'}</span><span>{feedback.text}</span></div>;
-  const nextNode = correct && <div className={s.next}><button ref={nextRef} className={`${s.btn} ${s.big}`} disabled={create.isPending} onClick={next} data-testid="button-next-touch">{touch === 5 && phase === 'followup' ? create.isPending ? 'عم نحفظ تقدمك...' : 'شوف نتيجتك' : touch === 5 ? 'السؤال الجاي ←' : 'اللمسة الجاية ←'}</button><span className={s.small}>أو اضغط Enter</span></div>;
+  const feedbackNode = feedback && <div className={`${s.fb} ${feedback.ok ? s.ok : s.no}`} role="status" data-testid="status-answer-feedback"><span className={s.fbi}>{feedback.ok ? '✓' : '!'}</span><span>{feedback.text}{feedback.ok && gain > 0 && <b className={s.gain}>+{arabic(gain)} نقطة</b>}</span></div>;
+  const nextNode = correct && <div className={s.next}><button ref={nextRef} className={`${s.btn} ${s.big}`} disabled={create.isPending || leaving} onClick={next} data-testid="button-next-touch">{touch === 5 && phase === 'followup' ? create.isPending ? 'عم نحفظ تقدمك...' : 'شوف نتيجتك' : touch === 5 ? 'السؤال الجاي ←' : 'اللمسة الجاية ←'}</button><span className={s.small}>أو اضغط Enter</span></div>;
   const readinessStart = 18;
   const readiness = readinessStart + results.reduce((sum, result) => sum + (result?.passed ? 3 : 1), 0);
   const baseXP = baselineRef.current ?? dashboard.data?.progress.total_xp ?? 0;
   const hudXP = baseXP + earned;
+  const perfect = complete && [0, 1, 2, 3, 4].every(i => results[i]?.passed) && mistakes === 0;
   const build = session?.touch4_build;
   const defense = session?.touch5_defend;
 
@@ -360,13 +438,15 @@ export default function Session() {
       : <>
         {touch > 0 && <header className={s.top}>
           <Link href="/dashboard" className={s.logo} aria-label="العودة إلى اللوحة" data-testid="link-dashboard"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18" fill="none" stroke="#f2f2f2" strokeWidth="4" /><path d="M19.5 16.5 L29 24 L19.5 31.5" fill="none" stroke="#f2f2f2" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg></Link>
-          <div className={s.rail} data-testid="text-lesson-progress">{touches.map((item, index) => <div key={item.name} className={`${s.seg} ${index < (complete ? 5 : touch - 1) ? s.done : index === touch - 1 && !complete ? s.now : ''}`} />)}</div>
-          <div className={s.meta}><span className={s.streak} data-testid="text-streak">🔥 {arabic(dashboard.data.progress.streak_days)}</span><div className={s.xpbox}><div className={s.lvl} data-testid="text-level">{arabic(Math.floor(hudXP / 100) + 1)}</div><div className={s.xpbar}><i style={{ width: `${hudXP % 100}%` }} /></div><span className={s.xpnum} data-testid="text-xp">{arabic(hudXP)}</span></div><button className={s.sound} onClick={() => setSound(value => !value)} aria-label={sound ? 'إيقاف الصوت' : 'تشغيل الصوت'} data-testid="button-toggle-sound">{sound ? <Volume2 size={16} /> : <VolumeX size={16} />}</button></div>
+          <div className={`${s.rail} ${complete ? s.gold : ''}`} data-testid="text-lesson-progress">{touches.map((item, index) => <div key={item.name} className={`${s.seg} ${index < (complete ? 5 : touch - 1) ? s.done : index === touch - 1 && !complete ? s.now : ''} ${index === glow ? `${s.wave} ${s.glowseg}` : ''}`} />)}</div>
+          <div className={s.meta}><span className={`${s.run} ${broke ? s.broke : ''} ${shaking ? s.shaking : ''}`} style={{ transform: `scale(${1 + Math.min(streak, 5) * .06})` }} data-testid="text-run-streak">{broke ? 'انكسرت السلسلة' : `🔥 ${arabic(streak)} صح ورا بعض`}</span><span className={s.streak} data-testid="text-streak">🔥 {arabic(dashboard.data.progress.streak_days)}</span><div className={s.xpbox}><div className={s.lvl} data-testid="text-level">{arabic(Math.floor(hudXP / 100) + 1)}</div><div className={s.xpbar}><i style={{ width: `${hudXP % 100}%` }} /></div><span className={s.xpnum} data-testid="text-xp">{arabic(hudXP)}</span></div><button className={s.sound} onClick={() => { const on = !sound; setSound(on); writeSound(on); }} aria-pressed={sound} aria-label={sound ? 'إيقاف الصوت' : 'تشغيل الصوت'} data-testid="button-toggle-sound">{sound ? <Volume2 size={16} /> : <VolumeX size={16} />}</button></div>
         </header>}
-        {float && <span key={`float-${float.key}`} className={s.float} style={{ left: float.x, top: float.y }}>+{arabic(float.amount)}</span>}
-        {confetti && <div key={`confetti-${confetti.key}`} className={s.bits}>{Array.from({ length: 24 }, (_, i) => <i key={i} className={s.bit} style={{ left: confetti.x, top: confetti.y, background: ['#22c55e', '#f5b84a', '#7cc7ff', '#c792ea'][i % 4], ['--dx' as string]: `${Math.cos(i * 2.4) * (60 + i * 4)}px`, ['--dy' as string]: `${Math.sin(i * 2.4) * (60 + i * 4) - 40}px` }} />)}</div>}
+        <FxLayer items={fx.items} />
+        {streakMsg && <div className={s.toast} role="status" data-testid="status-streak-message">{streakMsg}</div>}
+        {overlay > 0 && !complete && <div className={s.overlay} aria-hidden="true"><span>اللمسة {arabic(overlay)} من {arabic(5)}</span></div>}
+        <IdleMentor active={touch > 0 && !complete} resetKey={`${touch}-${phase}`} />
         {touch === 0 ? <main className={s.moodscreen}><h1>كيف حالك اليوم؟</h1><p>رح نظبّط الجلسة على مزاجك</p><div className={s.moodgrid}>{([['hyped', '🔥', 'متحمس'], ['normal', '😊', 'تمام'], ['tired', '😴', 'تعبان']] as const).map(([value, emoji, label]) => <button key={value} className={s.moodbtn} onClick={() => { baselineRef.current = dashboard.data?.progress.total_xp ?? 0; setMood(value); setTouch(1); }} data-testid={`button-mood-${label}`}><span className={s.emoji}>{emoji}</span><span>{label}</span></button>)}</div></main>
-          : <main className={s.stage}><div key={complete ? 'end' : `${touch}-${phase}`} className={s.slide}>
+          : <main className={s.stage}><div key={complete ? 'end' : `${touch}-${phase}`} className={`${s.slide} ${leaving ? s.leaving : ''}`}>
             {!complete && <>
               {touch === 1 && musicVisible && <div className={s.music}><span className={s.note}>🎵</span><span>{music[mood].label} —</span><a href={music[mood].url} target="_blank" rel="noopener noreferrer" data-testid="link-music">افتح بلايليست</a><button className={s.x} onClick={() => setMusicVisible(false)} data-testid="button-dismiss-music">إخفاء</button></div>}
               <div className={`${s.touchlabel} ${touches[touch - 1].color}`}>اللمسة {arabic(touch)} · {touches[touch - 1].name}</div>
@@ -389,19 +469,19 @@ export default function Session() {
               <div className={s.editor}>
               {build.starter_code.split('\n').map((line, index) => <div className={s.ln} key={`${index}-${line}`}><span className={s.n}>{arabic(index + 1)}</span><span className={s.c}>{line || ' '}</span></div>)}
              </div>
-              <div className={s.codeEntry}><pre className={s.syntaxMirror} aria-hidden="true"><code>{highlightCode(code)}</code></pre><textarea ref={inputRef} className={s.codeTextarea} value={code} disabled={correct || saveFile.isPending} onChange={event => setCode(event.target.value)} onScroll={event => { const mirror = event.currentTarget.previousElementSibling; if (mirror) { mirror.scrollTop = event.currentTarget.scrollTop; mirror.scrollLeft = event.currentTarget.scrollLeft; } }} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); void checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" aria-label={`اكتب كود الملف ${build.target_file}`} /></div>
-              <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><button className={s.hintbtn} disabled={hint || correct} onClick={() => { setHint(true); setConfidence(value => Math.max(0, value - 5)); }} data-testid="button-hint">تلميح <span className={s.hintcost}>−٥</span></button><button className={s.btn} disabled={correct || saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? 'عم نحفظ في مشروعك...' : 'احفظ في مشروعي'}</button></div>
-              <div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div>{hint && <div className={s.hinttext} data-testid="status-hint">💡 {build.hint}</div>}{feedbackNode}
+              <div className={s.codeEntry} onPointerMove={event => { if (event.pointerType === 'touch') return; const now = Date.now(); if (now - trailRef.current < 70) return; trailRef.current = now; fx.dot(event.clientX, event.clientY); }}><pre className={s.syntaxMirror} aria-hidden="true"><code>{highlightCode(code)}</code></pre><textarea ref={inputRef} className={s.codeTextarea} value={code} disabled={correct || saveFile.isPending} onChange={onCodeChange} onCompositionStart={() => typingRef.current.compositionStart()} onCompositionEnd={event => creditTyping(event.currentTarget, typingRef.current.compositionEnd(event.data))} onScroll={event => { const mirror = event.currentTarget.previousElementSibling; if (mirror) { mirror.scrollTop = event.currentTarget.scrollTop; mirror.scrollLeft = event.currentTarget.scrollLeft; } }} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); void checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" aria-label={`اكتب كود الملف ${build.target_file}`} /></div>
+              <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><button className={s.hintbtn} disabled={hint || correct} onClick={() => { setHint(true); setConfidence(value => Math.max(0, value - 5)); }} data-testid="button-hint">تلميح <span className={s.hintcost}>−٥</span></button><button ref={checkBtnRef} className={`${s.btn} ${fileSaved ? s.savedPulse : ''}`} disabled={correct || saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? 'عم نحفظ في مشروعك...' : 'احفظ في مشروعي'}</button></div>
+              <div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div><div className={s.practice} data-testid="text-typing-practice">نقاط تدريب: <b>+{arabic(practice)}</b> · كل ٥ أحرف تكتبها بإيدك = +١ للتشجيع فقط، وما بتغيّر نقاطك المحفوظة.</div>{hint && <div className={s.hinttext} data-testid="status-hint">💡 {build.hint}</div>}{feedbackNode}
               {fileSaveError && <p className={s.error} role="alert">الكود لم يُحفظ بعد. أعد المحاولة بنفس الزر.</p>}
               {fileSaved && <Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link>}{nextNode}</section>}
-            {!complete && touch === 5 && defense && <section className={`${s.card} ${s.boss}`}><div className={s.bosshead}><div className={s.ring}><svg width="52" height="52" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" className={s.ringbg} /><circle cx="24" cy="24" r="20" className={s.ringfg} strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - seconds / 30)} /></svg><span data-testid="text-countdown">{arabic(seconds)}</span></div><div className={s.hp}><div className={s.hpl}><span>ثقتك قدام اللجنة</span><span data-testid="text-confidence">{arabic(confidence)}٪</span></div><div className={s.hpb}><i style={{ width: `${confidence}%` }} /></div></div></div><div className={s.judge}>{phase === 'first' ? 'عضو لجنة المناقشة:' : 'الدكتور ما اكتفى:'}</div>
+            {!complete && touch === 5 && defense && <section className={`${s.card} ${s.boss}`}><div className={s.bosshead}><div className={`${s.ring} ${!correct && seconds > 0 && seconds <= 10 ? seconds <= 5 ? s.urgent2 : s.urgent1 : ''}`}><svg width="52" height="52" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" className={s.ringbg} /><circle cx="24" cy="24" r="20" className={s.ringfg} strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - seconds / 30)} /></svg><span data-testid="text-countdown">{arabic(seconds)}</span></div><div className={s.hp}><div className={s.hpl}><span>ثقتك قدام اللجنة</span><span data-testid="text-confidence">{arabic(confidence)}٪</span></div><div className={s.hpb}><i style={{ width: `${confidence}%` }} /></div></div></div><div className={s.judge}>{phase === 'first' ? 'عضو لجنة المناقشة:' : 'الدكتور ما اكتفى:'}</div>
               <div className={s.q}>{phase === 'first' ? defense.committee_question : defense.followup_question}</div>
               {phase === 'first'
                 ? choices(defense.options, defense.correct_index, defense.explanation, defense.feedback_wrong)
                 : choices(defense.followup_options, defense.followup_correct_index, defense.followup_explanation, defense.followup_feedback_wrong)}
               {feedbackNode}{seconds === 0 && !correct && <button className={`${s.btn} ${s.ghost}`} style={{ marginTop: 16 }} onClick={() => { setSeconds(30); setSelected(null); setFeedback(null); timedOutRef.current = false; }} data-testid="button-retry-defense">جرّب مرة ثانية</button>}{nextNode}</section>}
             {!complete && create.isError && savePayload && <div className={s.error} role="alert" data-testid="status-save-error">خلصت التدريب، بس ما قدرنا نحفظ نتيجتك. <button className={`${s.btn} ${s.ghost}`} onClick={() => save(savePayload)} data-testid="button-retry-save">إعادة المحاولة</button></div>}
-            {complete && <section className={s.end}><div className={s.endtitle}>خلّصت جلستك 🎉</div><div className={s.small} data-testid="text-completed-concept">{session.concept_name_ar} · {session.concept_name_en}</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div><div className={s.small} style={{ marginTop: 6 }}>+{arabic(earned)} نقطة · متتاليتك: {arabic(dashboard.data.progress.streak_days)} يوم 🔥</div><ul className={s.results}>{results.map((result, i) => <li key={i} className={result.passed ? s.pass : s.soft} data-testid={`row-touch-result-${i + 1}`}><span className={s.ri}>{result.passed ? '✓' : '↺'}</span><span className={s.name}>{result.name}</span><span className={s.concept}>{result.concept}</span></li>)}</ul><Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link><button className={`${s.btn} ${s.big}`} style={{ background: 'transparent', color: '#22c55e', border: '1px solid #22c55e' }} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-new-session">{freshPending ? 'عم نحضّر جلستك...' : 'جلسة جديدة بمفهوم آخر ↺'}</button>{freshError && <div className={s.error} role="alert" data-testid="status-fresh-error">ما قدرنا نحمّل جلسة جديدة. تقدمك محفوظ؛ حاول مرة ثانية.</div>}{freshError && <button className={`${s.btn} ${s.ghost}`} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-retry-fresh">إعادة المحاولة</button>}<Link href="/dashboard" className={s.small} style={{ marginTop: 10 }} data-testid="link-return-dashboard">ارجع للوحتي ←</Link></section>}
+            {complete && <section className={s.end}><div className={`${s.endtitle} ${s.drop} ${perfect ? s.perfect : ''}`} data-testid="text-session-complete">{perfect ? 'جلسة مثالية! خمس من خمس بلا ولا غلطة 🎉' : 'خلّصت جلستك 🎉'}</div><div className={s.small} data-testid="text-completed-concept">{session.concept_name_ar} · {session.concept_name_en}</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div><div className={s.stats}><div className={s.stat} style={{ animationDelay: '.4s' }} data-testid="text-earned-xp">+<b><CountUp value={earned} reduced={reduced} delay={400} /></b> نقطة</div><div className={s.stat} style={{ animationDelay: '.7s' }}>متتاليتك: <b>{arabic(dashboard.data.progress.streak_days)}</b> يوم 🔥</div><div className={s.stat} style={{ animationDelay: '1s' }}>مستوى <b>{arabic(Math.floor(hudXP / 100) + 1)}</b> · <b>{arabic(hudXP % 100)}٪</b> للتالي</div></div><ul className={s.results}>{results.map((result, i) => <li key={i} className={result.passed ? s.pass : s.soft} data-testid={`row-touch-result-${i + 1}`}><span className={s.ri}>{result.passed ? '✓' : '↺'}</span><span className={s.name}>{result.name}</span><span className={s.concept}>{result.concept}</span></li>)}</ul><Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link><button className={`${s.btn} ${s.big} ${s.pulsebtn}`} style={{ background: 'transparent', color: '#22c55e', border: '1px solid #22c55e' }} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-new-session">{freshPending ? 'عم نحضّر جلستك...' : 'جلسة جديدة بمفهوم آخر ↺'}</button>{freshError && <div className={s.error} role="alert" data-testid="status-fresh-error">ما قدرنا نحمّل جلسة جديدة. تقدمك محفوظ؛ حاول مرة ثانية.</div>}{freshError && <button className={`${s.btn} ${s.ghost}`} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-retry-fresh">إعادة المحاولة</button>}<Link href="/dashboard" className={s.small} style={{ marginTop: 10 }} data-testid="link-return-dashboard">ارجع للوحتي ←</Link></section>}
           </div></main>}
       </>}
   </div>;

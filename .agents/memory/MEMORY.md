@@ -3,3 +3,4 @@
 - [Historical project code](historical-project-code.md) — past Kodia lessons count as learned concepts, not completed project files when the student's code was not saved.
 - [Student project verification](student-project-verification.md) — parse and bundle saved code without running student scripts; passing syntax is not a full framework build.
 - [Kodia brand identifiers](kodia-brand-identifiers.md) — use كوديا/KODIA publicly; keep existing technical IDs stable to preserve accounts and routes.
+- [Session animation boundaries](session-animation-boundaries.md) — visual rewards must stay honest; animate decorative surfaces without continuously moving button targets.

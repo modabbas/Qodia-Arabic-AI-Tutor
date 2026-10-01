@@ -1,0 +1,206 @@
+# Qodia - Add Micro-wins & Live Animations
+
+## Task for Replit Agent
+
+**Enable Extended Thinking (🧠)**
+
+Transform the /session page from "static learning" to "alive and engaging" by adding micro-celebrations throughout the experience. Think Duolingo-level polish.
+
+## The Vision
+
+Currently: student learns concepts in sessions - works but feels academic
+After: student gets small dopamine hits every 10-30 seconds, making 15 minutes fly by
+
+## Features to Add
+
+### 1. Live Typing XP
+
+When student types in Touch 4 (code editor):
+- Every 5 characters typed → "+1 XP" small text floats up from the typing position
+- Fades out after 1 second
+- Barely visible, but creates "I'm making progress" feeling
+
+**Code structure:**
+```typescript
+onCharacterTyped(count) {
+  if (count % 5 === 0) showFloatingXP("+1", getCurrentCursorPosition());
+}
+```
+
+### 2. Correct Answer Celebrations
+
+When student selects correct answer in any touch:
+
+**Visual:**
+- Button pulses with green glow
+- Sparkle particles (3-5 small ✨) burst from button
+- "+25 XP" floats up and fades
+- Progress bar fills with subtle animation
+
+**Audio (optional, muted by default):**
+- Soft "ding" sound (very subtle)
+
+**Timing:** All within 400ms (feels instant)
+
+### 3. Streak Within Session
+
+Visible counter at top: "🔥 3 correct in a row"
+- Grows larger with each correct answer
+- Breaks on wrong answer (shake animation)
+- Rewards: 
+  - 3 in a row → "You're on fire!" message appears briefly
+  - 5 in a row → confetti burst
+  - All 5 touches correct → "Perfect session!" screen
+
+### 4. Progress Bar Micro-animations
+
+The 5-touch progress bar should:
+- **Pulse** gently every 2 seconds (shows it's alive)
+- **Shimmer** when a touch is active
+- **Fill with wave animation** when touch completes
+- **Glow** at the completed segment for 1 second
+
+### 5. Idle Encouragement
+
+If student is idle for 15 seconds:
+- Mentor avatar (small) appears bottom-right
+- Says one of random messages (Arabic, Levantine):
+  - "خذ وقتك، فكر فيها 💭"
+  - "تحتاج تلميح؟"
+  - "أنت أقرب مما تظن 💪"
+- Fades after 5 seconds or user interaction
+
+### 6. Session Completion Experience
+
+When student completes all 5 touches:
+
+**Animation sequence (2-3 seconds total):**
+1. Progress bar fills with golden shimmer
+2. "🎉 Session Complete!" slides down from top
+3. Confetti bursts from multiple points
+4. Stats appear one by one with counting animations:
+   - "+500 XP earned" (counts up from 0)
+   - "Streak: X days 🔥"
+   - "Current level progress"
+5. Big "Continue to Next Concept" button with pulse
+
+### 7. Touch Transition Polish
+
+Between touches:
+- Current touch fades out (opacity 1→0 over 300ms)
+- Progress bar advances with wave animation
+- Next touch slides in from right (translateX)
+- Brief "Touch X of 5" overlay (300ms)
+
+### 8. Small Touches of Life
+
+**Everywhere in /session:**
+- Buttons have subtle hover scale (1 → 1.03)
+- Cards have very subtle floating animation (translateY: 0 → -2px over 3s)
+- Mouse cursor leaves a brief trail of green dots on code editor
+- Timer in Touch 5 pulses faster as it counts down (urgency)
+
+## Design Rules
+
+**Colors:**
+- Keep existing palette: #0a0a0a bg, #22c55e primary, #121212 cards
+- XP floats: use green (#22c55e)
+- Sparkles: use mix of green, amber (#f5b84a), purple (#c792ea)
+- Celebrations: multi-color confetti
+
+**Timing:**
+- Nothing takes more than 1 second (except final celebration = 3s max)
+- All animations use `cubic-bezier(0.4, 0, 0.2, 1)` for feel
+- Reduce motion for `prefers-reduced-motion: reduce`
+
+**Sound (CRITICAL):**
+- All sounds OFF by default
+- Add toggle in top-right: 🔊/🔇
+- Save preference in localStorage
+- If enabled: very subtle, pleasant sounds only (no annoying beeps)
+
+**Mobile:**
+- All animations work on mobile
+- Smaller particles (don't overwhelm small screens)
+- Touch celebrations on tap, not hover
+
+## Technical Implementation
+
+### Floating XP Component
+
+```tsx
+<FloatingXP 
+  value="+1" 
+  x={cursorX} 
+  y={cursorY} 
+  duration={1000}
+  color="#22c55e"
+/>
+```
+
+Uses CSS animation:
+```css
+@keyframes float-up-fade {
+  0% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-30px); }
+}
+```
+
+### Confetti
+
+Use simple CSS-based confetti, no heavy library:
+```typescript
+function burstConfetti(x, y, count = 20) {
+  for (let i = 0; i < count; i++) {
+    createParticle(x, y, randomDirection(), randomColor());
+  }
+}
+```
+
+Or use `canvas-confetti` CDN:
+```html
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+```
+
+### Sound Effects
+
+Use Web Audio API or simple `<audio>` with these free sounds:
+- Correct: subtle "ding" (300Hz, 100ms)
+- Complete: ascending notes (300→500Hz)
+- Wrong: soft "boop" (200Hz, 150ms)
+
+## Testing Checklist
+
+- [ ] Floating XP appears when typing in code editor
+- [ ] Correct answers show celebration (button glow + sparkles + XP float)
+- [ ] Wrong answers show gentle feedback (shake, no confetti)
+- [ ] Streak counter updates in real-time
+- [ ] Progress bar animates smoothly between touches
+- [ ] Idle encouragement appears after 15s
+- [ ] Session completion shows full celebration sequence
+- [ ] Sound toggle works and persists
+- [ ] Mobile animations work smoothly
+- [ ] Reduced motion preference respected
+
+## What NOT to Do
+
+- Do NOT change: Gemini integration, project files logic, /my-project page
+- Do NOT change: dashboards (university, company)
+- Do NOT make animations slow or heavy
+- Do NOT enable sound by default
+- Do NOT use jQuery or heavy animation libraries
+
+## Impact Goal
+
+**Before:** Student completes session in 15 minutes, feels like homework
+**After:** Student completes session in 15 minutes, says "that was fun, let me do another"
+
+This is the invisible layer that turns "educational tool" into "addictive learning experience."
+
+## Time & Cost Estimate
+
+- Fast Mode is fine (not Extended Thinking)
+- Estimated time: 25-30 minutes
+- Estimated cost: $5-7
+
+Keep it tight and polished. Over-animation ruins it. Think Apple-level restraint.

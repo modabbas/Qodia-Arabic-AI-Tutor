@@ -118,4 +118,58 @@
 .error{color:var(--red);margin-top:15px;font-size:14px}.loading{height:12px;background:var(--s2);border-radius:8px;animation:pop .5s infinite alternate}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}@keyframes wiggle{0%,80%,100%{transform:rotate(0)}85%{transform:rotate(-8deg)}90%{transform:rotate(8deg)}95%{transform:rotate(-4deg)}}@keyframes floatUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-60px)}}@keyframes burst{to{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(300deg)}}@keyframes session-spin{to{transform:rotate(360deg)}}
 @media(max-width:600px){.top{gap:10px;padding:10px 14px}.rail{max-width:none}.xpbar{width:44px}.stage{padding:0 0 90px}.say{font-size:18px}.card{padding:20px 18px}.endnum{font-size:44px}.meta{gap:8px}}
-@media(prefers-reduced-motion:reduce){.session *{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:reduce){.session *{animation:none!important;transition:none!important}}/* micro-wins */
+.fxlayer{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden}
+.fx_float,.fx_typing,.fx_spark,.fx_bit,.fx_dot{position:absolute;display:block}
+.fx_float{font-weight:700;color:#22c55e;font-size:22px;white-space:nowrap;transform:translateX(-50%);animation:floatUp .4s cubic-bezier(.4,0,.2,1) forwards}
+.fx_typing{font:600 11px 'JetBrains Mono',monospace;color:#22c55e;opacity:.8;white-space:nowrap;animation:floatSm 1s cubic-bezier(.4,0,.2,1) forwards}
+.fx_spark{font-size:13px;animation:burst .4s cubic-bezier(.4,0,.2,1) forwards}
+.fx_bit{width:7px;height:7px;border-radius:2px;animation:burst .9s cubic-bezier(.4,0,.2,1) forwards}
+.fx_dot{width:6px;height:6px;border-radius:50%;background:#22c55e;opacity:.7;animation:dotFade .6s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes floatSm{from{opacity:.9;transform:translateY(0)}to{opacity:0;transform:translateY(-30px)}}
+@keyframes dotFade{from{opacity:.7;transform:scale(1)}to{opacity:0;transform:scale(.2)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+.slide{animation:slideIn .45s cubic-bezier(.4,0,.2,1) both}
+.slide.leaving{opacity:0;transition:opacity .3s cubic-bezier(.4,0,.2,1);animation:none;pointer-events:none}
+.overlay{position:fixed;inset:0;z-index:55;display:grid;place-items:center;pointer-events:none}
+.overlay span{padding:10px 26px;border-radius:14px;background:rgba(18,18,18,.92);border:1px solid var(--g);color:var(--tx);font-weight:700;font-size:18px;animation:overlay .3s cubic-bezier(.4,0,.2,1) both}
+@keyframes overlay{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.opt.right,.chip.right,.savedPulse{animation:okPulse .4s cubic-bezier(.4,0,.2,1)}
+@keyframes okPulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}60%{transform:scale(1.02);box-shadow:0 0 0 8px rgba(34,197,94,.12)}100%{transform:none;box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.gain{color:var(--g);margin-inline-start:6px;font-variant-numeric:tabular-nums}
+.run{display:inline-block;white-space:nowrap;color:var(--amber);font-weight:600;transition:transform .3s cubic-bezier(.4,0,.2,1);transform-origin:center}
+.run.broke{color:var(--red)}.run.shaking{animation:shake .35s cubic-bezier(.4,0,.2,1)}
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:58;padding:8px 18px;border-radius:20px;background:var(--s);border:1px solid var(--amber);color:var(--amber);font-weight:600;font-size:14px;pointer-events:none;animation:pop .3s cubic-bezier(.4,0,.2,1)}
+.rail{animation:railPulse 2s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes railPulse{0%,100%{opacity:1}50%{opacity:.78}}
+.now{position:relative;overflow:hidden}
+.now::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(34,197,94,.55),transparent);transform:translateX(-100%);animation:shimmer 1s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes shimmer{to{transform:translateX(100%)}}
+.seg.wave{animation:wave .6s cubic-bezier(.4,0,.2,1)}
+@keyframes wave{0%{transform:scaleY(1)}35%{transform:scaleY(2.2)}100%{transform:scaleY(1)}}
+.seg.glowseg{box-shadow:0 0 8px 2px rgba(34,197,94,.55)}
+.rail.gold .seg{background:linear-gradient(90deg,#f5b84a,#ffe29a,#f5b84a);background-size:200% 100%;border-color:var(--amber);animation:goldMove 1.4s cubic-bezier(.4,0,.2,1) 2}
+@keyframes goldMove{to{background-position:-200% 0}}
+.mentor{position:fixed;right:16px;bottom:16px;z-index:58;display:flex;align-items:center;gap:10px;max-width:calc(100vw - 32px);padding:10px 16px;border-radius:16px;background:var(--s);border:1px solid var(--ln);font-size:14px;direction:rtl;pointer-events:none;animation:rise .3s cubic-bezier(.4,0,.2,1) both}
+.mentorface{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--gs);border:1.5px solid var(--g);color:var(--g);font-weight:700;font-size:14px}
+.practice{font-size:12px;color:var(--mt);margin-top:6px}.practice b{color:var(--g);font-variant-numeric:tabular-nums}
+.drop{animation:drop .5s cubic-bezier(.4,0,.2,1) both}
+@keyframes drop{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:none}}
+.perfect{color:var(--amber)}
+.stats{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:8px 0}
+.stat{padding:8px 16px;border-radius:12px;background:var(--s2);border:1px solid var(--ln);font-size:14px;animation-name:rise;animation-duration:.4s;animation-timing-function:cubic-bezier(.4,0,.2,1);animation-fill-mode:both}
+.stat b{color:var(--g);font-variant-numeric:tabular-nums}
+.pulsebtn{animation:btnPulse 1.6s cubic-bezier(.4,0,.2,1) 1.4s infinite}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{box-shadow:0 0 0 8px rgba(34,197,94,0)}}
+.card{position:relative;isolation:isolate;background:transparent;border-color:transparent}
+.card::before{content:'';position:absolute;inset:-1px;z-index:-1;pointer-events:none;border:1px solid var(--ln);border-radius:inherit;background:var(--s);animation:cardFloat 3s cubic-bezier(.4,0,.2,1) infinite alternate}
+.card.boss{box-shadow:none}
+.card.boss::before{inset:-2px;border:2px solid var(--red);box-shadow:0 0 0 4px var(--redl)}
+@keyframes cardFloat{to{transform:translateY(-2px)}}
+.btn:hover:not(:disabled),.chip:hover:not(:disabled),.moodbtn:hover{transform:scale(1.03)}
+.ring.urgent1{animation:breathe 1s cubic-bezier(.4,0,.2,1) infinite}.ring.urgent2{animation:breathe .5s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes breathe{50%{transform:scale(1.1)}}
+.top{padding-inline-start:54px}
+.sound{position:absolute;inset-inline-start:18px;top:50%;transform:translateY(-50%)}
+@media(max-width:600px){.top{padding-inline-start:46px}.sound{inset-inline-start:14px}}
+@media(prefers-reduced-motion:reduce){.session *,.session *::before,.session *::after{animation:none!important;transition:none!important;animation-delay:0s!important;transition-delay:0s!important}.now::after{display:none}}
