@@ -20,4 +20,5 @@ export interface ProjectFileInput {
      * @maxLength 100
      */
   concept_name_en: string;
+  lesson_id?: string;
 }

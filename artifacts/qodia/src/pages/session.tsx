@@ -5,6 +5,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getGetDashboardQueryKey, getGetGeneratedSessionQueryKey, getGetProjectStructureQueryKey, getGetSessionsQueryKey, useCreateGeneratedSession, useCreateSession, useGetDashboard, useGetGeneratedSession, useGetProjectStructure, useSaveProjectFile, type GeneratedSession, type SessionInput } from '@workspace/api-client-react';
 import s from './Session.module.css';
 import { createTypingCounter } from './typing-accounting';
+import { sessionPerformance } from './session-performance';
+import { getGetLearningMapQueryKey } from '@workspace/api-client-react';
 import { CountUp, FxLayer, IdleMentor, caretPoint, readSound, useFx, useReducedMotion, writeSound } from './session-fx';
 
 type Mood = 'hyped' | 'normal' | 'tired';
@@ -91,12 +93,16 @@ export default function Session() {
   const create = useCreateSession();
   const saveFile = useSaveProjectFile();
   const freshSession = useCreateGeneratedSession();
-  const session = generatedSession.data;
-  const sessionLoading = !!dashboard.data && generatedSession.isLoading;
-  const sessionError = generatedSession.isError;
+  const [activeSession, setActiveSession] = useState<GeneratedSession | null>(null);
+  const session = activeSession ?? generatedSession.data;
+  const sessionLoading = !!dashboard.data && generatedSession.isLoading && !activeSession;
+  const sessionError = generatedSession.isError && !activeSession;
   const [freshPending, setFreshPending] = useState(false);
   const [freshError, setFreshError] = useState(false);
   const [touch, setTouch] = useState(0);
+  useEffect(() => {
+    if (touch > 0 && !activeSession && generatedSession.data) setActiveSession(generatedSession.data);
+  }, [touch, activeSession, generatedSession.data]);
   const [mood, setMood] = useState<Mood>('normal');
   const [musicVisible, setMusicVisible] = useState(true);
   const [wrongChoices, setWrongChoices] = useState<number[]>([]);
@@ -160,15 +166,27 @@ export default function Session() {
   const restoredFileRef = useRef<string | null>(null);
   const timedOutRef = useRef(false);
   const baselineRef = useRef<number | null>(null);
+  const startedAtRef = useRef<number | null>(null);
+  const defenseFirstPassRef = useRef(false);
+  useEffect(() => {
+    if (touch === 1 && startedAtRef.current === null) startedAtRef.current = Date.now();
+  }, [touch]);
   const nextRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const checkBtnRef = useRef<HTMLButtonElement>(null);
   const project = useGetProjectStructure({ query: { queryKey: getGetProjectStructureQueryKey(), enabled: touch === 4 && !!session } });
 
   useEffect(() => {
-    if (touch !== 4 || !session || !project.data) return;
+    if (touch !== 4 || !session) return;
     const path = session.touch4_build.target_file;
     if (restoredFileRef.current === path) return;
+    if (session.is_review) {
+      const reviewDraft = 'review_draft' in session ? session.review_draft : undefined;
+      if (typeof reviewDraft === 'string' && reviewDraft.trim()) setCode(current => current || reviewDraft);
+      restoredFileRef.current = path;
+      return;
+    }
+    if (!project.data) return;
     const draft = project.data.files.find(file => file.path === path && file.status === 'in_progress');
     if (draft?.content) setCode(current => current || draft.content || '');
     restoredFileRef.current = path;
@@ -272,6 +290,7 @@ export default function Session() {
       record(touch - 1, wrongChoices.length === 0);
       award(20, event, touch === 4);
     } else {
+      if (phase === 'first') defenseFirstPassRef.current = wrongChoices.length === 0 && confidence === 100 && !timedOutRef.current;
       if (phase === 'followup') record(4, wrongChoices.length === 0 && confidence >= 65);
       award(15, event, true);
     }
@@ -287,12 +306,16 @@ export default function Session() {
     if (savingRef.current) return;
     savingRef.current = true;
     create.mutate({ data: payload }, {
-      onSuccess: (saved) => {
+      onSuccess: async (saved) => {
         setEarned(saved.xp_earned);
+        // A resumed lesson may already have credited partial XP. Its final reward
+        // is the whole lesson total, not an additional award on that baseline.
+        const synced = await dashboard.refetch();
+        if (!synced.isError && synced.data) baselineRef.current = synced.data.progress.total_xp - saved.xp_earned;
         setComplete(true);
-        void queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetProjectStructureQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetLearningMapQueryKey() });
         // Keep the completed lesson on screen; refetch the next planned file on navigation.
         void queryClient.invalidateQueries({ queryKey: getGetGeneratedSessionQueryKey(), refetchType: 'none' });
         const w = window.innerWidth; const h = window.innerHeight;
@@ -310,7 +333,13 @@ export default function Session() {
       timedOutRef.current = false;
       resetChoice();
     } else if (touch === 5) {
-       const payload: SessionInput = { concept: `${session.concept_name_en} — ${session.concept_name_ar}`, concept_name_en: session.concept_name_en, touches_completed: 5, mistakes, xp_earned: 110 };
+       const payload: SessionInput = {
+         concept: `${session.concept_name_en} — ${session.concept_name_ar}`,
+         concept_name_en: session.concept_name_en, touches_completed: 5, mistakes, xp_earned: 110,
+         ...(session.concept_id ? { concept_id: session.concept_id } : {}),
+         ...(session.lesson_id ? { lesson_id: session.lesson_id } : {}),
+         ...sessionPerformance(results, defenseFirstPassRef.current, Date.now() - (startedAtRef.current ?? Date.now())),
+       };
       setSavePayload(payload);
       save(payload);
     } else if (!lockRef.current) {
@@ -346,16 +375,21 @@ export default function Session() {
           file_path: session.touch4_build.target_file,
           content: code.trim(),
           concept_name_en: session.concept_name_en,
+          ...(session.lesson_id ? { lesson_id: session.lesson_id } : {}),
         } });
         setFileSaved(true);
         setCorrect(true);
-        setFeedback({ ok: true, text: `تم حفظ الكود في ${session.touch4_build.target_file}. ${session.touch4_build.success_message}` });
+        setFeedback({ ok: true, text: session.is_review
+          ? `تم تسجيل تدريب المراجعة، ملفك المحفوظ ما تغيّر. ${session.touch4_build.success_message}`
+          : `تم حفظ الكود في ${session.touch4_build.target_file}. ${session.touch4_build.success_message}` });
         record(3, !hint && codeTries === 0);
         award(20, animationPoint, true);
         void queryClient.invalidateQueries({ queryKey: getGetProjectStructureQueryKey() });
       } catch {
         setFileSaveError(true);
-        setFeedback({ ok: false, text: 'ما قدرنا نحفظ الكود في مشروعك. حاول مرة ثانية قبل المتابعة.' });
+        setFeedback({ ok: false, text: session.is_review
+          ? 'ما قدرنا نسجّل تدريب المراجعة. حاول مرة ثانية قبل المتابعة.'
+          : 'ما قدرنا نحفظ الكود في مشروعك. حاول مرة ثانية قبل المتابعة.' });
       }
     } else {
       setCodeTries(count => count + 1);
@@ -363,6 +397,7 @@ export default function Session() {
     }
   }
   function resetForSession() {
+    setActiveSession(null);
     setTouch(0); setMood('normal'); setMusicVisible(true); resetChoice();
     clearLater(); fx.clear(); lockRef.current = false; setLeaving(false); typingRef.current.reset(); setPractice(0);
     streakRef.current = 0; setStreak(0); setStreakMsg(null); setGain(0); setBroke(false); setShaking(false);
@@ -373,6 +408,7 @@ export default function Session() {
     setSavePayload(null); timedOutRef.current = false; savingRef.current = false;
     restoredFileRef.current = null;
     baselineRef.current = null; create.reset();
+    startedAtRef.current = null; defenseFirstPassRef.current = false;
   }
   async function startFresh() {
     if (freshPending) return;
@@ -422,7 +458,7 @@ export default function Session() {
   const readinessStart = 18;
   const readiness = readinessStart + results.reduce((sum, result) => sum + (result?.passed ? 3 : 1), 0);
   const baseXP = baselineRef.current ?? dashboard.data?.progress.total_xp ?? 0;
-  const hudXP = baseXP + earned;
+  const hudXP = complete ? (dashboard.data?.progress.total_xp ?? baseXP) : baseXP + earned;
   const perfect = complete && [0, 1, 2, 3, 4].every(i => results[i]?.passed) && mistakes === 0;
   const build = session?.touch4_build;
   const defense = session?.touch5_defend;
@@ -450,6 +486,7 @@ export default function Session() {
             {!complete && <>
               {touch === 1 && musicVisible && <div className={s.music}><span className={s.note}>🎵</span><span>{music[mood].label} —</span><a href={music[mood].url} target="_blank" rel="noopener noreferrer" data-testid="link-music">افتح بلايليست</a><button className={s.x} onClick={() => setMusicVisible(false)} data-testid="button-dismiss-music">إخفاء</button></div>}
               <div className={`${s.touchlabel} ${touches[touch - 1].color}`}>اللمسة {arabic(touch)} · {touches[touch - 1].name}</div>
+              {session.is_review && <p className={s.fileNote} role="status" data-testid="status-review-session">مراجعة مفهوم سابق · {session.review_reason || 'عم نثبّت الفكرة قبل ما نكمل.'} التدريب منفصل، وما بيغيّر ملفات مشروعك المحفوظة.</p>}
               <div className={s.who}>مشرفك · <span data-testid="text-session-concept">{session.concept_name_ar} ({session.concept_name_en})</span></div>
               <p className={s.say}>{touch === 1
                 ? `${mood === 'hyped' ? 'يلا نشتغل! ' : mood === 'tired' ? 'ما تقلق، ' : ''}${session.concept_intro} سؤال قبل ما نبلش:`
@@ -463,16 +500,16 @@ export default function Session() {
             {!complete && touch === 2 && <section className={s.card}><p className={s.introtext}>{session.touch2_reveal.explanation}</p><p className={s.valueslabel}>خيارات ومفاهيم مرتبطة:</p><div className={s.values}>{session.touch2_reveal.values_table.map((row, index) => <div className={s.valuerow} key={`${row.code}-${index}`}><div className={s.valuename}>{row.code}</div><div className={s.valuedesc}>{row.meaning}</div></div>)}</div><div className={s.check}><div className={s.checkq}>قبل ما نكمّل — سؤال سريع:</div><div className={s.checkmain}>{session.touch2_reveal.verification_question}</div>{choices(session.touch2_reveal.verification_options, session.touch2_reveal.correct_index, session.touch2_reveal.feedback_correct, session.touch2_reveal.feedback_wrong, true)}</div>{feedbackNode}{nextNode}</section>}
             {!complete && touch === 3 && <section className={s.card}><div className={s.q}>{session.touch3_explore.question}</div>{choices(session.touch3_explore.options, session.touch3_explore.correct_index, session.touch3_explore.feedback_correct, session.touch3_explore.feedback_wrong)}{feedbackNode}{nextNode}</section>}
             {!complete && touch === 4 && build && <section className={s.card}><div className={s.q}>{build.task_description}</div>
-              <p className={s.fileTarget}>اليوم رح تضيف كود لـ: <span dir="ltr">{build.target_file}</span></p>
-              <p className={s.fileNote}>هذا الكود سيُحفظ في مشروعك الحقيقي. {build.integration_note}</p>
+              <p className={s.fileTarget}>{session.is_review ? 'تدريب مراجعة مرتبط بالملف:' : 'اليوم رح تضيف كود لـ:'} <span dir="ltr">{build.target_file}</span></p>
+              <p className={s.fileNote}>{session.is_review ? 'الكود هون تدريب للمراجعة فقط، والملف الأصلي ما بيتغيّر.' : 'هذا الكود سيُحفظ في مشروعك الحقيقي.'} {build.integration_note}</p>
               {build.existing_content && <div className={s.priorFile}><strong>الملف الحالي (للقراءة فقط):</strong><pre dir="ltr"><code>{highlightCode(build.existing_content)}</code></pre></div>}
               <div className={s.editor}>
               {build.starter_code.split('\n').map((line, index) => <div className={s.ln} key={`${index}-${line}`}><span className={s.n}>{arabic(index + 1)}</span><span className={s.c}>{line || ' '}</span></div>)}
              </div>
               <div className={s.codeEntry} onPointerMove={event => { if (event.pointerType === 'touch') return; const now = Date.now(); if (now - trailRef.current < 70) return; trailRef.current = now; fx.dot(event.clientX, event.clientY); }}><pre className={s.syntaxMirror} aria-hidden="true"><code>{highlightCode(code)}</code></pre><textarea ref={inputRef} className={s.codeTextarea} value={code} disabled={correct || saveFile.isPending} onChange={onCodeChange} onCompositionStart={() => typingRef.current.compositionStart()} onCompositionEnd={event => creditTyping(event.currentTarget, typingRef.current.compositionEnd(event.data))} onScroll={event => { const mirror = event.currentTarget.previousElementSibling; if (mirror) { mirror.scrollTop = event.currentTarget.scrollTop; mirror.scrollLeft = event.currentTarget.scrollLeft; } }} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); void checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" aria-label={`اكتب كود الملف ${build.target_file}`} /></div>
-              <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><button className={s.hintbtn} disabled={hint || correct} onClick={() => { setHint(true); setConfidence(value => Math.max(0, value - 5)); }} data-testid="button-hint">تلميح <span className={s.hintcost}>−٥</span></button><button ref={checkBtnRef} className={`${s.btn} ${fileSaved ? s.savedPulse : ''}`} disabled={correct || saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? 'عم نحفظ في مشروعك...' : 'احفظ في مشروعي'}</button></div>
+              <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><button className={s.hintbtn} disabled={hint || correct} onClick={() => { setHint(true); setConfidence(value => Math.max(0, value - 5)); }} data-testid="button-hint">تلميح <span className={s.hintcost}>−٥</span></button><button ref={checkBtnRef} className={`${s.btn} ${fileSaved ? s.savedPulse : ''}`} disabled={correct || saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? session.is_review ? 'عم نسجّل المراجعة...' : 'عم نحفظ في مشروعك...' : session.is_review ? 'سجّل تدريب المراجعة' : 'احفظ في مشروعي'}</button></div>
               <div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div><div className={s.practice} data-testid="text-typing-practice">نقاط تدريب: <b>+{arabic(practice)}</b> · كل ٥ أحرف تكتبها بإيدك = +١ للتشجيع فقط، وما بتغيّر نقاطك المحفوظة.</div>{hint && <div className={s.hinttext} data-testid="status-hint">💡 {build.hint}</div>}{feedbackNode}
-              {fileSaveError && <p className={s.error} role="alert">الكود لم يُحفظ بعد. أعد المحاولة بنفس الزر.</p>}
+              {fileSaveError && <p className={s.error} role="alert">{session.is_review ? 'تدريب المراجعة لم يُسجّل بعد.' : 'الكود لم يُحفظ بعد.'} أعد المحاولة بنفس الزر.</p>}
               {fileSaved && <Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link>}{nextNode}</section>}
             {!complete && touch === 5 && defense && <section className={`${s.card} ${s.boss}`}><div className={s.bosshead}><div className={`${s.ring} ${!correct && seconds > 0 && seconds <= 10 ? seconds <= 5 ? s.urgent2 : s.urgent1 : ''}`}><svg width="52" height="52" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" className={s.ringbg} /><circle cx="24" cy="24" r="20" className={s.ringfg} strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - seconds / 30)} /></svg><span data-testid="text-countdown">{arabic(seconds)}</span></div><div className={s.hp}><div className={s.hpl}><span>ثقتك قدام اللجنة</span><span data-testid="text-confidence">{arabic(confidence)}٪</span></div><div className={s.hpb}><i style={{ width: `${confidence}%` }} /></div></div></div><div className={s.judge}>{phase === 'first' ? 'عضو لجنة المناقشة:' : 'الدكتور ما اكتفى:'}</div>
               <div className={s.q}>{phase === 'first' ? defense.committee_question : defense.followup_question}</div>

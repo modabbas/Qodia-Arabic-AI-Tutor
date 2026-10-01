@@ -11,5 +11,4 @@ export type GeneratedSessionSource = typeof GeneratedSessionSource[keyof typeof 
 
 export const GeneratedSessionSource = {
   gemini: 'gemini',
-  fallback: 'fallback',
 } as const;

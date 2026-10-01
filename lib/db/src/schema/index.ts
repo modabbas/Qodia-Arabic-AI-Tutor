@@ -4,3 +4,5 @@ export * from "./progress";
 export * from "./generated-sessions";
 export * from "./project-structures";
 export * from "./project-files";
+export * from "./learning-maps";
+export * from "./lesson-evidence";

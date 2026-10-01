@@ -142,6 +142,40 @@ export async function verifyProject(files: SourceFile[], tech: ProjectTechStack)
   };
 }
 
+export async function verifySubmittedFile(path: string, content: string, tech: ProjectTechStack): Promise<boolean> {
+  const extension = extname(path);
+  if (tech === "Flutter") return false;
+  if (tech === "Django") {
+    if (extension !== ".py") return false;
+    const result = spawnSync("python3", ["-I", "-c", "import ast,sys\nast.parse(sys.stdin.read())"], {
+      input: content,
+      encoding: "utf8",
+      timeout: 5000,
+      maxBuffer: 65536,
+    });
+    return !result.error && result.status === 0;
+  }
+  if (extension === ".json") {
+    try {
+      JSON.parse(content);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  if (![".js", ".jsx", ".ts", ".tsx", ".css"].includes(extension)) return false;
+  try {
+    await transform(content, {
+      sourcefile: path,
+      loader: extension.slice(1) as "js" | "jsx" | "ts" | "tsx" | "css",
+      logLevel: "silent",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const crcTable = Uint32Array.from({ length: 256 }, (_, i) => {
   let value = i;
   for (let n = 0; n < 8; n++) value = value & 1 ? (value >>> 1) ^ 0xedb88320 : value >>> 1;

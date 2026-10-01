@@ -29,6 +29,17 @@ export interface GeneratedSession {
      */
   concept_intro: string;
   source: GeneratedSessionSource;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  concept_id?: string;
+  is_review?: boolean;
+  /** @maxLength 500 */
+  review_reason?: string;
+  lesson_id?: string;
+  /** @maxLength 30720 */
+  review_draft?: string;
   touch1_provoke: GeneratedTouch1;
   touch2_reveal: GeneratedTouch2;
   touch3_explore: GeneratedTouch3;

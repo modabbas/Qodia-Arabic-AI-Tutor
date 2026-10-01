@@ -95,6 +95,117 @@ export interface SessionInput {
   mistakes: number;
   /** @minimum 0 */
   xp_earned: number;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  concept_id?: string;
+  lesson_id?: string;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  touches_correct?: number;
+  /** @minimum 0 */
+  completion_time?: number;
+  build_passed?: boolean;
+}
+
+export interface MasteryUpdateInput {
+  session_id: string;
+}
+
+export type LearningConceptStatus = typeof LearningConceptStatus[keyof typeof LearningConceptStatus];
+
+
+export const LearningConceptStatus = {
+  planned: 'planned',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  needs_review: 'needs_review',
+} as const;
+
+export interface LearningConcept {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  id: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name_en: string;
+  /**
+     * @minLength 1
+     * @maxLength 140
+     */
+  name_ar: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  category: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  difficulty: number;
+  /**
+     * @items.minLength 1
+     * @items.maxLength 100
+     */
+  prerequisites: string[];
+  /**
+     * @minimum 1
+     * @maximum 30
+     */
+  planned_day: number;
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  target_file: string;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  why_important: string;
+  status: LearningConceptStatus;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  mastery_score: number | null;
+  /** @nullable */
+  last_reviewed: string | null;
+  /** @nullable */
+  session_id: string | null;
+  is_locked: boolean;
+  unmet_prerequisites: string[];
+}
+
+export type LearningMapSource = typeof LearningMapSource[keyof typeof LearningMapSource];
+
+
+export const LearningMapSource = {
+  gemini: 'gemini',
+  fallback: 'fallback',
+} as const;
+
+export interface LearningMap {
+  user_id: string;
+  project_name: string;
+  tech_stack: TechStack;
+  /**
+     * @minItems 30
+     * @maxItems 30
+     */
+  concepts: LearningConcept[];
+  created_at: string;
+  updated_at: string;
+  source: LearningMapSource;
 }
 
 export interface LearningSession {
@@ -105,6 +216,26 @@ export interface LearningSession {
   mistakes: number;
   xp_earned: number;
   timestamp: string;
+  /** @nullable */
+  concept_id?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  mastery_earned?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 5
+     * @nullable
+     */
+  touches_correct?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  completion_time?: number | null;
+  is_review?: boolean;
 }
 
 export interface Progress {
@@ -127,7 +258,6 @@ export type GeneratedSessionSource = typeof GeneratedSessionSource[keyof typeof 
 
 export const GeneratedSessionSource = {
   gemini: 'gemini',
-  fallback: 'fallback',
 } as const;
 
 export interface GeneratedTouch1 {
@@ -377,6 +507,17 @@ export interface GeneratedSession {
      */
   concept_intro: string;
   source: GeneratedSessionSource;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  concept_id?: string;
+  is_review?: boolean;
+  /** @maxLength 500 */
+  review_reason?: string;
+  lesson_id?: string;
+  /** @maxLength 30720 */
+  review_draft?: string;
   touch1_provoke: GeneratedTouch1;
   touch2_reveal: GeneratedTouch2;
   touch3_explore: GeneratedTouch3;
@@ -413,6 +554,7 @@ export interface ProjectPlanFile {
      * @nullable
      */
   content: string | null;
+  is_review?: boolean;
 }
 
 export interface ProjectStructure {
@@ -429,6 +571,29 @@ export interface ProjectStructure {
 
 export type ProjectVerificationStatus = typeof ProjectVerificationStatus[keyof typeof ProjectVerificationStatus];
 
+
+export const ProjectVerificationStatus = {
+  passed: 'passed',
+  failed: 'failed',
+  unavailable: 'unavailable',
+} as const;
+
+export type ProjectVerificationIssuesItem = {
+  path: string;
+  /** @nullable */
+  line: number | null;
+  message: string;
+};
+
+export interface ProjectVerification {
+  status: ProjectVerificationStatus;
+  check: string;
+  /** @minimum 0 */
+  checked_files: number;
+  note: string;
+  issues: ProjectVerificationIssuesItem[];
+}
+
 export interface ProjectFileInput {
   /**
      * @minLength 1
@@ -443,27 +608,6 @@ export interface ProjectFileInput {
      * @maxLength 100
      */
   concept_name_en: string;
+  lesson_id?: string;
 }
 
-
-export interface ProjectVerification {
-  status: ProjectVerificationStatus;
-  check: string;
-  /** @minimum 0 */
-  checked_files: number;
-  note: string;
-  issues: ProjectVerificationIssuesItem[];
-}
-
-export type ProjectVerificationIssuesItem = {
-  path: string;
-  /** @nullable */
-  line: number | null;
-  message: string;
-};
-
-export const ProjectVerificationStatus = {
-  passed: 'passed',
-  failed: 'failed',
-  unavailable: 'unavailable',
-} as const;

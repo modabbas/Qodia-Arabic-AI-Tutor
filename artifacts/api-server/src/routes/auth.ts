@@ -11,6 +11,8 @@ import {
   SignUpResponse,
 } from "@workspace/api-zod";
 import { clearSession, issueSession, publicUser, requireUser } from "../lib/qodia-auth";
+import { ensureLearningMap } from "../lib/learning-map-service";
+import { isProjectTechStack } from "../lib/project-builder";
 
 const router: IRouter = Router();
 
@@ -67,6 +69,11 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   await issueSession(res, user.id);
   res.json(LogInResponse.parse({ user: publicUser(user) }));
+  if (user.projectName?.trim() && isProjectTechStack(user.techStack)) {
+    void ensureLearningMap(user.id, user.projectName, user.techStack, req).catch((error: unknown) => {
+      req.log.warn({ reason: error instanceof Error ? error.message : "learning_map_unavailable" }, "Login succeeded; learning map will retry on access");
+    });
+  }
 });
 
 router.post("/auth/logout", (_req, res): void => {

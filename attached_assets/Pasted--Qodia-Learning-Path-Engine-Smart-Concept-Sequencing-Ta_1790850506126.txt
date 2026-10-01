@@ -1,0 +1,291 @@
+# Qodia Learning Path Engine - Smart Concept Sequencing
+
+## Task for Replit Agent
+
+**IMPORTANT: Enable Extended Thinking (🧠) for this architectural change.**
+
+Transform Qodia's session generation from "random concept selection" to "intelligent learning path". No concept should repeat. Each session builds on previous ones.
+
+## The Problem We're Solving
+
+**Current behavior:** Each session asks Gemini "pick a concept for this student". Gemini has no memory, so it might pick StreamBuilder today and StreamBuilder again next week.
+
+**New behavior:** 
+1. On student signup, generate a full 30-concept learning path
+2. Before each session, select the NEXT concept based on prerequisites and mastery
+3. During session generation, send Gemini context: "Student already learned X, Y, Z. Focus on W only."
+4. After session, update mastery score for that concept
+5. Low-mastery concepts (<70%) get reviewed via spaced repetition
+
+## Data Structure Changes
+
+### Add new table: `learning_map`
+
+```typescript
+{
+  user_id: string,
+  concepts: [
+    {
+      id: "concept_1",
+      name_en: "StreamBuilder",
+      name_ar: "StreamBuilder للتحديث الحي",
+      category: "state_management",      // Grouping
+      difficulty: 1,                      // 1=beginner, 5=expert
+      prerequisites: [],                  // IDs of concepts needed before
+      planned_day: 3,                     // When to teach it
+      status: "planned",                  // planned | in_progress | completed | needs_review
+      mastery_score: null,                // 0-100 after completion
+      last_reviewed: null,                // Timestamp
+      session_id: null,                   // Which session taught it
+      target_file: "lib/widgets/flight_list.dart"  // From Cumulative Project
+    },
+    ... 30 concepts total
+  ],
+  created_at: timestamp,
+  updated_at: timestamp
+}
+```
+
+### Update existing `sessions` table
+
+Add fields:
+```typescript
+{
+  ...existing fields,
+  concept_id: string,          // Links to learning_map concept
+  mastery_earned: number,       // 0-100 score for this concept
+  touches_correct: number,      // How many of 5 touches got right
+  completion_time: number       // Minutes to complete
+}
+```
+
+## Implementation Steps
+
+### Step 1: Generate Learning Map (On Signup/Onboarding)
+
+Create new API: `/api/generate-learning-map`
+
+**When called:** After user completes onboarding (chose project + tech)
+
+**Logic:**
+1. Call Gemini with this prompt:
+
+```
+أنت مصمم مناهج تعليمية للتخرج التقني.
+
+معلومات الطالب:
+- المشروع: {project_name}
+- التقنية: {tech_stack}
+
+مهمتك: صمم خارطة تعلّم لـ 30 مفهوم جوهري يحتاجها الطالب لبناء هذا المشروع.
+
+قواعد التصميم:
+1. ابدأ من الأساسيات، تدرّج للمتقدم
+2. كل مفهوم يبني على السابق منطقياً  
+3. حدد prerequisites لكل مفهوم
+4. وزّع المفاهيم على 30 يوم (تدرج صعوبة)
+5. اربط كل مفهوم بملف محدد في مشروع الطالب
+
+أرجع JSON فقط بهذه الصيغة:
+
+{
+  "concepts": [
+    {
+      "id": "concept_1",
+      "name_en": "اسم المفهوم بالإنجليزي",
+      "name_ar": "اسم المفهوم بالعربي",
+      "category": "basics | state | navigation | api | database | ui | advanced",
+      "difficulty": 1-5,
+      "prerequisites": ["concept_id_1", "concept_id_2"],
+      "planned_day": 1-30,
+      "target_file": "lib/path/to/file.dart",
+      "why_important": "جملة قصيرة عن أهمية هذا المفهوم للمشروع"
+    },
+    ... 30 concepts
+  ]
+}
+
+مهم:
+- المفاهيم مرتبطة بـ {tech_stack} تحديداً
+- target_file يناسب هيكل {tech_stack}
+- بدون markdown · JSON صافي فقط
+- اللغة العربية سورية بسيطة
+```
+
+2. Save response to `learning_map` collection
+3. Return success to frontend
+
+### Step 2: Select Next Concept (Before Each Session)
+
+Update `/api/generate-session`:
+
+Before calling Gemini, run selection logic:
+
+```typescript
+async function selectNextConcept(userId) {
+  const map = await db.get(`learning_map:${userId}`);
+  
+  // Priority 1: Needs review (mastery < 70% from past)
+  const reviewNeeded = map.concepts.filter(c => 
+    c.status === "completed" && 
+    c.mastery_score < 70 &&
+    daysSince(c.last_reviewed) >= 3
+  );
+  if (reviewNeeded.length > 0) {
+    return reviewNeeded[0];  // Return oldest low-mastery
+  }
+  
+  // Priority 2: Next concept whose prerequisites are met
+  const nextPlanned = map.concepts
+    .filter(c => c.status === "planned")
+    .find(c => {
+      // All prerequisites must be completed with mastery >= 70%
+      return c.prerequisites.every(prereqId => {
+        const prereq = map.concepts.find(x => x.id === prereqId);
+        return prereq && prereq.status === "completed" && prereq.mastery_score >= 70;
+      });
+    });
+  
+  if (nextPlanned) {
+    return nextPlanned;
+  }
+  
+  // Fallback: Any planned concept (shouldn't happen if map is well-designed)
+  return map.concepts.find(c => c.status === "planned");
+}
+```
+
+### Step 3: Pass Context to Gemini
+
+When generating session content, include learned concepts context:
+
+```
+معلومات إضافية مهمة:
+
+المفاهيم التي درسها الطالب سابقاً (لا تذكرها كأمثلة أساسية):
+{list of completed concept names in Arabic}
+
+المفهوم اليوم: {selected_concept.name_ar}
+صعوبته: {selected_concept.difficulty}/5
+الملف المستهدف: {selected_concept.target_file}
+
+قواعد التوليد:
+- ركّز على {selected_concept.name_ar} فقط
+- يمكنك الإشارة للمفاهيم السابقة بسرعة، لكن لا تعلّمها
+- الأمثلة يجب أن تخص هذا المفهوم بالتحديد
+- Touch 4 (البناء) يجب أن ينتج كود لـ {selected_concept.target_file}
+```
+
+### Step 4: Update Mastery After Session
+
+Create new API: `/api/update-mastery`
+
+**Called when:** Session completes
+
+**Logic:**
+```typescript
+async function updateMastery(userId, conceptId, sessionData) {
+  const score = calculateMasteryScore(sessionData);
+  // Formula: 
+  // - Each correct touch answer = 20 points (max 100)
+  // - Fast completion bonus: +5 if under 10 min
+  // - Perfect code bonus: +10 if build touch passed
+  
+  const map = await db.get(`learning_map:${userId}`);
+  const concept = map.concepts.find(c => c.id === conceptId);
+  
+  concept.status = "completed";
+  concept.mastery_score = score;
+  concept.last_reviewed = Date.now();
+  concept.session_id = sessionData.id;
+  
+  await db.set(`learning_map:${userId}`, map);
+}
+```
+
+### Step 5: Add Visual Feedback (/my-project page)
+
+On the my-project page, enhance the file tree to show:
+
+```
+📁 lib/
+├── 📄 main.dart              [✓ درسته - إتقان 92%]
+├── 📁 widgets/
+│   ├── 📄 flight_list.dart   [✓ درسته - إتقان 85%]  
+│   └── 📄 booking_form.dart  [⏳ اليوم - جاري]
+│   └── 📄 search_bar.dart    [🔒 يحتاج: StreamBuilder, FutureBuilder]
+```
+
+Hover on 🔒 shows prerequisites tooltip.
+
+Add a new section at top of /my-project:
+
+```
+┌──────────────────────────────────────┐
+│ خارطة تعلّمك                        │
+│                                       │
+│ درست: ١٢ مفهوم                       │
+│ متوسط الإتقان: ٨٧٪                  │
+│ مفاهيم تحتاج مراجعة: ٢              │
+│                                       │
+│ [عرض خارطة التعلّم الكاملة]           │
+└──────────────────────────────────────┘
+```
+
+## Testing Checklist
+
+- [ ] New user → signup → learning_map generated (30 concepts)
+- [ ] First session starts with concept_1 (lowest difficulty, no prerequisites)
+- [ ] Complete session → mastery_score saved
+- [ ] Next session picks concept_2 (not repeat concept_1)
+- [ ] After 10 sessions, no concept is repeated
+- [ ] Low mastery (<70%) triggers review after 3+ days
+- [ ] /my-project shows locked files with prerequisites
+- [ ] /my-project shows mastery scores for completed concepts
+
+## Critical Requirements
+
+1. **Do NOT break existing /session page** - only change the data source
+2. **Do NOT change UI drastically** - add info, don't rebuild
+3. **Keep Gemini prompt structure the same** - just add context
+4. **Backward compatible** - existing users should get retroactive learning_map
+
+## Backward Compatibility for Existing Users
+
+For users who already have sessions but no learning_map:
+1. On next login, generate learning_map based on their project
+2. Mark concepts they already covered as "completed" with default mastery = 75
+3. New sessions start filling remaining concepts
+
+## Design Guidelines
+
+- Match Qodia's dark theme
+- Use existing colors (green, purple, amber, red)
+- Status icons:
+  - ✓ = completed (green)
+  - ⏳ = in progress (amber)
+  - 🔒 = locked (gray)
+  - 📝 = needs review (purple)
+
+## Success Criteria
+
+After this:
+- Every student gets a UNIQUE learning path
+- No concept repeats
+- Low-mastery concepts auto-review
+- Judges can test: "Create 2 accounts, see 2 different paths" → PROVES personalization
+
+## The Winning Moment
+
+In the pitch:
+> "Each student gets a personalized 30-concept journey tailored to their project. 
+> StreamBuilder for airport system, useReducer for e-commerce. 
+> Qodia doesn't just teach - it designs curricula."
+
+## Cost & Time
+
+- Extended Thinking: Yes (foundational change)
+- Estimated time: 50-60 minutes
+- Estimated cost: $15-20
+
+This is the smartest feature we're adding. Take your time.

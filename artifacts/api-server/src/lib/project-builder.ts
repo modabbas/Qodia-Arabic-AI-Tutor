@@ -6,7 +6,9 @@ import {
   projectFilesTable,
   projectStructuresTable,
   sessionsTable,
+  type ProjectFile,
   type ProjectPlanEntry,
+  type ProjectStructure,
 } from "@workspace/db";
 
 const supportedTechs = ["Django", "Node.js", "React", "Flutter"] as const;
@@ -170,8 +172,8 @@ const planStringSchema = (maxLength: number): Schema => ({
 });
 const filePlanSchema: Schema = {
   type: Type.ARRAY,
-  minItems: "30",
-  maxItems: "30",
+  // Enforce the exact size in validatePlan; Gemini rejects these provider-side
+  // bounds on complex 30-item response schemas.
   items: {
     type: Type.OBJECT,
     properties: {
@@ -256,7 +258,7 @@ async function generatePlanWithGemini(
   try {
     response = await Promise.race([
       client.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash-lite",
         contents: [
           `Create a cumulative graduation project roadmap for the named technology. Return exactly 30 ordered files, days 1 through 30, each with a unique safe relative path, concept, and concise description. Day 1 MUST be the application entrypoint at ${entryPathByTech[techStack]}.`,
           "Use architecture and file conventions appropriate to the exact stack. Learned concepts are context only; never claim they produced completed code. All planned entries are plans, not saved code.",
@@ -351,18 +353,32 @@ export async function loadProjectBuildContext(
   projectName: string,
   techStack: ProjectTechStack,
   req: Request,
+  requestedTargetPath?: string,
+  reviewMode = false,
 ): Promise<ProjectBuildContext | null> {
   const planRow = await ensureProjectPlan(userId, projectName, techStack, req);
-  if (!isProjectTechStack(planRow.techStack)) throw new Error("Stored project plan has an unsupported technology");
   const savedFiles = await db.select().from(projectFilesTable).where(eq(projectFilesTable.userId, userId));
+  return buildProjectBuildContext(planRow, savedFiles, requestedTargetPath, reviewMode);
+}
+
+export function buildProjectBuildContext(
+  planRow: ProjectStructure,
+  savedFiles: ProjectFile[],
+  requestedTargetPath?: string,
+  reviewMode = false,
+): ProjectBuildContext | null {
+  if (!isProjectTechStack(planRow.techStack)) throw new Error("Stored project plan has an unsupported technology");
   const savedByPath = new Map(savedFiles.map((file) => [file.path, file]));
   const plan: GeneratedPlan = {
     project_summary: planRow.projectSummary,
     files: planRow.files,
   };
-  const target = plan.files.find((entry) => savedByPath.get(entry.path)?.status !== "complete");
+  const target = requestedTargetPath
+    ? plan.files.find((entry) => entry.path === requestedTargetPath)
+    : plan.files.find((entry) => savedByPath.get(entry.path)?.status !== "complete");
   if (!target) return null;
   const savedTarget = savedByPath.get(target.path);
+  if (!reviewMode && savedTarget?.status === "complete") return null;
   const completedFileSummaries = savedFiles
     .filter((file) => file.status === "complete")
     .map((file) => {
@@ -378,9 +394,9 @@ export async function loadProjectBuildContext(
     projectName: planRow.projectName,
     techStack: planRow.techStack,
     target,
-    fileAction: savedTarget ? "modify" : "create",
-    existingContent: savedTarget?.content ?? "",
-    existingConceptNameEn: savedTarget?.conceptNameEn ?? null,
+    fileAction: reviewMode ? "create" : savedTarget ? "modify" : "create",
+    existingContent: reviewMode ? "" : savedTarget?.content ?? "",
+    existingConceptNameEn: reviewMode ? null : savedTarget?.conceptNameEn ?? null,
     completedFileSummaries,
   };
 }

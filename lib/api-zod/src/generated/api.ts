@@ -28,6 +28,7 @@ export const signUpBodyPasswordMax = 128;
 export const signUpBodyNameMax = 80;
 
 
+
 export const SignUpBody = zod.object({
   "email": zod.string().email().max(signUpBodyEmailMax),
   "password": zod.string().min(signUpBodyPasswordMin).max(signUpBodyPasswordMax),
@@ -53,6 +54,7 @@ export const logInBodyEmailMax = 254;
 
 export const logInBodyPasswordMin = 8;
 export const logInBodyPasswordMax = 128;
+
 
 
 export const LogInBody = zod.object({
@@ -101,6 +103,7 @@ export const GetCurrentUserResponse = zod.object({
 export const completeOnboardingBodyProjectNameMax = 120;
 
 
+
 export const CompleteOnboardingBody = zod.object({
   "project_name": zod.string().min(1).max(completeOnboardingBodyProjectNameMax),
   "tech_stack": zod.enum(['Django', 'Node.js', 'React', 'Flutter'])
@@ -117,8 +120,191 @@ export const CompleteOnboardingResponse = zod.object({
 
 
 /**
+ * @summary Get or lazily create the authenticated student's learning map
+ */
+export const getLearningMapResponseConceptsItemIdMax = 100;
+
+export const getLearningMapResponseConceptsItemNameEnMax = 100;
+
+export const getLearningMapResponseConceptsItemNameArMax = 140;
+
+export const getLearningMapResponseConceptsItemCategoryMax = 80;
+
+export const getLearningMapResponseConceptsItemDifficultyMax = 5;
+
+export const getLearningMapResponseConceptsItemPrerequisitesItemMax = 100;
+
+export const getLearningMapResponseConceptsItemPlannedDayMax = 30;
+
+export const getLearningMapResponseConceptsItemTargetFileMax = 240;
+
+export const getLearningMapResponseConceptsItemWhyImportantMax = 500;
+
+export const getLearningMapResponseConceptsItemMasteryScoreMin = 0;
+export const getLearningMapResponseConceptsItemMasteryScoreMax = 100;
+
+export const getLearningMapResponseConceptsMin = 30;
+export const getLearningMapResponseConceptsMax = 30;
+
+
+
+export const GetLearningMapResponse = zod.object({
+  "user_id": zod.string().uuid(),
+  "project_name": zod.string(),
+  "tech_stack": zod.enum(['Django', 'Node.js', 'React', 'Flutter']),
+  "concepts": zod.array(zod.object({
+  "id": zod.string().min(1).max(getLearningMapResponseConceptsItemIdMax),
+  "name_en": zod.string().min(1).max(getLearningMapResponseConceptsItemNameEnMax),
+  "name_ar": zod.string().min(1).max(getLearningMapResponseConceptsItemNameArMax),
+  "category": zod.string().min(1).max(getLearningMapResponseConceptsItemCategoryMax),
+  "difficulty": zod.number().int().min(1).max(getLearningMapResponseConceptsItemDifficultyMax),
+  "prerequisites": zod.array(zod.string().min(1).max(getLearningMapResponseConceptsItemPrerequisitesItemMax)),
+  "planned_day": zod.number().int().min(1).max(getLearningMapResponseConceptsItemPlannedDayMax),
+  "target_file": zod.string().min(1).max(getLearningMapResponseConceptsItemTargetFileMax),
+  "why_important": zod.string().min(1).max(getLearningMapResponseConceptsItemWhyImportantMax),
+  "status": zod.enum(['planned', 'in_progress', 'completed', 'needs_review']),
+  "mastery_score": zod.number().min(getLearningMapResponseConceptsItemMasteryScoreMin).max(getLearningMapResponseConceptsItemMasteryScoreMax).nullable(),
+  "last_reviewed": zod.coerce.date().nullable(),
+  "session_id": zod.string().uuid().nullable(),
+  "is_locked": zod.boolean(),
+  "unmet_prerequisites": zod.array(zod.string())
+})).min(getLearningMapResponseConceptsMin).max(getLearningMapResponseConceptsMax),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "source": zod.enum(['gemini', 'fallback'])
+})
+
+
+/**
+ * @summary Ensure the authenticated student has an idempotently generated learning map
+ */
+export const generateLearningMapResponseConceptsItemIdMax = 100;
+
+export const generateLearningMapResponseConceptsItemNameEnMax = 100;
+
+export const generateLearningMapResponseConceptsItemNameArMax = 140;
+
+export const generateLearningMapResponseConceptsItemCategoryMax = 80;
+
+export const generateLearningMapResponseConceptsItemDifficultyMax = 5;
+
+export const generateLearningMapResponseConceptsItemPrerequisitesItemMax = 100;
+
+export const generateLearningMapResponseConceptsItemPlannedDayMax = 30;
+
+export const generateLearningMapResponseConceptsItemTargetFileMax = 240;
+
+export const generateLearningMapResponseConceptsItemWhyImportantMax = 500;
+
+export const generateLearningMapResponseConceptsItemMasteryScoreMin = 0;
+export const generateLearningMapResponseConceptsItemMasteryScoreMax = 100;
+
+export const generateLearningMapResponseConceptsMin = 30;
+export const generateLearningMapResponseConceptsMax = 30;
+
+
+
+export const GenerateLearningMapResponse = zod.object({
+  "user_id": zod.string().uuid(),
+  "project_name": zod.string(),
+  "tech_stack": zod.enum(['Django', 'Node.js', 'React', 'Flutter']),
+  "concepts": zod.array(zod.object({
+  "id": zod.string().min(1).max(generateLearningMapResponseConceptsItemIdMax),
+  "name_en": zod.string().min(1).max(generateLearningMapResponseConceptsItemNameEnMax),
+  "name_ar": zod.string().min(1).max(generateLearningMapResponseConceptsItemNameArMax),
+  "category": zod.string().min(1).max(generateLearningMapResponseConceptsItemCategoryMax),
+  "difficulty": zod.number().int().min(1).max(generateLearningMapResponseConceptsItemDifficultyMax),
+  "prerequisites": zod.array(zod.string().min(1).max(generateLearningMapResponseConceptsItemPrerequisitesItemMax)),
+  "planned_day": zod.number().int().min(1).max(generateLearningMapResponseConceptsItemPlannedDayMax),
+  "target_file": zod.string().min(1).max(generateLearningMapResponseConceptsItemTargetFileMax),
+  "why_important": zod.string().min(1).max(generateLearningMapResponseConceptsItemWhyImportantMax),
+  "status": zod.enum(['planned', 'in_progress', 'completed', 'needs_review']),
+  "mastery_score": zod.number().min(generateLearningMapResponseConceptsItemMasteryScoreMin).max(generateLearningMapResponseConceptsItemMasteryScoreMax).nullable(),
+  "last_reviewed": zod.coerce.date().nullable(),
+  "session_id": zod.string().uuid().nullable(),
+  "is_locked": zod.boolean(),
+  "unmet_prerequisites": zod.array(zod.string())
+})).min(generateLearningMapResponseConceptsMin).max(generateLearningMapResponseConceptsMax),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "source": zod.enum(['gemini', 'fallback'])
+})
+
+
+/**
+ * Mastery is calculated atomically when the session is saved; this endpoint only verifies its owner and completion.
+ * @summary Verify a completed session and return its persisted learning map
+ */
+export const UpdateMasteryBody = zod.object({
+  "session_id": zod.string().uuid()
+})
+
+export const updateMasteryResponseConceptsItemIdMax = 100;
+
+export const updateMasteryResponseConceptsItemNameEnMax = 100;
+
+export const updateMasteryResponseConceptsItemNameArMax = 140;
+
+export const updateMasteryResponseConceptsItemCategoryMax = 80;
+
+export const updateMasteryResponseConceptsItemDifficultyMax = 5;
+
+export const updateMasteryResponseConceptsItemPrerequisitesItemMax = 100;
+
+export const updateMasteryResponseConceptsItemPlannedDayMax = 30;
+
+export const updateMasteryResponseConceptsItemTargetFileMax = 240;
+
+export const updateMasteryResponseConceptsItemWhyImportantMax = 500;
+
+export const updateMasteryResponseConceptsItemMasteryScoreMin = 0;
+export const updateMasteryResponseConceptsItemMasteryScoreMax = 100;
+
+export const updateMasteryResponseConceptsMin = 30;
+export const updateMasteryResponseConceptsMax = 30;
+
+
+
+export const UpdateMasteryResponse = zod.object({
+  "user_id": zod.string().uuid(),
+  "project_name": zod.string(),
+  "tech_stack": zod.enum(['Django', 'Node.js', 'React', 'Flutter']),
+  "concepts": zod.array(zod.object({
+  "id": zod.string().min(1).max(updateMasteryResponseConceptsItemIdMax),
+  "name_en": zod.string().min(1).max(updateMasteryResponseConceptsItemNameEnMax),
+  "name_ar": zod.string().min(1).max(updateMasteryResponseConceptsItemNameArMax),
+  "category": zod.string().min(1).max(updateMasteryResponseConceptsItemCategoryMax),
+  "difficulty": zod.number().int().min(1).max(updateMasteryResponseConceptsItemDifficultyMax),
+  "prerequisites": zod.array(zod.string().min(1).max(updateMasteryResponseConceptsItemPrerequisitesItemMax)),
+  "planned_day": zod.number().int().min(1).max(updateMasteryResponseConceptsItemPlannedDayMax),
+  "target_file": zod.string().min(1).max(updateMasteryResponseConceptsItemTargetFileMax),
+  "why_important": zod.string().min(1).max(updateMasteryResponseConceptsItemWhyImportantMax),
+  "status": zod.enum(['planned', 'in_progress', 'completed', 'needs_review']),
+  "mastery_score": zod.number().min(updateMasteryResponseConceptsItemMasteryScoreMin).max(updateMasteryResponseConceptsItemMasteryScoreMax).nullable(),
+  "last_reviewed": zod.coerce.date().nullable(),
+  "session_id": zod.string().uuid().nullable(),
+  "is_locked": zod.boolean(),
+  "unmet_prerequisites": zod.array(zod.string())
+})).min(updateMasteryResponseConceptsMin).max(updateMasteryResponseConceptsMax),
+  "created_at": zod.coerce.date(),
+  "updated_at": zod.coerce.date(),
+  "source": zod.enum(['gemini', 'fallback'])
+})
+
+
+/**
  * @summary Get progress, streak, and recent learning sessions
  */
+export const getDashboardResponseRecentSessionsItemMasteryEarnedMin = 0;
+export const getDashboardResponseRecentSessionsItemMasteryEarnedMax = 100;
+
+export const getDashboardResponseRecentSessionsItemTouchesCorrectMin = 0;
+export const getDashboardResponseRecentSessionsItemTouchesCorrectMax = 5;
+
+export const getDashboardResponseRecentSessionsItemCompletionTimeMin = 0;
+
+
+
 export const GetDashboardResponse = zod.object({
   "user": zod.object({
   "id": zod.string(),
@@ -141,7 +327,12 @@ export const GetDashboardResponse = zod.object({
   "touches_completed": zod.number().int(),
   "mistakes": zod.number().int(),
   "xp_earned": zod.number().int(),
-  "timestamp": zod.coerce.date()
+  "timestamp": zod.coerce.date(),
+  "concept_id": zod.string().nullish(),
+  "mastery_earned": zod.number().min(getDashboardResponseRecentSessionsItemMasteryEarnedMin).max(getDashboardResponseRecentSessionsItemMasteryEarnedMax).nullish(),
+  "touches_correct": zod.number().int().min(getDashboardResponseRecentSessionsItemTouchesCorrectMin).max(getDashboardResponseRecentSessionsItemTouchesCorrectMax).nullish(),
+  "completion_time": zod.number().min(getDashboardResponseRecentSessionsItemCompletionTimeMin).nullish(),
+  "is_review": zod.boolean().optional()
 })),
   "onboarding_complete": zod.boolean()
 })
@@ -150,6 +341,16 @@ export const GetDashboardResponse = zod.object({
 /**
  * @summary List the signed-in user's recent learning sessions
  */
+export const getSessionsResponseMasteryEarnedMin = 0;
+export const getSessionsResponseMasteryEarnedMax = 100;
+
+export const getSessionsResponseTouchesCorrectMin = 0;
+export const getSessionsResponseTouchesCorrectMax = 5;
+
+export const getSessionsResponseCompletionTimeMin = 0;
+
+
+
 export const GetSessionsResponseItem = zod.object({
   "id": zod.string(),
   "user_id": zod.string(),
@@ -157,7 +358,12 @@ export const GetSessionsResponseItem = zod.object({
   "touches_completed": zod.number().int(),
   "mistakes": zod.number().int(),
   "xp_earned": zod.number().int(),
-  "timestamp": zod.coerce.date()
+  "timestamp": zod.coerce.date(),
+  "concept_id": zod.string().nullish(),
+  "mastery_earned": zod.number().min(getSessionsResponseMasteryEarnedMin).max(getSessionsResponseMasteryEarnedMax).nullish(),
+  "touches_correct": zod.number().int().min(getSessionsResponseTouchesCorrectMin).max(getSessionsResponseTouchesCorrectMax).nullish(),
+  "completion_time": zod.number().min(getSessionsResponseCompletionTimeMin).nullish(),
+  "is_review": zod.boolean().optional()
 })
 export const GetSessionsResponse = zod.array(GetSessionsResponseItem)
 
@@ -176,14 +382,37 @@ export const createSessionBodyMistakesMin = 0;
 
 export const createSessionBodyXpEarnedMin = 0;
 
+export const createSessionBodyConceptIdMax = 100;
+
+export const createSessionBodyTouchesCorrectMin = 0;
+export const createSessionBodyTouchesCorrectMax = 5;
+
+export const createSessionBodyCompletionTimeMin = 0;
+
+
 
 export const CreateSessionBody = zod.object({
   "concept": zod.string().min(1).max(createSessionBodyConceptMax),
   "concept_name_en": zod.string().min(1).max(createSessionBodyConceptNameEnMax),
   "touches_completed": zod.number().int().min(createSessionBodyTouchesCompletedMin).max(createSessionBodyTouchesCompletedMax),
   "mistakes": zod.number().int().min(createSessionBodyMistakesMin),
-  "xp_earned": zod.number().int().min(createSessionBodyXpEarnedMin)
+  "xp_earned": zod.number().int().min(createSessionBodyXpEarnedMin),
+  "concept_id": zod.string().min(1).max(createSessionBodyConceptIdMax).optional(),
+  "lesson_id": zod.string().uuid().optional(),
+  "touches_correct": zod.number().int().min(createSessionBodyTouchesCorrectMin).max(createSessionBodyTouchesCorrectMax).optional(),
+  "completion_time": zod.number().min(createSessionBodyCompletionTimeMin).optional(),
+  "build_passed": zod.boolean().optional()
 })
+
+export const createSessionResponseMasteryEarnedMin = 0;
+export const createSessionResponseMasteryEarnedMax = 100;
+
+export const createSessionResponseTouchesCorrectMin = 0;
+export const createSessionResponseTouchesCorrectMax = 5;
+
+export const createSessionResponseCompletionTimeMin = 0;
+
+
 
 export const CreateSessionResponse = zod.object({
   "id": zod.string(),
@@ -192,7 +421,12 @@ export const CreateSessionResponse = zod.object({
   "touches_completed": zod.number().int(),
   "mistakes": zod.number().int(),
   "xp_earned": zod.number().int(),
-  "timestamp": zod.coerce.date()
+  "timestamp": zod.coerce.date(),
+  "concept_id": zod.string().nullish(),
+  "mastery_earned": zod.number().min(createSessionResponseMasteryEarnedMin).max(createSessionResponseMasteryEarnedMax).nullish(),
+  "touches_correct": zod.number().int().min(createSessionResponseTouchesCorrectMin).max(createSessionResponseTouchesCorrectMax).nullish(),
+  "completion_time": zod.number().min(createSessionResponseCompletionTimeMin).nullish(),
+  "is_review": zod.boolean().optional()
 })
 
 
@@ -204,6 +438,12 @@ export const getGeneratedSessionResponseConceptNameEnMax = 100;
 export const getGeneratedSessionResponseConceptNameArMax = 140;
 
 export const getGeneratedSessionResponseConceptIntroMax = 400;
+
+export const getGeneratedSessionResponseConceptIdMax = 100;
+
+export const getGeneratedSessionResponseReviewReasonMax = 500;
+
+export const getGeneratedSessionResponseReviewDraftMax = 30720;
 
 export const getGeneratedSessionResponseTouch1ProvokeQuestionMax = 500;
 
@@ -307,11 +547,17 @@ export const getGeneratedSessionResponseTouch5DefendFollowupExplanationMax = 800
 export const getGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax = 400;
 
 
+
 export const GetGeneratedSessionResponse = zod.object({
   "concept_name_en": zod.string().min(1).max(getGeneratedSessionResponseConceptNameEnMax),
   "concept_name_ar": zod.string().min(1).max(getGeneratedSessionResponseConceptNameArMax),
   "concept_intro": zod.string().min(1).max(getGeneratedSessionResponseConceptIntroMax),
-  "source": zod.enum(['gemini', 'fallback']),
+  "source": zod.enum(['gemini']),
+  "concept_id": zod.string().min(1).max(getGeneratedSessionResponseConceptIdMax).optional(),
+  "is_review": zod.boolean().optional(),
+  "review_reason": zod.string().max(getGeneratedSessionResponseReviewReasonMax).optional(),
+  "lesson_id": zod.string().uuid().optional(),
+  "review_draft": zod.string().max(getGeneratedSessionResponseReviewDraftMax).optional(),
   "touch1_provoke": zod.object({
   "question": zod.string().min(1).max(getGeneratedSessionResponseTouch1ProvokeQuestionMax),
   "options": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch1ProvokeOptionsItemMax)).min(getGeneratedSessionResponseTouch1ProvokeOptionsMin).max(getGeneratedSessionResponseTouch1ProvokeOptionsMax),
@@ -373,6 +619,12 @@ export const createGeneratedSessionResponseConceptNameEnMax = 100;
 export const createGeneratedSessionResponseConceptNameArMax = 140;
 
 export const createGeneratedSessionResponseConceptIntroMax = 400;
+
+export const createGeneratedSessionResponseConceptIdMax = 100;
+
+export const createGeneratedSessionResponseReviewReasonMax = 500;
+
+export const createGeneratedSessionResponseReviewDraftMax = 30720;
 
 export const createGeneratedSessionResponseTouch1ProvokeQuestionMax = 500;
 
@@ -476,11 +728,17 @@ export const createGeneratedSessionResponseTouch5DefendFollowupExplanationMax = 
 export const createGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax = 400;
 
 
+
 export const CreateGeneratedSessionResponse = zod.object({
   "concept_name_en": zod.string().min(1).max(createGeneratedSessionResponseConceptNameEnMax),
   "concept_name_ar": zod.string().min(1).max(createGeneratedSessionResponseConceptNameArMax),
   "concept_intro": zod.string().min(1).max(createGeneratedSessionResponseConceptIntroMax),
-  "source": zod.enum(['gemini', 'fallback']),
+  "source": zod.enum(['gemini']),
+  "concept_id": zod.string().min(1).max(createGeneratedSessionResponseConceptIdMax).optional(),
+  "is_review": zod.boolean().optional(),
+  "review_reason": zod.string().max(createGeneratedSessionResponseReviewReasonMax).optional(),
+  "lesson_id": zod.string().uuid().optional(),
+  "review_draft": zod.string().max(createGeneratedSessionResponseReviewDraftMax).optional(),
   "touch1_provoke": zod.object({
   "question": zod.string().min(1).max(createGeneratedSessionResponseTouch1ProvokeQuestionMax),
   "options": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch1ProvokeOptionsItemMax)).min(createGeneratedSessionResponseTouch1ProvokeOptionsMin).max(createGeneratedSessionResponseTouch1ProvokeOptionsMax),
@@ -550,6 +808,7 @@ export const getProjectStructureResponseFilesItemPathRegExp = new RegExp('^(?!.*
 export const getProjectStructureResponseFilesItemContentMax = 30720;
 
 
+
 export const GetProjectStructureResponse = zod.object({
   "project_name": zod.string(),
   "tech_stack": zod.string(),
@@ -564,14 +823,36 @@ export const GetProjectStructureResponse = zod.object({
   "description": zod.string(),
   "status": zod.enum(['complete', 'in_progress', 'planned']),
   "session_id": zod.string().nullable(),
-  "content": zod.string().max(getProjectStructureResponseFilesItemContentMax).nullable().describe('File content is present only for files that have actually been saved.')
+  "content": zod.string().max(getProjectStructureResponseFilesItemContentMax).nullable().describe('File content is present only for files that have actually been saved.'),
+  "is_review": zod.boolean().optional()
 }))
 })
+
 
 /**
  * @summary Safely check syntax of saved student files without executing project code
  */
 export const getProjectVerificationResponseCheckedFilesMin = 0;
+
+
+
+export const GetProjectVerificationResponse = zod.object({
+  "status": zod.enum(['passed', 'failed', 'unavailable']),
+  "check": zod.string(),
+  "checked_files": zod.number().int().min(getProjectVerificationResponseCheckedFilesMin),
+  "note": zod.string(),
+  "issues": zod.array(zod.object({
+  "path": zod.string(),
+  "line": zod.number().int().nullable(),
+  "message": zod.string()
+}))
+})
+
+
+/**
+ * @summary Download saved project files and labeled framework scaffolding
+ */
+export const ExportProjectResponse = zod.unknown()
 
 
 /**
@@ -586,10 +867,12 @@ export const saveProjectFileBodyContentMax = 30720;
 export const saveProjectFileBodyConceptNameEnMax = 100;
 
 
+
 export const SaveProjectFileBody = zod.object({
   "file_path": zod.string().min(1).max(saveProjectFileBodyFilePathMax).regex(saveProjectFileBodyFilePathRegExp),
   "content": zod.string().max(saveProjectFileBodyContentMax),
-  "concept_name_en": zod.string().min(1).max(saveProjectFileBodyConceptNameEnMax)
+  "concept_name_en": zod.string().min(1).max(saveProjectFileBodyConceptNameEnMax),
+  "lesson_id": zod.string().uuid().optional()
 })
 
 export const saveProjectFileResponsePathMax = 240;
@@ -600,6 +883,7 @@ export const saveProjectFileResponsePathRegExp = new RegExp('^(?!.*(?:^|/)\\.\\.
 export const saveProjectFileResponseContentMax = 30720;
 
 
+
 export const SaveProjectFileResponse = zod.object({
   "path": zod.string().min(1).max(saveProjectFileResponsePathMax).regex(saveProjectFileResponsePathRegExp),
   "day": zod.number().int().min(1),
@@ -607,23 +891,8 @@ export const SaveProjectFileResponse = zod.object({
   "description": zod.string(),
   "status": zod.enum(['complete', 'in_progress', 'planned']),
   "session_id": zod.string().nullable(),
-  "content": zod.string().max(saveProjectFileResponseContentMax).nullable().describe('File content is present only for files that have actually been saved.')
+  "content": zod.string().max(saveProjectFileResponseContentMax).nullable().describe('File content is present only for files that have actually been saved.'),
+  "is_review": zod.boolean().optional()
 })
 
 
-/**
- * @summary Download saved project files and labeled framework scaffolding
- */
-export const ExportProjectResponse = zod.unknown()
-
-export const GetProjectVerificationResponse = zod.object({
-  "status": zod.enum(['passed', 'failed', 'unavailable']),
-  "check": zod.string(),
-  "checked_files": zod.number().int().min(getProjectVerificationResponseCheckedFilesMin),
-  "note": zod.string(),
-  "issues": zod.array(zod.object({
-  "path": zod.string(),
-  "line": zod.number().int().nullable(),
-  "message": zod.string()
-}))
-})

@@ -27,4 +27,5 @@ export interface ProjectPlanFile {
      * @nullable
      */
   content: string | null;
+  is_review?: boolean;
 }

@@ -1,4 +1,4 @@
-import { index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, real, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -12,9 +12,18 @@ export const sessionsTable = pgTable(
     touchesCompleted: integer("touches_completed").notNull(),
     mistakes: integer("mistakes").notNull(),
     xpEarned: integer("xp_earned").notNull(),
+    conceptId: text("concept_id"),
+    lessonId: uuid("lesson_id"),
+    masteryEarned: real("mastery_earned"),
+    touchesCorrect: integer("touches_correct"),
+    completionTime: real("completion_time"),
+    isReview: boolean("is_review").notNull().default(false),
     timestamp: timestamp("timestamp", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("sessions_user_timestamp_idx").on(table.userId, table.timestamp)],
+  (table) => [
+    index("sessions_user_timestamp_idx").on(table.userId, table.timestamp),
+    uniqueIndex("sessions_user_lesson_unique").on(table.userId, table.lessonId),
+  ],
 );
 
 export const insertSessionSchema = createInsertSchema(sessionsTable).omit({

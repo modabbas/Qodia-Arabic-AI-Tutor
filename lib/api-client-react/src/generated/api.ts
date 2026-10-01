@@ -25,8 +25,10 @@ import type {
   ErrorResponse,
   GeneratedSession,
   HealthStatus,
+  LearningMap,
   LearningSession,
   LoginInput,
+  MasteryUpdateInput,
   OkResponse,
   OnboardingInput,
   ProjectFileInput,
@@ -556,6 +558,246 @@ export const useCompleteOnboarding = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCompleteOnboardingMutationOptions(options));
+    }
+
+export const getGetLearningMapUrl = () => {
+
+
+
+
+  return `/api/learning-map`
+}
+
+/**
+ * @summary Get or lazily create the authenticated student's learning map
+ */
+export const getLearningMap = async ( options?: Parameters<typeof customFetch>[1]): Promise<LearningMap> => {
+
+  return customFetch<LearningMap>(getGetLearningMapUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLearningMapQueryKey = () => {
+    return [
+    `/api/learning-map`
+    ] as const;
+    }
+
+
+export const getGetLearningMapQueryOptions = <TData = Awaited<ReturnType<typeof getLearningMap>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLearningMap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLearningMapQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLearningMap>>> = ({ signal }) => getLearningMap({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLearningMap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLearningMapQueryResult = NonNullable<Awaited<ReturnType<typeof getLearningMap>>>
+export type GetLearningMapQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get or lazily create the authenticated student's learning map
+ */
+
+export function useGetLearningMap<TData = Awaited<ReturnType<typeof getLearningMap>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLearningMap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLearningMapQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGenerateLearningMapUrl = () => {
+
+
+
+
+  return `/api/generate-learning-map`
+}
+
+/**
+ * @summary Ensure the authenticated student has an idempotently generated learning map
+ */
+export const generateLearningMap = async ( options?: Parameters<typeof customFetch>[1]): Promise<LearningMap> => {
+
+  return customFetch<LearningMap>(getGenerateLearningMapUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getGenerateLearningMapMutationKey = () => ['generateLearningMap'] as const;
+
+export const getGenerateLearningMapMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateLearningMap>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateLearningMap>>, TError,void, TContext> => {
+
+const mutationKey = getGenerateLearningMapMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateLearningMap>>, void> = () => {
+
+
+          return  generateLearningMap(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateLearningMapMutationResult = NonNullable<Awaited<ReturnType<typeof generateLearningMap>>>
+
+    export type GenerateLearningMapMutationError = ErrorType<ErrorResponse>
+
+
+    /**
+ * @summary Ensure the authenticated student has an idempotently generated learning map
+ */
+export const useGenerateLearningMap = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateLearningMap>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateLearningMap>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGenerateLearningMapMutationOptions(options));
+    }
+
+export const getUpdateMasteryUrl = () => {
+
+
+
+
+  return `/api/update-mastery`
+}
+
+/**
+ * Mastery is calculated atomically when the session is saved; this endpoint only verifies its owner and completion.
+ * @summary Verify a completed session and return its persisted learning map
+ */
+export const updateMastery = async (masteryUpdateInput: MasteryUpdateInput, options?: Parameters<typeof customFetch>[1]): Promise<LearningMap> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<LearningMap>(getUpdateMasteryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(masteryUpdateInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateMasteryMutationKey = () => ['updateMastery'] as const;
+
+export const getUpdateMasteryMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMastery>>, TError,UpdateMasteryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMastery>>, TError,UpdateMasteryMutationVariables, TContext> => {
+
+const mutationKey = getUpdateMasteryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMastery>>, UpdateMasteryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateMastery(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMasteryMutationResult = NonNullable<Awaited<ReturnType<typeof updateMastery>>>
+    export type UpdateMasteryMutationBody = BodyType<MasteryUpdateInput>
+    export type UpdateMasteryMutationError = ErrorType<ErrorResponse>
+    export type UpdateMasteryMutationVariables = {data: BodyType<MasteryUpdateInput>}
+
+    /**
+ * @summary Verify a completed session and return its persisted learning map
+ */
+export const useUpdateMastery = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMastery>>, TError,UpdateMasteryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMastery>>,
+        TError,
+        UpdateMasteryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateMasteryMutationOptions(options));
     }
 
 export const getGetDashboardUrl = () => {

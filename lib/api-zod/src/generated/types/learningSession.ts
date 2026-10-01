@@ -14,4 +14,24 @@ export interface LearningSession {
   mistakes: number;
   xp_earned: number;
   timestamp: Date;
+  /** @nullable */
+  concept_id?: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  mastery_earned?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 5
+     * @nullable
+     */
+  touches_correct?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  completion_time?: number | null;
+  is_review?: boolean;
 }

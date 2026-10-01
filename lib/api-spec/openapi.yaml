@@ -136,6 +136,97 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /learning-map:
+    get:
+      operationId: getLearningMap
+      tags: [learning]
+      summary: Get or lazily create the authenticated student's learning map
+      responses:
+        "200":
+          description: Personalized 30-concept learning map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningMap"
+        "400":
+          description: Project profile is incomplete or map generation is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /generate-learning-map:
+    post:
+      operationId: generateLearningMap
+      tags: [learning]
+      summary: Ensure the authenticated student has an idempotently generated learning map
+      responses:
+        "200":
+          description: Existing or newly generated learning map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningMap"
+        "400":
+          description: Project profile is incomplete or map generation is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /update-mastery:
+    post:
+      operationId: updateMastery
+      tags: [learning]
+      summary: Verify a completed session and return its persisted learning map
+      description: Mastery is calculated atomically when the session is saved; this endpoint only verifies its owner and completion.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MasteryUpdateInput"
+      responses:
+        "200":
+          description: Updated learning map
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LearningMap"
+        "400":
+          description: Invalid session identifier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session does not belong to the signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Session has not been completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /dashboard:
     get:
       operationId: getDashboard
@@ -466,7 +557,71 @@ components:
         xp_earned:
           type: integer
           minimum: 0
+        concept_id:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lesson_id:
+          type: string
+          format: uuid
+        touches_correct:
+          type: integer
+          minimum: 0
+          maximum: 5
+        completion_time:
+          type: number
+          minimum: 0
+        build_passed:
+          type: boolean
       required: [concept, concept_name_en, touches_completed, mistakes, xp_earned]
+    MasteryUpdateInput:
+      type: object
+      properties:
+        session_id:
+          type: string
+          format: uuid
+      required: [session_id]
+    LearningConcept:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, minLength: 1, maxLength: 100 }
+        name_en: { type: string, minLength: 1, maxLength: 100 }
+        name_ar: { type: string, minLength: 1, maxLength: 140 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+        difficulty: { type: integer, minimum: 1, maximum: 5 }
+        prerequisites:
+          type: array
+          items: { type: string, minLength: 1, maxLength: 100 }
+        planned_day: { type: integer, minimum: 1, maximum: 30 }
+        target_file: { type: string, minLength: 1, maxLength: 240 }
+        why_important: { type: string, minLength: 1, maxLength: 500 }
+        status:
+          type: string
+          enum: [planned, in_progress, completed, needs_review]
+        mastery_score: { type: ["number", "null"], minimum: 0, maximum: 100 }
+        last_reviewed: { type: ["string", "null"], format: date-time }
+        session_id: { type: ["string", "null"], format: uuid }
+        is_locked: { type: boolean }
+        unmet_prerequisites:
+          type: array
+          items: { type: string }
+      required: [id, name_en, name_ar, category, difficulty, prerequisites, planned_day, target_file, why_important, status, mastery_score, last_reviewed, session_id, is_locked, unmet_prerequisites]
+    LearningMap:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        project_name: { type: string }
+        tech_stack: { $ref: "#/components/schemas/TechStack" }
+        concepts:
+          type: array
+          minItems: 30
+          maxItems: 30
+          items: { $ref: "#/components/schemas/LearningConcept" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        source: { type: string, enum: [gemini, fallback] }
+      required: [user_id, project_name, tech_stack, concepts, created_at, updated_at, source]
     LearningSession:
       type: object
       properties:
@@ -485,6 +640,11 @@ components:
         timestamp:
           type: string
           format: date-time
+        concept_id: { type: ["string", "null"] }
+        mastery_earned: { type: ["number", "null"], minimum: 0, maximum: 100 }
+        touches_correct: { type: ["integer", "null"], minimum: 0, maximum: 5 }
+        completion_time: { type: ["number", "null"], minimum: 0 }
+        is_review: { type: boolean }
       required: [id, user_id, concept, touches_completed, mistakes, xp_earned, timestamp]
     Progress:
       type: object
@@ -531,7 +691,14 @@ components:
           maxLength: 400
         source:
           type: string
-          enum: [gemini, fallback]
+          enum: [gemini]
+        concept_id: { type: string, minLength: 1, maxLength: 100 }
+        is_review: { type: boolean }
+        review_reason: { type: string, maxLength: 500 }
+        lesson_id: { type: string, format: uuid }
+        review_draft:
+          type: string
+          maxLength: 30720
         touch1_provoke:
           $ref: "#/components/schemas/GeneratedTouch1"
         touch2_reveal:
@@ -661,6 +828,7 @@ components:
           type: ["string", "null"]
           maxLength: 30720
           description: File content is present only for files that have actually been saved.
+        is_review: { type: boolean }
       required: [path, day, concept, description, status, session_id, content]
     ProjectFileInput:
       type: object
@@ -677,6 +845,9 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        lesson_id:
+          type: string
+          format: uuid
       required: [file_path, content, concept_name_en]
     GeneratedTouch5:
       type: object

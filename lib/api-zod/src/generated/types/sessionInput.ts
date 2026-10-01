@@ -26,4 +26,18 @@ export interface SessionInput {
   mistakes: number;
   /** @minimum 0 */
   xp_earned: number;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  concept_id?: string;
+  lesson_id?: string;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  touches_correct?: number;
+  /** @minimum 0 */
+  completion_time?: number;
+  build_passed?: boolean;
 }

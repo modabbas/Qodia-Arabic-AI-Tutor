@@ -3,8 +3,11 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import {
   db,
   generatedSessionsTable,
+  learningMapsTable,
+  lessonSubmissionsTable,
   progressTable,
   projectFilesTable,
+  reviewExercisesTable,
   sessionsTable,
   usersTable,
   type LearningSession,
@@ -26,8 +29,20 @@ import {
   getProjectStructureData,
   isProjectTechStack,
 } from "../lib/project-builder";
-import { assembleProject, verifyProject, zipProject } from "../lib/project-export";
+import { assembleProject, verifyProject, verifySubmittedFile, zipProject } from "../lib/project-export";
 import { GetProjectVerificationResponse } from "@workspace/api-zod";
+import { ensureLearningMap } from "../lib/learning-map-service";
+import {
+  additionalXpForProgress,
+  findOwnedGeneratedLesson,
+  findOwnedUnfinishedLessonById,
+  selectOwnedUnfinishedLesson,
+} from "../lib/lesson-cache";
+import {
+  calculateMasteryScore,
+  conservativeLegacyTouchesCorrect,
+  normalizeConceptName,
+} from "../lib/learning-path";
 
 const router: IRouter = Router();
 
@@ -40,6 +55,11 @@ function sessionResponse(session: LearningSession) {
     mistakes: session.mistakes,
     xp_earned: session.xpEarned,
     timestamp: session.timestamp.toISOString(),
+    concept_id: session.conceptId,
+    mastery_earned: session.masteryEarned,
+    touches_correct: session.touchesCorrect,
+    completion_time: session.completionTime,
+    is_review: session.isReview,
   };
 }
 
@@ -57,6 +77,10 @@ function dayInDamascus(date: Date): string {
 type CachedLesson = {
   conceptNameEn: string;
   conceptNameAr: string;
+  conceptId?: string;
+  lessonId?: string;
+  isReview: boolean;
+  reviewReason?: string;
   legacy: boolean;
   targetFile?: string;
   fileAction?: "create" | "modify";
@@ -76,6 +100,10 @@ function cachedLesson(payload: unknown): CachedLesson | null {
     return {
       conceptNameEn: session.concept_name_en,
       conceptNameAr: session.concept_name_ar,
+      conceptId: typeof session.concept_id === "string" ? session.concept_id : undefined,
+      lessonId: typeof session.lesson_id === "string" ? session.lesson_id : undefined,
+      isReview: session.is_review === true,
+      reviewReason: typeof session.review_reason === "string" ? session.review_reason : undefined,
       legacy: true,
     };
   }
@@ -87,6 +115,10 @@ function cachedLesson(payload: unknown): CachedLesson | null {
   return {
     conceptNameEn: session.concept_name_en,
     conceptNameAr: session.concept_name_ar,
+    conceptId: typeof session.concept_id === "string" ? session.concept_id : undefined,
+    lessonId: typeof session.lesson_id === "string" ? session.lesson_id : undefined,
+    isReview: session.is_review === true,
+    reviewReason: typeof session.review_reason === "string" ? session.review_reason : undefined,
     legacy: false,
     targetFile: build.target_file,
     fileAction: build.file_action,
@@ -121,6 +153,11 @@ router.patch("/onboarding", async (req, res): Promise<void> => {
       req.log.error({ reason: "plan_creation_failed" }, "Project plan creation failed after onboarding");
       res.status(500).json({ error: "تعذر إنشاء خطة المشروع حالياً. أعد المحاولة لاحقاً." });
       return;
+    }
+    try {
+      await ensureLearningMap(updated.id, updated.projectName, updated.techStack, req);
+    } catch (error) {
+      req.log.warn({ reason: error instanceof Error ? error.message : "learning_map_unavailable" }, "Onboarding saved; learning map will retry on access");
     }
   }
   res.json(CompleteOnboardingResponse.parse(publicUser(updated)));
@@ -204,26 +241,100 @@ router.post("/save-file", async (req, res): Promise<void> => {
     res.status(400).json({ error: "هذا المسار غير موجود في خطة المشروع." });
     return;
   }
-  let saved: typeof projectFilesTable.$inferSelect;
+  let result: {
+    content: string;
+    status: "complete" | "in_progress" | "planned";
+    sessionId: string | null;
+    isReview: boolean;
+  };
   try {
-    saved = await db.transaction(async (tx) => {
-      const sessionDate = dayInDamascus(new Date());
-      const [cached] = await tx.select().from(generatedSessionsTable).where(and(
-        eq(generatedSessionsTable.userId, user.id),
-        eq(generatedSessionsTable.sessionDate, sessionDate),
-      )).limit(1).for("update");
-      const lesson = cachedLesson(cached?.payload);
+    result = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${user.id})::bigint)`);
+      const cacheRows = await tx.select().from(generatedSessionsTable)
+        .where(eq(generatedSessionsTable.userId, user.id))
+        .orderBy(desc(generatedSessionsTable.updatedAt))
+        .for("update");
+      const lessonProgress = await tx.select({
+        userId: sessionsTable.userId,
+        lessonId: sessionsTable.lessonId,
+        touchesCompleted: sessionsTable.touchesCompleted,
+      }).from(sessionsTable).where(eq(sessionsTable.userId, user.id));
+      const activeCache = parsed.data.lesson_id
+        ? findOwnedUnfinishedLessonById(cacheRows, lessonProgress, user.id, parsed.data.lesson_id)
+        : selectOwnedUnfinishedLesson(cacheRows, lessonProgress, user.id);
+      const lesson = cachedLesson(activeCache?.payload);
       if (
         !lesson
         || lesson.legacy
+        || !lesson.conceptId
+        || !lesson.lessonId
         || lesson.targetFile !== parsed.data.file_path
         || lesson.conceptNameEn !== parsed.data.concept_name_en
       ) throw new Error("PROJECT_FILE_CONFLICT");
+
+      const [map] = await tx.select().from(learningMapsTable)
+        .where(eq(learningMapsTable.userId, user.id)).limit(1).for("update");
+      const concept = map?.concepts.find((entry) => entry.id === lesson.conceptId);
+      if (!concept || concept.name_en !== lesson.conceptNameEn || concept.target_file !== parsed.data.file_path) {
+        throw new Error("PROJECT_FILE_CONFLICT");
+      }
 
       let [existing] = await tx.select().from(projectFilesTable).where(and(
         eq(projectFilesTable.userId, user.id),
         eq(projectFilesTable.path, planned.path),
       )).limit(1).for("update");
+
+      if (lesson.isReview) {
+        const [reviewDraft] = await tx.select().from(reviewExercisesTable).where(and(
+          eq(reviewExercisesTable.userId, user.id),
+          eq(reviewExercisesTable.lessonId, lesson.lessonId),
+        )).limit(1).for("update");
+        if (reviewDraft && (
+          reviewDraft.conceptId !== lesson.conceptId
+          || reviewDraft.targetFile !== planned.path
+          || !appendOnlyExtension(reviewDraft.content, parsed.data.content)
+        )) throw new Error("PROJECT_FILE_CONFLICT");
+        if (reviewDraft) {
+          await tx.update(reviewExercisesTable).set({
+            content: parsed.data.content,
+            updatedAt: new Date(),
+          }).where(eq(reviewExercisesTable.id, reviewDraft.id));
+        } else {
+          await tx.insert(reviewExercisesTable).values({
+            userId: user.id,
+            lessonId: lesson.lessonId,
+            conceptId: lesson.conceptId,
+            targetFile: planned.path,
+            content: parsed.data.content,
+          });
+        }
+        const [submission] = await tx.select().from(lessonSubmissionsTable).where(and(
+          eq(lessonSubmissionsTable.userId, user.id),
+          eq(lessonSubmissionsTable.lessonId, lesson.lessonId),
+        )).limit(1).for("update");
+        if (submission) {
+          if (submission.isReview !== true || submission.targetFile !== planned.path) throw new Error("PROJECT_FILE_CONFLICT");
+          await tx.update(lessonSubmissionsTable).set({
+            submissionCount: submission.submissionCount + 1,
+            updatedAt: new Date(),
+          }).where(eq(lessonSubmissionsTable.id, submission.id));
+        } else {
+          const firstAttemptPassed = await verifySubmittedFile(planned.path, parsed.data.content, user.techStack as Parameters<typeof verifyProject>[1]);
+          await tx.insert(lessonSubmissionsTable).values({
+            userId: user.id,
+            lessonId: lesson.lessonId,
+            targetFile: planned.path,
+            isReview: true,
+            firstAttemptPassed,
+          });
+        }
+        return {
+          content: parsed.data.content,
+          status: existing?.status ?? "planned",
+          sessionId: existing?.completedSessionId ?? null,
+          isReview: true,
+        };
+      }
 
       if (!existing) {
         if (lesson.fileAction !== "create" || lesson.existingContent !== "") {
@@ -236,7 +347,26 @@ router.post("/save-file", async (req, res): Promise<void> => {
           conceptNameEn: lesson.conceptNameEn,
           status: "in_progress",
         }).onConflictDoNothing().returning();
-        if (inserted) return inserted;
+        if (inserted) {
+          const source = await tx.select({ path: projectFilesTable.path, content: projectFilesTable.content })
+            .from(projectFilesTable).where(eq(projectFilesTable.userId, user.id));
+          const candidateFiles = source.map((file) => file.path === planned.path
+            ? { path: file.path, content: parsed.data.content }
+            : file);
+          const verification = await verifyProject(candidateFiles, user.techStack as Parameters<typeof verifyProject>[1]);
+          const [submission] = await tx.select().from(lessonSubmissionsTable).where(and(
+            eq(lessonSubmissionsTable.userId, user.id),
+            eq(lessonSubmissionsTable.lessonId, lesson.lessonId),
+          )).limit(1).for("update");
+          if (!submission) await tx.insert(lessonSubmissionsTable).values({
+            userId: user.id,
+            lessonId: lesson.lessonId,
+            targetFile: planned.path,
+            isReview: false,
+            firstAttemptPassed: verification.status === "passed",
+          });
+          return { content: inserted.content, status: inserted.status, sessionId: inserted.completedSessionId, isReview: false };
+        }
         [existing] = await tx.select().from(projectFilesTable).where(and(
           eq(projectFilesTable.userId, user.id),
           eq(projectFilesTable.path, planned.path),
@@ -267,7 +397,32 @@ router.post("/save-file", async (req, res): Promise<void> => {
         eq(projectFilesTable.status, "in_progress"),
       )).returning();
       if (!updated) throw new Error("PROJECT_FILE_CONFLICT");
-      return updated;
+      const [submission] = await tx.select().from(lessonSubmissionsTable).where(and(
+        eq(lessonSubmissionsTable.userId, user.id),
+        eq(lessonSubmissionsTable.lessonId, lesson.lessonId),
+      )).limit(1).for("update");
+      if (submission) {
+        if (submission.isReview || submission.targetFile !== planned.path) throw new Error("PROJECT_FILE_CONFLICT");
+        await tx.update(lessonSubmissionsTable).set({
+          submissionCount: submission.submissionCount + 1,
+          updatedAt: new Date(),
+        }).where(eq(lessonSubmissionsTable.id, submission.id));
+      } else {
+        const source = await tx.select({ path: projectFilesTable.path, content: projectFilesTable.content })
+          .from(projectFilesTable).where(eq(projectFilesTable.userId, user.id));
+        const candidateFiles = source.map((file) => file.path === planned.path
+          ? { path: file.path, content: parsed.data.content }
+          : file);
+        const verification = await verifyProject(candidateFiles, user.techStack as Parameters<typeof verifyProject>[1]);
+        await tx.insert(lessonSubmissionsTable).values({
+          userId: user.id,
+          lessonId: lesson.lessonId,
+          targetFile: planned.path,
+          isReview: false,
+          firstAttemptPassed: verification.status === "passed",
+        });
+      }
+      return { content: updated.content, status: updated.status, sessionId: updated.completedSessionId, isReview: false };
     });
   } catch (error) {
     if (error instanceof Error && error.message === "PROJECT_FILE_CONFLICT") {
@@ -281,9 +436,10 @@ router.post("/save-file", async (req, res): Promise<void> => {
     day: planned.day,
     concept: planned.concept,
     description: planned.description,
-    status: saved.status,
-    session_id: saved.completedSessionId,
-    content: saved.content,
+    status: result.status,
+    session_id: result.sessionId,
+    content: result.content,
+    is_review: result.isReview,
   }));
 });
 
@@ -325,7 +481,12 @@ router.post("/sessions", async (req, res): Promise<void> => {
   if (!user) return;
 
   const parsed = CreateSessionBody.safeParse(req.body);
-  if (!parsed.success || !parsed.data.concept.trim() || parsed.data.mistakes > 100) {
+  if (
+    !parsed.success
+    || !parsed.data.concept.trim()
+    || parsed.data.mistakes > 100
+    || (parsed.data.touches_correct !== undefined && parsed.data.touches_correct > parsed.data.touches_completed)
+  ) {
     res.status(400).json({ error: "بيانات الجلسة غير صالحة." });
     return;
   }
@@ -343,55 +504,113 @@ router.post("/sessions", async (req, res): Promise<void> => {
   let session: LearningSession;
   try {
     session = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${user.id})::bigint)`);
       await tx.insert(progressTable).values({ userId: user.id }).onConflictDoNothing();
       const [progress] = await tx.select().from(progressTable)
         .where(eq(progressTable.userId, user.id)).for("update");
       if (!progress) throw new Error("Progress row missing after insert");
 
-      // Locking the progress row serializes concurrent saves for this student.
-      // A replay of the same concept on the same Damascus day must not award XP twice.
-      const concept = parsed.data.concept;
+      const cacheRows = await tx.select().from(generatedSessionsTable)
+        .where(eq(generatedSessionsTable.userId, user.id))
+        .orderBy(desc(generatedSessionsTable.updatedAt))
+        .for("update");
+      const lessonProgress = await tx.select({
+        userId: sessionsTable.userId,
+        lessonId: sessionsTable.lessonId,
+        touchesCompleted: sessionsTable.touchesCompleted,
+      }).from(sessionsTable).where(eq(sessionsTable.userId, user.id));
+      if (parsed.data.lesson_id) {
+        const [replay] = await tx.select().from(sessionsTable).where(and(
+          eq(sessionsTable.userId, user.id),
+          eq(sessionsTable.lessonId, parsed.data.lesson_id),
+        )).limit(1);
+        if (replay && replay.touchesCompleted >= parsed.data.touches_completed) {
+          if (
+            replay.concept !== parsed.data.concept
+            || replay.concept.split(" — ", 1)[0] !== parsed.data.concept_name_en
+            || (parsed.data.concept_id && replay.conceptId !== parsed.data.concept_id)
+          ) throw new Error("CURRENT_LESSON_MISMATCH");
+          return replay;
+        }
+      }
+      const cached = parsed.data.lesson_id
+        ? findOwnedGeneratedLesson(cacheRows, user.id, parsed.data.lesson_id)
+        : selectOwnedUnfinishedLesson(cacheRows, lessonProgress, user.id);
+      if (!cached) throw new Error("CURRENT_LESSON_REQUIRED");
+      const lesson = cachedLesson(cached.payload);
+      if (
+        !lesson
+        || lesson.legacy
+        || !lesson.conceptId
+        || !lesson.lessonId
+        || lesson.conceptNameEn !== parsed.data.concept_name_en
+        || parsed.data.concept !== `${lesson.conceptNameEn} — ${lesson.conceptNameAr}`
+        || (parsed.data.lesson_id && parsed.data.lesson_id !== lesson.lessonId)
+        || (parsed.data.concept_id && parsed.data.concept_id !== lesson.conceptId)
+      ) throw new Error("CURRENT_LESSON_MISMATCH");
+
+      const [map] = await tx.select().from(learningMapsTable)
+        .where(eq(learningMapsTable.userId, user.id)).limit(1).for("update");
+      if (!map) throw new Error("CURRENT_LESSON_REQUIRED");
+      const mapConcept = map.concepts.find((item) => item.id === lesson.conceptId);
+      if (
+        !mapConcept
+        || normalizeConceptName(mapConcept.name_en) !== normalizeConceptName(lesson.conceptNameEn)
+        || mapConcept.target_file !== lesson.targetFile
+        || (!lesson.isReview && mapConcept.status !== "in_progress")
+        || (lesson.isReview && (mapConcept.mastery_score === null || mapConcept.mastery_score >= 70))
+      ) throw new Error("CURRENT_LESSON_MISMATCH");
+
       const [existing] = await tx.select().from(sessionsTable).where(and(
         eq(sessionsTable.userId, user.id),
-        eq(sessionsTable.concept, concept),
-        sql`(${sessionsTable.timestamp} AT TIME ZONE 'Asia/Damascus')::date = ${today}::date`,
-      )).orderBy(desc(sessionsTable.timestamp)).limit(1);
+        eq(sessionsTable.lessonId, lesson.lessonId),
+      )).limit(1);
       if (existing && existing.touchesCompleted >= parsed.data.touches_completed) {
-        const delimiter = existing.concept.indexOf(" — ");
-        if (delimiter < 0 || existing.concept.slice(0, delimiter) !== parsed.data.concept_name_en) {
+        if (existing.concept !== parsed.data.concept || (parsed.data.concept_id && existing.conceptId !== parsed.data.concept_id)) {
           throw new Error("CURRENT_LESSON_MISMATCH");
         }
         return existing;
       }
 
-      const [cached] = await tx.select().from(generatedSessionsTable).where(and(
-        eq(generatedSessionsTable.userId, user.id),
-        eq(generatedSessionsTable.sessionDate, today),
-      )).limit(1).for("update");
-      if (!cached) throw new Error("CURRENT_LESSON_REQUIRED");
-      const lesson = cachedLesson(cached.payload);
-      if (
-        !lesson
-        || lesson.conceptNameEn !== parsed.data.concept_name_en
-        || concept !== `${lesson.conceptNameEn} — ${lesson.conceptNameAr}`
-      ) throw new Error("CURRENT_LESSON_MISMATCH");
-
       let completionDraft: typeof projectFilesTable.$inferSelect | undefined;
-      if (parsed.data.touches_completed === 5 && !lesson.legacy) {
-        const [draft] = await tx.select().from(projectFilesTable).where(and(
-          eq(projectFilesTable.userId, user.id),
-          eq(projectFilesTable.path, lesson.targetFile!),
-        )).limit(1).for("update");
-        if (
-          !draft
-          || draft.status !== "in_progress"
-          || draft.conceptNameEn !== lesson.conceptNameEn
-          || !draft.content.trim()
-        ) throw new Error("PROJECT_FILE_DRAFT_REQUIRED");
-        completionDraft = draft;
+      if (parsed.data.touches_completed === 5) {
+        if (lesson.isReview) {
+          const [practice] = await tx.select().from(reviewExercisesTable).where(and(
+            eq(reviewExercisesTable.userId, user.id),
+            eq(reviewExercisesTable.lessonId, lesson.lessonId),
+            eq(reviewExercisesTable.conceptId, lesson.conceptId),
+          )).limit(1).for("update");
+          if (!practice || practice.targetFile !== lesson.targetFile || !practice.content.trim()) {
+            throw new Error("REVIEW_EVIDENCE_REQUIRED");
+          }
+        } else {
+          const [draft] = await tx.select().from(projectFilesTable).where(and(
+            eq(projectFilesTable.userId, user.id),
+            eq(projectFilesTable.path, lesson.targetFile!),
+          )).limit(1).for("update");
+          if (
+            !draft
+            || draft.status !== "in_progress"
+            || draft.conceptNameEn !== lesson.conceptNameEn
+            || !draft.content.trim()
+          ) throw new Error("PROJECT_FILE_DRAFT_REQUIRED");
+          completionDraft = draft;
+        }
       }
 
-      const additionalXp = Math.max(0, earned - (existing?.xpEarned ?? 0));
+      const touchesCorrect = parsed.data.touches_correct
+        ?? conservativeLegacyTouchesCorrect(parsed.data.touches_completed, parsed.data.mistakes);
+      const [submissionEvidence] = await tx.select().from(lessonSubmissionsTable).where(and(
+        eq(lessonSubmissionsTable.userId, user.id),
+        eq(lessonSubmissionsTable.lessonId, lesson.lessonId),
+        eq(lessonSubmissionsTable.targetFile, lesson.targetFile!),
+      )).limit(1);
+      const buildPassed = parsed.data.build_passed === true && submissionEvidence?.firstAttemptPassed === true;
+      const masteryEarned = parsed.data.touches_completed === 5
+        ? calculateMasteryScore(touchesCorrect, parsed.data.completion_time ?? Number.POSITIVE_INFINITY, buildPassed)
+        : null;
+      const lessonConcept = `${lesson.conceptNameEn} — ${lesson.conceptNameAr}`;
+      const additionalXp = additionalXpForProgress(existing?.xpEarned ?? 0, earned);
       const totalXp = progress.totalXp + additionalXp;
       const streakDays = progress.lastActive === today
         ? progress.streakDays
@@ -403,14 +622,26 @@ router.post("/sessions", async (req, res): Promise<void> => {
           touchesCompleted: parsed.data.touches_completed,
           mistakes: parsed.data.mistakes,
           xpEarned: Math.max(existing.xpEarned, earned),
+          conceptId: lesson.conceptId,
+          lessonId: lesson.lessonId,
+          masteryEarned,
+          touchesCorrect,
+          completionTime: parsed.data.completion_time ?? null,
+          isReview: lesson.isReview,
           timestamp: new Date(),
         }).where(eq(sessionsTable.id, existing.id)).returning()
         : await tx.insert(sessionsTable).values({
           userId: user.id,
-          concept,
+          concept: lessonConcept,
           touchesCompleted: parsed.data.touches_completed,
           mistakes: parsed.data.mistakes,
           xpEarned: earned,
+          conceptId: lesson.conceptId,
+          lessonId: lesson.lessonId,
+          masteryEarned,
+          touchesCorrect,
+          completionTime: parsed.data.completion_time ?? null,
+          isReview: lesson.isReview,
         }).returning();
       if (parsed.data.touches_completed === 5 && completionDraft) {
         await tx.update(projectFilesTable).set({
@@ -418,6 +649,19 @@ router.post("/sessions", async (req, res): Promise<void> => {
           completedSessionId: saved.id,
           updatedAt: new Date(),
         }).where(eq(projectFilesTable.id, completionDraft.id));
+      }
+      if (parsed.data.touches_completed === 5 && masteryEarned !== null) {
+        const concepts = map.concepts.map((item) => item.id === lesson.conceptId
+          ? {
+            ...item,
+            status: masteryEarned >= 70 ? "completed" as const : "needs_review" as const,
+            mastery_score: masteryEarned,
+            last_reviewed: saved.timestamp.toISOString(),
+            session_id: saved.id,
+          }
+          : item);
+        await tx.update(learningMapsTable).set({ concepts, updatedAt: new Date() })
+          .where(eq(learningMapsTable.userId, user.id));
       }
       await tx.update(progressTable).set({
         totalXp,
@@ -430,12 +674,15 @@ router.post("/sessions", async (req, res): Promise<void> => {
   } catch (error) {
     if (error instanceof Error && [
       "PROJECT_FILE_DRAFT_REQUIRED",
+        "REVIEW_EVIDENCE_REQUIRED",
       "CURRENT_LESSON_REQUIRED",
       "CURRENT_LESSON_MISMATCH",
     ].includes(error.message)) {
       res.status(409).json({
         error: error.message === "PROJECT_FILE_DRAFT_REQUIRED"
           ? "احفظ مسودة ملف المهمة قبل إكمال الجلسة."
+          : error.message === "REVIEW_EVIDENCE_REQUIRED"
+            ? "احفظ كود تمرين المراجعة قبل إكمال الجلسة."
           : error.message === "CURRENT_LESSON_REQUIRED"
             ? "لا توجد جلسة مولدة حالية. أنشئ جلسة ثم أعد المحاولة."
             : "بيانات الجلسة لا تطابق الدرس المولد الحالي. أعد تحميل الدرس.",

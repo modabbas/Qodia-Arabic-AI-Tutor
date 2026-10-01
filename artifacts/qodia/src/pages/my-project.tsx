@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { ArrowRight, ChevronDown, Clock3, Download, FolderTree, GitCommitHorizontal, ScanSearch } from 'lucide-react';
 import { Link } from 'wouter';
-import { getProjectVerification, useGetProjectStructure, type ProjectPlanFile, type ProjectVerification } from '@workspace/api-client-react';
+import { getProjectVerification, useGetLearningMap, type LearningMap, useGetProjectStructure, type ProjectPlanFile, type ProjectVerification } from '@workspace/api-client-react';
 import { AppHeader, ErrorState, LoadingState } from '@/components/qodia-ui';
+import { LearningPathPanel, TreeConceptDisclosure, conceptsByFile, type FileConceptInfo } from '@/components/learning-path';
 import './my-project.css';
 
 type TreeNode = { name: string; path: string; children: TreeNode[]; file?: ProjectPlanFile };
@@ -61,7 +62,8 @@ function highlightedLine(line: string, path: string) {
   return output;
 }
 
-function FileTree({ nodes, selectedPath, onSelect, collapsed, onToggle, depth = 0 }: {
+function FileTree({ nodes, selectedPath, onSelect, collapsed, onToggle, info, depth = 0 }: {
+  info: Map<string, FileConceptInfo>;
   nodes: TreeNode[];
   selectedPath: string | null;
   onSelect: (path: string) => void;
@@ -70,13 +72,14 @@ function FileTree({ nodes, selectedPath, onSelect, collapsed, onToggle, depth = 
   depth?: number;
 }) {
   return <>{nodes.map(node => node.file
-    ? <button key={node.path} type="button" className={`project-tree-file ${selectedPath === node.path ? 'is-selected' : ''}`}
-        style={{ paddingRight: 9 + depth * 17 }} onClick={() => onSelect(node.path)}
+    ? <div key={node.path} className="project-tree-row"><button type="button" className={`project-tree-file ${selectedPath === node.path ? 'is-selected' : ''} ${info.get(node.path)?.locked ? 'is-locked-file' : ''}`}
+
+        style={{ paddingRight: 9 + depth * 17, ...(info.get(node.path) ? { paddingLeft: 38 } : {}) }} onClick={() => onSelect(node.path)}
         aria-current={selectedPath === node.path ? 'true' : undefined}
         title={node.path} data-testid={`button-project-file-${node.path.replaceAll('/', '-')}`}>
         <span className="project-tree-emoji" aria-hidden="true">📄</span><span className="project-tree-file-name">{node.name}</span>
         <span className="project-tree-status" aria-label={statusLabels[node.file.status]} title={statusLabels[node.file.status]}>{statusIcons[node.file.status]}</span>
-      </button>
+      </button>{info.get(node.path) && <TreeConceptDisclosure info={info.get(node.path)!} id={node.path.replaceAll('/', '-')} />}</div>
     : <div key={node.path}>
         <button type="button" className="project-tree-folder" style={{ paddingRight: 9 + depth * 17 }}
           onClick={() => onToggle(node.path)} aria-expanded={!collapsed.has(node.path)}
@@ -84,12 +87,14 @@ function FileTree({ nodes, selectedPath, onSelect, collapsed, onToggle, depth = 
           <ChevronDown size={13} className={`project-tree-chevron ${collapsed.has(node.path) ? 'is-closed' : ''}`} aria-hidden="true" />
           <span className="project-tree-emoji" aria-hidden="true">📁</span><span className="project-tree-folder-name">{node.name}</span>
         </button>
-        {!collapsed.has(node.path) && <FileTree nodes={node.children} selectedPath={selectedPath} onSelect={onSelect} collapsed={collapsed} onToggle={onToggle} depth={depth + 1} />}
+        {!collapsed.has(node.path) && <FileTree nodes={node.children} selectedPath={selectedPath} onSelect={onSelect} collapsed={collapsed} onToggle={onToggle} info={info} depth={depth + 1} />}
       </div>)}</>;
 }
 
 export default function MyProject() {
   const project = useGetProjectStructure();
+  const learningMap = useGetLearningMap<LearningMap>();
+  const conceptInfo = useMemo(() => conceptsByFile(learningMap.data), [learningMap.data]);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [verification, setVerification] = useState<ProjectVerification | null>(null);
@@ -149,6 +154,8 @@ export default function MyProject() {
         {data.tech_stack && <span className="project-tech" data-testid="text-project-tech">{data.tech_stack}</span>}
       </div>
 
+      <LearningPathPanel map={learningMap} />
+
       <div className="project-overview">
         <section className="project-progress" aria-label="تقدم ملفات المشروع">
           <div className="project-progress-head">
@@ -182,7 +189,7 @@ export default function MyProject() {
       <section className="project-workspace" aria-label="ملفات المشروع">
         <aside className="project-sidebar">
           <div className="project-sidebar-head"><h2>هيكل الملفات</h2><p data-testid="text-project-file-count">{data.files.length} ملف في الخطة</p></div>
-          {tree.length ? <div className="project-tree"><FileTree nodes={tree} selectedPath={selected?.path ?? null} onSelect={setSelectedPath} collapsed={collapsed} onToggle={toggleFolder} /></div>
+          {tree.length ? <div className="project-tree"><FileTree nodes={tree} selectedPath={selected?.path ?? null} onSelect={setSelectedPath} collapsed={collapsed} onToggle={toggleFolder} info={conceptInfo} /></div>
             : <div className="project-code-empty"><FolderTree size={24} /><strong>الشجرة لسا فاضية</strong><p>ملفات مشروعك رح تظهر هون لما تبدأ تبنيها في الجلسات.</p></div>}
         </aside>
         <div className="project-detail">
