@@ -1,0 +1,36 @@
+# Fix: Dashboard "Today's Challenge" Card Shows Completed Session Again
+
+## Bug
+After a student fully completes a session (reaches the celebration/results screen), returning to the dashboard still shows the SAME concept in the "تحدّي اليوم" card as if not completed. Clicking "ابدأ جلسة اليوم" restarts the same session instead of loading the next concept from the Learning Path.
+
+## Root Cause (likely)
+The dashboard's challenge card data is being read from a stale cache, OR the dashboard is not re-fetching the next-concept-to-learn after session completion is recorded, OR session completion isn't properly marking the concept as "completed" in the learning_map before the dashboard re-renders.
+
+## Fix
+
+1. Verify that when a session reaches its completion screen, the backend correctly:
+   - Marks the corresponding concept in `learning_map` as `status: completed` with its mastery_score
+   - This should already be happening (built in Learning Path Engine) — confirm it's not broken by recent changes (Lenient Validation, Hints fix, Touch 4 scaffold)
+
+2. Fix the dashboard's challenge card to ALWAYS fetch fresh data on page load/navigation:
+   - It should call `selectNextConcept(userId)` (the existing Learning Path selection logic) fresh every time the dashboard is visited, not rely on a cached session reference
+   - If the previously shown concept is now `completed`, the card must show the NEXT concept from the learning path, not the same one
+
+3. Check for any client-side caching (React state, localStorage, or stale SWR/React Query cache) that might be preventing the dashboard from re-fetching after returning from a completed session. Ensure navigation back to dashboard triggers a fresh fetch, not a cached render.
+
+## What NOT to Do
+- Do NOT touch Touch 4 scaffold, Validation, Hints, or Pride Moment logic
+- Do NOT change the Learning Path concept-selection algorithm itself — only ensure the dashboard calls it freshly
+- Do NOT modify session completion/celebration screen
+
+## Testing
+- [ ] Complete a full session (all 5 touches) through to the celebration screen
+- [ ] Navigate back to dashboard
+- [ ] "تحدّي اليوم" card shows a DIFFERENT concept than the one just completed
+- [ ] Clicking "ابدأ جلسة اليوم" starts the NEW concept, not the completed one
+- [ ] Refreshing the dashboard page (F5) does not revert to showing the completed concept
+
+## Cost & Time
+- Extended Thinking: not required, this is a caching/data-fetch fix
+- Time: 10-15 minutes
+- Cost: $3-5
