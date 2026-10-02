@@ -24,6 +24,7 @@ import type {
   Dashboard,
   ErrorResponse,
   GeneratedSession,
+  GetTouch4SupportParams,
   HealthStatus,
   LearningMap,
   LearningSession,
@@ -37,6 +38,8 @@ import type {
   ProjectVerification,
   SessionInput,
   SignUpInput,
+  Touch4Support,
+  Touch4SupportRevealInput,
   User
 } from './api.schemas';
 
@@ -1191,6 +1194,178 @@ export const useCreateGeneratedSession = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateGeneratedSessionMutationOptions(options));
+    }
+
+export const getGetTouch4SupportUrl = (params: GetTouch4SupportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/touch4-support?${stringifiedParams}` : `/api/touch4-support`
+}
+
+/**
+ * @summary Get persisted Touch 4 attempts and already revealed help
+ */
+export const getTouch4Support = async (params: GetTouch4SupportParams, options?: Parameters<typeof customFetch>[1]): Promise<Touch4Support> => {
+
+  return customFetch<Touch4Support>(getGetTouch4SupportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTouch4SupportQueryKey = (params?: GetTouch4SupportParams,) => {
+    return [
+    `/api/touch4-support`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTouch4SupportQueryOptions = <TData = Awaited<ReturnType<typeof getTouch4Support>>, TError = ErrorType<ErrorResponse>>(params: GetTouch4SupportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTouch4Support>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTouch4SupportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTouch4Support>>> = ({ signal }) => getTouch4Support(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTouch4Support>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTouch4SupportQueryResult = NonNullable<Awaited<ReturnType<typeof getTouch4Support>>>
+export type GetTouch4SupportQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get persisted Touch 4 attempts and already revealed help
+ */
+
+export function useGetTouch4Support<TData = Awaited<ReturnType<typeof getTouch4Support>>, TError = ErrorType<ErrorResponse>>(
+ params: GetTouch4SupportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTouch4Support>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTouch4SupportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRevealTouch4HintUrl = () => {
+
+
+
+
+  return `/api/touch4-support/reveal`
+}
+
+/**
+ * @summary Reveal an eligible progressive hint or reference solution
+ */
+export const revealTouch4Hint = async (touch4SupportRevealInput: Touch4SupportRevealInput, options?: Parameters<typeof customFetch>[1]): Promise<Touch4Support> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Touch4Support>(getRevealTouch4HintUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(touch4SupportRevealInput)
+  }
+);}
+
+
+
+
+
+export const getRevealTouch4HintMutationKey = () => ['revealTouch4Hint'] as const;
+
+export const getRevealTouch4HintMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revealTouch4Hint>>, TError,RevealTouch4HintMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revealTouch4Hint>>, TError,RevealTouch4HintMutationVariables, TContext> => {
+
+const mutationKey = getRevealTouch4HintMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revealTouch4Hint>>, RevealTouch4HintMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  revealTouch4Hint(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevealTouch4HintMutationResult = NonNullable<Awaited<ReturnType<typeof revealTouch4Hint>>>
+    export type RevealTouch4HintMutationBody = BodyType<Touch4SupportRevealInput>
+    export type RevealTouch4HintMutationError = ErrorType<ErrorResponse>
+    export type RevealTouch4HintMutationVariables = {data: BodyType<Touch4SupportRevealInput>}
+
+    /**
+ * @summary Reveal an eligible progressive hint or reference solution
+ */
+export const useRevealTouch4Hint = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revealTouch4Hint>>, TError,RevealTouch4HintMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revealTouch4Hint>>,
+        TError,
+        RevealTouch4HintMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRevealTouch4HintMutationOptions(options));
     }
 
 export const getGetProjectStructureUrl = () => {

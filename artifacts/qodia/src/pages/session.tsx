@@ -8,6 +8,8 @@ import { createTypingCounter } from './typing-accounting';
 import { sessionPerformance } from './session-performance';
 import { getGetLearningMapQueryKey } from '@workspace/api-client-react';
 import type { CodeValidationResult } from '@workspace/api-client-react';
+import { getGetTouch4SupportQueryKey, useGetTouch4Support, type Touch4Support } from '@workspace/api-client-react';
+import { Touch4HintButton, Touch4HintCards, Touch4HintProgress } from './touch4-hints';
 import { CountUp, FxLayer, IdleMentor, caretPoint, readSound, useFx, useReducedMotion, writeSound } from './session-fx';
 
 type Mood = 'hyped' | 'normal' | 'tired';
@@ -145,7 +147,8 @@ export default function Session() {
   const [code, setCode] = useState('');
   const [fileSaved, setFileSaved] = useState(false);
   const [fileSaveError, setFileSaveError] = useState(false);
-  const [hint, setHint] = useState(false);
+  const [hintBusy, setHintBusy] = useState(false);
+  const hintPenaltyApplied = useRef(0);
   const [codeTries, setCodeTries] = useState(0);
   const [buildValidation, setBuildValidation] = useState<CodeValidationResult | null>(null);
   const codeCheckLock = useRef(false);
@@ -178,6 +181,23 @@ export default function Session() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const checkBtnRef = useRef<HTMLButtonElement>(null);
   const project = useGetProjectStructure({ query: { queryKey: getGetProjectStructureQueryKey(), enabled: touch === 4 && !!session } });
+  const supportParams = { lesson_id: session?.lesson_id ?? '' };
+  const touch4Support = useGetTouch4Support(supportParams, { query: {
+    queryKey: getGetTouch4SupportQueryKey(supportParams),
+    enabled: touch === 4 && !!session?.lesson_id,
+    staleTime: 0, refetchOnWindowFocus: true,
+  } });
+  const support = touch4Support.data?.lesson_id === session?.lesson_id ? touch4Support.data : undefined;
+  useEffect(() => {
+    if (touch !== 4 || !support) return;
+    setCodeTries(count => Math.max(count, support.attempts));
+    const adjustment = support.xp_penalty - hintPenaltyApplied.current;
+    hintPenaltyApplied.current = support.xp_penalty;
+    if (adjustment) setEarned(value => Math.max(0, value - adjustment));
+  }, [touch, support]);
+  function updateHintState(updated: Touch4Support) {
+    queryClient.setQueryData(getGetTouch4SupportQueryKey(supportParams), updated);
+  }
 
   useEffect(() => {
     if (touch !== 4 || !session) return;
@@ -365,7 +385,7 @@ export default function Session() {
     creditTyping(el, typingRef.current.input({ inputType: native.inputType ?? '', data: native.data ?? null, isComposing: native.isComposing }, delta));
   }
   async function checkCode(event?: MouseEvent<HTMLButtonElement>) {
-    if (correct || !session || saveFile.isPending || codeCheckLock.current) return;
+    if (correct || !session || saveFile.isPending || codeCheckLock.current || hintBusy) return;
     codeCheckLock.current = true;
     setCodeTries(count => count + 1);
     setBuildValidation(null);
@@ -382,20 +402,23 @@ export default function Session() {
           ...(session.lesson_id ? { lesson_id: session.lesson_id } : {}),
           attempt_number: Math.min(10000, codeTries + 1),
         } });
+        const refreshedSupport = await touch4Support.refetch();
+        const reward = refreshedSupport.data?.first_try_bonus ?? 0;
         setBuildValidation(saved.build_validation ?? null);
         setFileSaved(true);
         setCorrect(true);
         setFeedback({ ok: true, text: session.is_review
           ? `تم تسجيل تدريب المراجعة، ملفك المحفوظ ما تغيّر. ${saved.build_validation?.feedback_ar ?? session.touch4_build.success_message}`
           : `تم حفظ الكود في ${session.touch4_build.target_file}. ${saved.build_validation?.feedback_ar ?? session.touch4_build.success_message}` });
-        record(3, !hint && codeTries === 0);
-        award(20, animationPoint, true);
+        record(3, !(refreshedSupport.data?.hints_used ?? support?.hints_used) && codeTries === 0);
+        award(20 + reward, animationPoint, true);
         void queryClient.invalidateQueries({ queryKey: getGetProjectStructureQueryKey() });
       } catch (error) {
         const body = (error as { data?: { error?: string; validation?: CodeValidationResult } }).data;
         if (body?.validation) {
           setBuildValidation(body.validation);
           miss(null, body.validation.feedback_ar);
+          void touch4Support.refetch();
           return;
         }
         setFileSaveError(true);
@@ -412,7 +435,7 @@ export default function Session() {
     clearLater(); fx.clear(); lockRef.current = false; setLeaving(false); typingRef.current.reset(); setPractice(0);
     streakRef.current = 0; setStreak(0); setStreakMsg(null); setGain(0); setBroke(false); setShaking(false);
     setMistakes(0); setEarned(0);
-    setCode(''); setHint(false); setCodeTries(0); setPhase('first');
+    setCode(''); setHintBusy(false); hintPenaltyApplied.current = 0; setCodeTries(0); setPhase('first');
     setFileSaved(false); setFileSaveError(false); saveFile.reset();
     setBuildValidation(null); codeCheckLock.current = false;
     setSeconds(30); setConfidence(100); setComplete(false); setResults([]);
@@ -517,11 +540,13 @@ export default function Session() {
               <div className={s.editor}>
               {build.starter_code.split('\n').map((line, index) => <div className={s.ln} key={`${index}-${line}`}><span className={s.n}>{arabic(index + 1)}</span><span className={s.c}>{line || ' '}</span></div>)}
              </div>
+              <Touch4HintProgress support={support} attempts={codeTries} />
               <div className={s.codeEntry} onPointerMove={event => { if (event.pointerType === 'touch') return; const now = Date.now(); if (now - trailRef.current < 70) return; trailRef.current = now; fx.dot(event.clientX, event.clientY); }}><pre className={s.syntaxMirror} aria-hidden="true"><code>{highlightCode(code)}</code></pre><textarea ref={inputRef} className={s.codeTextarea} value={code} disabled={correct || saveFile.isPending} onChange={onCodeChange} onCompositionStart={() => typingRef.current.compositionStart()} onCompositionEnd={event => creditTyping(event.currentTarget, typingRef.current.compositionEnd(event.data))} onScroll={event => { const mirror = event.currentTarget.previousElementSibling; if (mirror) { mirror.scrollTop = event.currentTarget.scrollTop; mirror.scrollLeft = event.currentTarget.scrollLeft; } }} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); void checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" aria-label={`اكتب كود الملف ${build.target_file}`} /></div>
-              <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><button className={s.hintbtn} disabled={hint || correct || saveFile.isPending} onClick={() => { setHint(true); setConfidence(value => Math.max(0, value - 5)); }} data-testid="button-hint">تلميح <span className={s.hintcost}>−٥</span></button><button ref={checkBtnRef} className={`${s.btn} ${fileSaved ? s.savedPulse : ''}`} disabled={correct || saveFile.isPending} aria-busy={saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? <><LoaderCircle className={s.checkingSpinner} size={16} aria-hidden="true" /> عم أتفحص كودك...</> : session.is_review ? 'سجّل تدريب المراجعة' : 'احفظ في مشروعي'}</button></div>
+              <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><Touch4HintButton support={support} lessonId={session.lesson_id ?? ''} busy={saveFile.isPending || hintBusy} completed={correct} loadError={touch4Support.isError} onBusy={setHintBusy} onState={updateHintState} onRefresh={() => touch4Support.refetch()} /><button ref={checkBtnRef} className={`${s.btn} ${fileSaved ? s.savedPulse : ''}`} disabled={correct || saveFile.isPending || hintBusy} aria-busy={saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? <><LoaderCircle className={s.checkingSpinner} size={16} aria-hidden="true" /> عم أتفحص كودك...</> : session.is_review ? 'سجّل تدريب المراجعة' : 'احفظ في مشروعي'}</button></div>
               <p className={s.small} data-testid="text-code-attempts">محاولات هاللمسة: {arabic(codeTries)}</p>
               {buildValidation && <div className={s.hinttext} role="status" aria-live="polite" data-testid="status-build-validation"><strong>{buildValidation.valid ? buildValidation.semantic_status === 'checked' ? 'ممتاز! حلّك حقق المطلوب.' : 'اجتزت الفحوص الأولية.' : buildValidation.level === 1 ? 'الكود مش جاهز بعد.' : buildValidation.level === 2 ? 'قريب! بس في شي ناقص.' : 'في جزء من منطق الحل يحتاج مراجعة.'}</strong><p>مستوى الفحص: {arabic(buildValidation.level)}{buildValidation.score !== null && <> · الدرجة: <span data-testid="text-code-score">{arabic(buildValidation.score)}/١٠٠</span></>}</p>{buildValidation.semantic_status === 'unavailable' && <p>التقييم المنطقي غير متاح؛ القبول مبني على الصياغة والبنية فقط.</p>}{buildValidation.hint_ar && <p>{buildValidation.hint_ar}</p>}{buildValidation.suggestions.length > 0 && <ul>{buildValidation.suggestions.map((suggestion, i) => <li key={i}>{suggestion}</li>)}</ul>}{buildValidation.can_retry && <p>عدّل كودك وجرب مرة ثانية بنفس الزر.</p>}</div>}
-              <div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div><div className={s.practice} data-testid="text-typing-practice">نقاط تدريب: <b>+{arabic(practice)}</b> · كل ٥ أحرف تكتبها بإيدك = +١ للتشجيع فقط، وما بتغيّر نقاطك المحفوظة.</div>{hint && <div className={s.hinttext} data-testid="status-hint">💡 {build.hint}</div>}{feedbackNode}
+              <Touch4HintCards support={support} completed={correct} />
+              <div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div><div className={s.practice} data-testid="text-typing-practice">نقاط تدريب: <b>+{arabic(practice)}</b> · كل ٥ أحرف تكتبها بإيدك = +١ للتشجيع فقط، وما بتغيّر نقاطك المحفوظة.</div>{feedbackNode}
               {fileSaveError && <p className={s.error} role="alert">{session.is_review ? 'تدريب المراجعة لم يُسجّل بعد.' : 'الكود لم يُحفظ بعد.'} أعد المحاولة بنفس الزر.</p>}
               {fileSaved && <Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link>}{nextNode}</section>}
             {!complete && touch === 5 && defense && <section className={`${s.card} ${s.boss}`}><div className={s.bosshead}><div className={`${s.ring} ${!correct && seconds > 0 && seconds <= 10 ? seconds <= 5 ? s.urgent2 : s.urgent1 : ''}`}><svg width="52" height="52" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" className={s.ringbg} /><circle cx="24" cy="24" r="20" className={s.ringfg} strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - seconds / 30)} /></svg><span data-testid="text-countdown">{arabic(seconds)}</span></div><div className={s.hp}><div className={s.hpl}><span>ثقتك قدام اللجنة</span><span data-testid="text-confidence">{arabic(confidence)}٪</span></div><div className={s.hpb}><i style={{ width: `${confidence}%` }} /></div></div></div><div className={s.judge}>{phase === 'first' ? 'عضو لجنة المناقشة:' : 'الدكتور ما اكتفى:'}</div>

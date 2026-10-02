@@ -7,6 +7,7 @@
  */
 import type { BuildValidation } from './buildValidation';
 import type { GeneratedTouch4FileAction } from './generatedTouch4FileAction';
+import type { Touch4Hint } from './touch4Hint';
 
 export interface GeneratedTouch4 {
   /**
@@ -59,4 +60,14 @@ export interface GeneratedTouch4 {
      */
   integration_note: string;
   validation?: BuildValidation;
+  /**
+     * @minItems 3
+     * @maxItems 3
+     */
+  hints?: Touch4Hint[];
+  /**
+     * @minLength 1
+     * @maxLength 4000
+     */
+  reference_solution?: string;
 }

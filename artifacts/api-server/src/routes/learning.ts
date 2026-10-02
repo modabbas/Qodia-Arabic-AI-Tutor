@@ -11,6 +11,7 @@ import {
   projectFilesTable,
   reviewExercisesTable,
   sessionsTable,
+  touch4SupportTable,
   usersTable,
   type LearningSession,
 } from "@workspace/db";
@@ -45,6 +46,12 @@ import {
   conservativeLegacyTouchesCorrect,
   normalizeConceptName,
 } from "../lib/learning-path";
+import {
+  recordTouch4Failure,
+  recordTouch4SuccessfulSave,
+  reserveTouch4Attempt,
+} from "../lib/touch4-support";
+import { touch4SessionXp, touch4XpPenalty, xpDeltaForSession } from "../lib/touch4-support-rules";
 
 const router: IRouter = Router();
 
@@ -267,6 +274,15 @@ router.post("/save-file", async (req, res): Promise<void> => {
     step: "touch4_attempt", concept_id: ownedSession.data.concept_id,
     attempt_number: parsed.data.attempt_number ?? null,
   }, "Student submitted code for progressive validation");
+  const reservedAttemptIndex = await reserveTouch4Attempt(
+    user.id,
+    ownedSession.data.lesson_id,
+    validationCache?.payload,
+  );
+  if (reservedAttemptIndex === null) {
+    res.status(409).json({ error: "المهمة تغيرت أو اكتملت. أعد تحميل جلستك قبل ما تحفظ." });
+    return;
+  }
   const buildValidation = await validateStudentCode({
     code: parsed.data.content,
     techStack: user.techStack,
@@ -274,6 +290,19 @@ router.post("/save-file", async (req, res): Promise<void> => {
     task: ownedSession.data.touch4_build,
   }, req);
   if (!buildValidation.valid) {
+    try {
+      await recordTouch4Failure(
+        user.id,
+        ownedSession.data.lesson_id,
+        reservedAttemptIndex,
+        validationCache?.payload,
+      );
+    } catch {
+      req.log.warn({
+        lesson_id: ownedSession.data.lesson_id,
+        reason: "touch4_attempt_persistence_failed",
+      }, "Validation result preserved, but Touch 4 failure progress could not be persisted");
+    }
     res.status(422).json({ error: buildValidation.feedback_ar, validation: buildValidation });
     return;
   }
@@ -366,6 +395,13 @@ router.post("/save-file", async (req, res): Promise<void> => {
             firstAttemptPassed,
           });
         }
+        await recordTouch4SuccessfulSave(
+          tx,
+          user.id,
+          lesson.lessonId,
+          reservedAttemptIndex,
+          Boolean(submission || reviewDraft),
+        );
         return {
           content: parsed.data.content,
           status: existing?.status ?? "planned",
@@ -403,6 +439,13 @@ router.post("/save-file", async (req, res): Promise<void> => {
             isReview: false,
             firstAttemptPassed: verification.status === "passed",
           });
+          await recordTouch4SuccessfulSave(
+            tx,
+            user.id,
+            lesson.lessonId,
+            reservedAttemptIndex,
+            Boolean(submission),
+          );
           return { content: inserted.content, status: inserted.status, sessionId: inserted.completedSessionId, isReview: false };
         }
         [existing] = await tx.select().from(projectFilesTable).where(and(
@@ -460,6 +503,13 @@ router.post("/save-file", async (req, res): Promise<void> => {
           firstAttemptPassed: verification.status === "passed",
         });
       }
+      await recordTouch4SuccessfulSave(
+        tx,
+        user.id,
+        lesson.lessonId,
+        reservedAttemptIndex,
+        Boolean(submission || (existing.conceptNameEn === lesson.conceptNameEn && existing.content.trim())),
+      );
       return { content: updated.content, status: updated.status, sessionId: updated.completedSessionId, isReview: false };
     });
   } catch (error) {
@@ -649,8 +699,23 @@ router.post("/sessions", async (req, res): Promise<void> => {
         ? calculateMasteryScore(touchesCorrect, parsed.data.completion_time ?? Number.POSITIVE_INFINITY, buildPassed)
         : null;
       const lessonConcept = `${lesson.conceptNameEn} — ${lesson.conceptNameAr}`;
-      const additionalXp = additionalXpForProgress(existing?.xpEarned ?? 0, earned);
-      const totalXp = progress.totalXp + additionalXp;
+      const [touch4Support] = parsed.data.touches_completed === 5
+        ? await tx.select().from(touch4SupportTable).where(and(
+          eq(touch4SupportTable.userId, user.id),
+          eq(touch4SupportTable.lessonId, lesson.lessonId),
+        )).limit(1).for("update")
+        : [];
+      const xpPenalty = touch4Support?.buildSaved
+        ? touch4XpPenalty(touch4Support.hintsUsed, touch4Support.solutionViewed)
+        : 0;
+      const firstTryBonus = touch4Support?.buildSaved ? touch4Support.firstTryBonus : 0;
+      const sessionEarned = parsed.data.touches_completed === 5
+        ? touch4SessionXp(earned, firstTryBonus, xpPenalty, touch4Support?.buildSaved ?? false)
+        : earned;
+      const additionalXp = parsed.data.touches_completed === 5
+        ? xpDeltaForSession(existing?.xpEarned ?? 0, sessionEarned)
+        : additionalXpForProgress(existing?.xpEarned ?? 0, sessionEarned);
+      const totalXp = Math.max(0, progress.totalXp + additionalXp);
       const streakDays = progress.lastActive === today
         ? progress.streakDays
         : progress.lastActive === yesterday
@@ -660,7 +725,7 @@ router.post("/sessions", async (req, res): Promise<void> => {
         ? await tx.update(sessionsTable).set({
           touchesCompleted: parsed.data.touches_completed,
           mistakes: parsed.data.mistakes,
-          xpEarned: Math.max(existing.xpEarned, earned),
+          xpEarned: sessionEarned,
           conceptId: lesson.conceptId,
           lessonId: lesson.lessonId,
           masteryEarned,
@@ -674,7 +739,7 @@ router.post("/sessions", async (req, res): Promise<void> => {
           concept: lessonConcept,
           touchesCompleted: parsed.data.touches_completed,
           mistakes: parsed.data.mistakes,
-          xpEarned: earned,
+          xpEarned: sessionEarned,
           conceptId: lesson.conceptId,
           lessonId: lesson.lessonId,
           masteryEarned,

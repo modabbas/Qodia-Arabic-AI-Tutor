@@ -435,6 +435,33 @@ export interface BuildValidation {
   level3_question: string;
 }
 
+export type Touch4HintType = typeof Touch4HintType[keyof typeof Touch4HintType];
+
+
+export const Touch4HintType = {
+  guidance: 'guidance',
+  similar_example: 'similar_example',
+  partial_solution: 'partial_solution',
+} as const;
+
+export interface Touch4Hint {
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  level: number;
+  type: Touch4HintType;
+  /**
+     * @minLength 1
+     * @maxLength 700
+     */
+  text_ar: string;
+  /** @maxLength 700 */
+  example?: string;
+  /** @maxLength 2000 */
+  code_example?: string;
+}
+
 export interface GeneratedTouch4 {
   /**
      * @minLength 1
@@ -486,6 +513,16 @@ export interface GeneratedTouch4 {
      */
   integration_note: string;
   validation?: BuildValidation;
+  /**
+     * @minItems 3
+     * @maxItems 3
+     */
+  hints?: Touch4Hint[];
+  /**
+     * @minLength 1
+     * @maxLength 4000
+     */
+  reference_solution?: string;
 }
 
 export interface GeneratedTouch5 {
@@ -580,6 +617,56 @@ export interface GeneratedSession {
   touch5_defend: GeneratedTouch5;
 }
 
+export type Touch4SupportFirstTryBonus = typeof Touch4SupportFirstTryBonus[keyof typeof Touch4SupportFirstTryBonus];
+
+
+export const Touch4SupportFirstTryBonus = {
+  NUMBER_0: 0,
+  NUMBER_50: 50,
+} as const;
+
+export interface Touch4Support {
+  lesson_id: string;
+  /** @minimum 0 */
+  attempts: number;
+  /** @minimum 0 */
+  failed_attempts: number;
+  /**
+     * @minimum 0
+     * @maximum 3
+     */
+  hints_used: number;
+  /**
+     * @minimum 0
+     * @maximum 50
+     */
+  xp_penalty: number;
+  first_try_bonus: Touch4SupportFirstTryBonus;
+  build_saved: boolean;
+  can_reveal_next: boolean;
+  solution_viewed: boolean;
+  revealed_hints: Touch4Hint[];
+  reference_solution?: string;
+}
+
+export type Touch4SupportRevealInputKind = typeof Touch4SupportRevealInputKind[keyof typeof Touch4SupportRevealInputKind];
+
+
+export const Touch4SupportRevealInputKind = {
+  hint: 'hint',
+  solution: 'solution',
+} as const;
+
+export interface Touch4SupportRevealInput {
+  lesson_id: string;
+  kind: Touch4SupportRevealInputKind;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  level?: number;
+}
+
 export type ProjectPlanFileStatus = typeof ProjectPlanFileStatus[keyof typeof ProjectPlanFileStatus];
 
 
@@ -671,4 +758,8 @@ export interface ProjectFileInput {
      */
   attempt_number?: number;
 }
+
+export type GetTouch4SupportParams = {
+lesson_id: string;
+};
 

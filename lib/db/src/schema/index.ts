@@ -6,3 +6,4 @@ export * from "./project-structures";
 export * from "./project-files";
 export * from "./learning-maps";
 export * from "./lesson-evidence";
+export * from "./touch4-support";

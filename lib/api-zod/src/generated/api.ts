@@ -526,6 +526,19 @@ export const getGeneratedSessionResponseTouch4BuildValidationLevel2RulesMax = 8;
 
 export const getGeneratedSessionResponseTouch4BuildValidationLevel3QuestionMax = 500;
 
+export const getGeneratedSessionResponseTouch4BuildHintsItemLevelMax = 3;
+
+export const getGeneratedSessionResponseTouch4BuildHintsItemTextArMax = 700;
+
+export const getGeneratedSessionResponseTouch4BuildHintsItemExampleMax = 700;
+
+export const getGeneratedSessionResponseTouch4BuildHintsItemCodeExampleMax = 2000;
+
+export const getGeneratedSessionResponseTouch4BuildHintsMin = 3;
+export const getGeneratedSessionResponseTouch4BuildHintsMax = 3;
+
+export const getGeneratedSessionResponseTouch4BuildReferenceSolutionMax = 4000;
+
 export const getGeneratedSessionResponseTouch5DefendCommitteeQuestionMax = 700;
 
 export const getGeneratedSessionResponseTouch5DefendOptionsItemMax = 400;
@@ -609,7 +622,15 @@ export const GetGeneratedSessionResponse = zod.object({
   "error_if_missing": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemErrorIfMissingMax)
 })).max(getGeneratedSessionResponseTouch4BuildValidationLevel2RulesMax),
   "level3_question": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildValidationLevel3QuestionMax)
-}).optional()
+}).optional(),
+  "hints": zod.array(zod.object({
+  "level": zod.number().int().min(1).max(getGeneratedSessionResponseTouch4BuildHintsItemLevelMax),
+  "type": zod.enum(['guidance', 'similar_example', 'partial_solution']),
+  "text_ar": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildHintsItemTextArMax),
+  "example": zod.string().max(getGeneratedSessionResponseTouch4BuildHintsItemExampleMax).optional(),
+  "code_example": zod.string().max(getGeneratedSessionResponseTouch4BuildHintsItemCodeExampleMax).optional()
+})).min(getGeneratedSessionResponseTouch4BuildHintsMin).max(getGeneratedSessionResponseTouch4BuildHintsMax).optional(),
+  "reference_solution": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildReferenceSolutionMax).optional()
 }),
   "touch5_defend": zod.object({
   "committee_question": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendCommitteeQuestionMax),
@@ -722,6 +743,19 @@ export const createGeneratedSessionResponseTouch4BuildValidationLevel2RulesMax =
 
 export const createGeneratedSessionResponseTouch4BuildValidationLevel3QuestionMax = 500;
 
+export const createGeneratedSessionResponseTouch4BuildHintsItemLevelMax = 3;
+
+export const createGeneratedSessionResponseTouch4BuildHintsItemTextArMax = 700;
+
+export const createGeneratedSessionResponseTouch4BuildHintsItemExampleMax = 700;
+
+export const createGeneratedSessionResponseTouch4BuildHintsItemCodeExampleMax = 2000;
+
+export const createGeneratedSessionResponseTouch4BuildHintsMin = 3;
+export const createGeneratedSessionResponseTouch4BuildHintsMax = 3;
+
+export const createGeneratedSessionResponseTouch4BuildReferenceSolutionMax = 4000;
+
 export const createGeneratedSessionResponseTouch5DefendCommitteeQuestionMax = 700;
 
 export const createGeneratedSessionResponseTouch5DefendOptionsItemMax = 400;
@@ -805,7 +839,15 @@ export const CreateGeneratedSessionResponse = zod.object({
   "error_if_missing": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemErrorIfMissingMax)
 })).max(createGeneratedSessionResponseTouch4BuildValidationLevel2RulesMax),
   "level3_question": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildValidationLevel3QuestionMax)
-}).optional()
+}).optional(),
+  "hints": zod.array(zod.object({
+  "level": zod.number().int().min(1).max(createGeneratedSessionResponseTouch4BuildHintsItemLevelMax),
+  "type": zod.enum(['guidance', 'similar_example', 'partial_solution']),
+  "text_ar": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildHintsItemTextArMax),
+  "example": zod.string().max(createGeneratedSessionResponseTouch4BuildHintsItemExampleMax).optional(),
+  "code_example": zod.string().max(createGeneratedSessionResponseTouch4BuildHintsItemCodeExampleMax).optional()
+})).min(createGeneratedSessionResponseTouch4BuildHintsMin).max(createGeneratedSessionResponseTouch4BuildHintsMax).optional(),
+  "reference_solution": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildReferenceSolutionMax).optional()
 }),
   "touch5_defend": zod.object({
   "committee_question": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendCommitteeQuestionMax),
@@ -819,6 +861,108 @@ export const CreateGeneratedSessionResponse = zod.object({
   "followup_explanation": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupExplanationMax),
   "followup_feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax)
 })
+})
+
+
+/**
+ * @summary Get persisted Touch 4 attempts and already revealed help
+ */
+export const GetTouch4SupportQueryParams = zod.object({
+  "lesson_id": zod.coerce.string().uuid()
+})
+
+export const getTouch4SupportResponseAttemptsMin = 0;
+
+export const getTouch4SupportResponseFailedAttemptsMin = 0;
+
+export const getTouch4SupportResponseHintsUsedMin = 0;
+export const getTouch4SupportResponseHintsUsedMax = 3;
+
+export const getTouch4SupportResponseXpPenaltyMin = 0;
+export const getTouch4SupportResponseXpPenaltyMax = 50;
+
+export const getTouch4SupportResponseRevealedHintsItemLevelMax = 3;
+
+export const getTouch4SupportResponseRevealedHintsItemTextArMax = 700;
+
+export const getTouch4SupportResponseRevealedHintsItemExampleMax = 700;
+
+export const getTouch4SupportResponseRevealedHintsItemCodeExampleMax = 2000;
+
+
+
+export const GetTouch4SupportResponse = zod.object({
+  "lesson_id": zod.string().uuid(),
+  "attempts": zod.number().int().min(getTouch4SupportResponseAttemptsMin),
+  "failed_attempts": zod.number().int().min(getTouch4SupportResponseFailedAttemptsMin),
+  "hints_used": zod.number().int().min(getTouch4SupportResponseHintsUsedMin).max(getTouch4SupportResponseHintsUsedMax),
+  "xp_penalty": zod.number().int().min(getTouch4SupportResponseXpPenaltyMin).max(getTouch4SupportResponseXpPenaltyMax),
+  "first_try_bonus": zod.union([zod.literal(0),zod.literal(50)]),
+  "build_saved": zod.boolean(),
+  "can_reveal_next": zod.boolean(),
+  "solution_viewed": zod.boolean(),
+  "revealed_hints": zod.array(zod.object({
+  "level": zod.number().int().min(1).max(getTouch4SupportResponseRevealedHintsItemLevelMax),
+  "type": zod.enum(['guidance', 'similar_example', 'partial_solution']),
+  "text_ar": zod.string().min(1).max(getTouch4SupportResponseRevealedHintsItemTextArMax),
+  "example": zod.string().max(getTouch4SupportResponseRevealedHintsItemExampleMax).optional(),
+  "code_example": zod.string().max(getTouch4SupportResponseRevealedHintsItemCodeExampleMax).optional()
+})),
+  "reference_solution": zod.string().optional()
+})
+
+
+/**
+ * @summary Reveal an eligible progressive hint or reference solution
+ */
+export const revealTouch4HintBodyLevelMax = 3;
+
+
+
+export const RevealTouch4HintBody = zod.object({
+  "lesson_id": zod.string().uuid(),
+  "kind": zod.enum(['hint', 'solution']),
+  "level": zod.number().int().min(1).max(revealTouch4HintBodyLevelMax).optional()
+})
+
+export const revealTouch4HintResponseAttemptsMin = 0;
+
+export const revealTouch4HintResponseFailedAttemptsMin = 0;
+
+export const revealTouch4HintResponseHintsUsedMin = 0;
+export const revealTouch4HintResponseHintsUsedMax = 3;
+
+export const revealTouch4HintResponseXpPenaltyMin = 0;
+export const revealTouch4HintResponseXpPenaltyMax = 50;
+
+export const revealTouch4HintResponseRevealedHintsItemLevelMax = 3;
+
+export const revealTouch4HintResponseRevealedHintsItemTextArMax = 700;
+
+export const revealTouch4HintResponseRevealedHintsItemExampleMax = 700;
+
+export const revealTouch4HintResponseRevealedHintsItemCodeExampleMax = 2000;
+
+
+
+export const RevealTouch4HintResponse = zod.object({
+  "lesson_id": zod.string().uuid(),
+  "attempts": zod.number().int().min(revealTouch4HintResponseAttemptsMin),
+  "failed_attempts": zod.number().int().min(revealTouch4HintResponseFailedAttemptsMin),
+  "hints_used": zod.number().int().min(revealTouch4HintResponseHintsUsedMin).max(revealTouch4HintResponseHintsUsedMax),
+  "xp_penalty": zod.number().int().min(revealTouch4HintResponseXpPenaltyMin).max(revealTouch4HintResponseXpPenaltyMax),
+  "first_try_bonus": zod.union([zod.literal(0),zod.literal(50)]),
+  "build_saved": zod.boolean(),
+  "can_reveal_next": zod.boolean(),
+  "solution_viewed": zod.boolean(),
+  "revealed_hints": zod.array(zod.object({
+  "level": zod.number().int().min(1).max(revealTouch4HintResponseRevealedHintsItemLevelMax),
+  "type": zod.enum(['guidance', 'similar_example', 'partial_solution']),
+  "text_ar": zod.string().min(1).max(revealTouch4HintResponseRevealedHintsItemTextArMax),
+  "example": zod.string().max(revealTouch4HintResponseRevealedHintsItemExampleMax).optional(),
+  "code_example": zod.string().max(revealTouch4HintResponseRevealedHintsItemCodeExampleMax).optional()
+})),
+  "reference_solution": zod.string().optional()
 })
 
 

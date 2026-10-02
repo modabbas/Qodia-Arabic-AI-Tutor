@@ -6,3 +6,5 @@
 - [Session animation boundaries](session-animation-boundaries.md) — visual rewards must stay honest; animate decorative surfaces without continuously moving button targets.
 - [Learning-path integrity](learning-path-integrity.md) — preserve unfinished attempts across dates; use safe reinforcement and keep review mastery separate from source-file ownership.
 - [Touch 4 validation policy](touch4-validation-policy.md) — assessment outages may pass local checks, but must be labelled; negative assessments are not outage fallbacks.
+- [Artifact build context](artifact-build-context.md) — one-off shell builds do not inherit a managed workflow’s injected serving settings.
+- [Progressive hint contract](progressive-hint-contract.md) — keep fresh and cached-lesson hint prompts aligned with pedagogical content constraints.

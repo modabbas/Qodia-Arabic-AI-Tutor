@@ -341,6 +341,73 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /touch4-support:
+    get:
+      operationId: getTouch4Support
+      tags: [learning]
+      summary: Get persisted Touch 4 attempts and already revealed help
+      parameters:
+        - name: lesson_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Current Touch 4 support state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Touch4Support" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Lesson not found or already completed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /touch4-support/reveal:
+    post:
+      operationId: revealTouch4Hint
+      tags: [learning]
+      summary: Reveal an eligible progressive hint or reference solution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Touch4SupportRevealInput" }
+      responses:
+        "200":
+          description: Updated Touch 4 support state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Touch4Support" }
+        "400":
+          description: Invalid reveal request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Lesson not found or already completed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Hint is still locked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "503":
+          description: Generated lesson support is temporarily unavailable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
   /project-structure:
     get:
       operationId: getProjectStructure
@@ -785,7 +852,49 @@ components:
         integration_note: { type: string, minLength: 1, maxLength: 700 }
         validation:
           $ref: "#/components/schemas/BuildValidation"
+        hints:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items: { $ref: "#/components/schemas/Touch4Hint" }
+        reference_solution: { type: string, minLength: 1, maxLength: 4000 }
       required: [task_description, starter_code, expected_keywords, success_message, hint, code_placeholder, target_file, file_action, existing_content, integration_note]
+    Touch4Hint:
+      type: object
+      additionalProperties: false
+      properties:
+        level: { type: integer, minimum: 1, maximum: 3 }
+        type: { type: string, enum: [guidance, similar_example, partial_solution] }
+        text_ar: { type: string, minLength: 1, maxLength: 700 }
+        example: { type: string, maxLength: 700 }
+        code_example: { type: string, maxLength: 2000 }
+      required: [level, type, text_ar]
+    Touch4Support:
+      type: object
+      additionalProperties: false
+      properties:
+        lesson_id: { type: string, format: uuid }
+        attempts: { type: integer, minimum: 0 }
+        failed_attempts: { type: integer, minimum: 0 }
+        hints_used: { type: integer, minimum: 0, maximum: 3 }
+        xp_penalty: { type: integer, minimum: 0, maximum: 50 }
+        first_try_bonus: { type: integer, enum: [0, 50] }
+        build_saved: { type: boolean }
+        can_reveal_next: { type: boolean }
+        solution_viewed: { type: boolean }
+        revealed_hints:
+          type: array
+          items: { $ref: "#/components/schemas/Touch4Hint" }
+        reference_solution: { type: string }
+      required: [lesson_id, attempts, failed_attempts, hints_used, xp_penalty, first_try_bonus, build_saved, can_reveal_next, solution_viewed, revealed_hints]
+    Touch4SupportRevealInput:
+      type: object
+      additionalProperties: false
+      properties:
+        lesson_id: { type: string, format: uuid }
+        kind: { type: string, enum: [hint, solution] }
+        level: { type: integer, minimum: 1, maximum: 3 }
+      required: [lesson_id, kind]
     ProjectStructure:
       type: object
       properties:

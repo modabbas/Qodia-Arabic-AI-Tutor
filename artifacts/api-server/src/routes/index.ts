@@ -4,6 +4,7 @@ import healthRouter from "./health";
 import learningRouter from "./learning";
 import generatedSessionRouter from "./generated-session";
 import learningMapRouter from "./learning-map";
+import touch4SupportRouter from "./touch4-support";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(authRouter);
 router.use(learningRouter);
 router.use(learningMapRouter);
 router.use(generatedSessionRouter);
+router.use(touch4SupportRouter);
 
 export default router;

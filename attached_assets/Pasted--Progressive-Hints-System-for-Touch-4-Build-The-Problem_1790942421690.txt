@@ -1,0 +1,288 @@
+# Progressive Hints System for Touch 4 (Build)
+
+## The Problem
+
+Students reach Touch 4 (Build) without knowing the exact syntax to write. For example:
+- Task: Add dependencies in `pubspec.yaml`
+- Student doesn't know YAML syntax
+- Student doesn't know Flutter conventions
+- Result: student stuck or guesses randomly
+
+The explanation in Touch 2 (Reveal) is too abstract. Students need **progressive guidance** in Touch 4 itself.
+
+## The Solution: 3-Tier Progressive Hints
+
+Add a "تلميح" (Hint) button to Touch 4. When clicked, it reveals progressively more help:
+
+- **Hint 1** (after 1st attempt): General guidance - direction without syntax
+- **Hint 2** (after 2nd attempt): Similar example - shows syntax of RELATED thing
+- **Hint 3** (after 3rd attempt): Partial solution - shows most of the answer
+
+Each hint used = -10 XP from final score. Keeps challenge, prevents cheating.
+
+## Implementation
+
+### 1. Update Gemini Session Generation
+
+In the Gemini prompt for Touch 4 (Build), add:
+
+```
+في Touch 4 (Build)، أضف حقل "hints" يحوي 3 تلميحات متدرجة:
+
+"hints": [
+  {
+    "level": 1,
+    "type": "guidance",
+    "text_ar": "توجيه عام بدون كشف syntax",
+    "example": "مثال: في pubspec.yaml، كل dependency تحت dependencies: بـ indent"
+  },
+  {
+    "level": 2,
+    "type": "similar_example", 
+    "text_ar": "مثال من حالة مشابهة",
+    "code_example": "// كود يوضح نفس الفكرة بمثال مختلف"
+  },
+  {
+    "level": 3,
+    "type": "partial_solution",
+    "text_ar": "جزء من الحل، الطالب يكمل الباقي",
+    "code_example": "// الكود مع blanks للطالب يكمل"
+  }
+]
+
+قواعد:
+- Hint 1 لا يعرض syntax للحل المحدد
+- Hint 2 يعرض syntax لحالة مشابهة (مثلاً مكتبة ثانية بدل المطلوبة)
+- Hint 3 يعطي 70% من الحل، 30% للطالب
+- اللغة: عربية سورية بسيطة وودية
+```
+
+### 2. UI Updates in Touch 4
+
+**Current button bar:**
+```
+[تلميح] [احفظ في مشروعي]
+```
+
+**New button bar:**
+```
+[💡 تلميح (1/3)] [احفظ في مشروعي]
+Hints used: 0 | XP penalty: 0
+```
+
+### Hint Display
+
+When student clicks "تلميح":
+
+**First click (shows Hint 1):**
+```
+┌──────────────────────────────────┐
+│ 💡 تلميح 1/3                     │
+├──────────────────────────────────┤
+│ [guidance_text_ar from Gemini]  │
+│                                  │
+│ مثال: [example from Gemini]      │
+│                                  │
+│ ⚠️ استخدمت تلميح: -10 XP         │
+└──────────────────────────────────┘
+```
+
+**After next failed submission, button becomes:**
+```
+[💡 تلميح 2/3 (-10 XP)]
+```
+
+**Second click (shows Hint 2):**
+```
+┌──────────────────────────────────┐
+│ 💡 تلميح 2/3                     │
+├──────────────────────────────────┤
+│ [similar example explanation]    │
+│                                  │
+│ ```yaml                          │
+│ [code_example from Gemini]       │
+│ ```                              │
+│                                  │
+│ ⚠️ المجموع: -20 XP               │
+└──────────────────────────────────┘
+```
+
+**Third click (shows Hint 3):**
+```
+┌──────────────────────────────────┐
+│ 💡 تلميح 3/3 (الأخير)            │
+├──────────────────────────────────┤
+│ [partial solution explanation]   │
+│                                  │
+│ ```yaml                          │
+│ [partial code]                   │
+│ // أكمل: ___________             │
+│ ```                              │
+│                                  │
+│ ⚠️ المجموع: -30 XP               │
+└──────────────────────────────────┘
+```
+
+### 3. Attempt + Hint Tracking Logic
+
+```typescript
+interface TouchAttemptState {
+  attempts: number;        // Submissions made
+  hintsUsed: number;        // 0, 1, 2, or 3
+  xpPenalty: number;        // 0, 10, 20, or 30
+}
+
+function canUnlockNextHint(state: TouchAttemptState): boolean {
+  // Hint 1: available after 1st failed attempt (or always available)
+  // Hint 2: available after 2nd failed attempt AND hint 1 used
+  // Hint 3: available after 3rd failed attempt AND hint 2 used
+  
+  if (state.hintsUsed === 0 && state.attempts >= 1) return true;
+  if (state.hintsUsed === 1 && state.attempts >= 2) return true;
+  if (state.hintsUsed === 2 && state.attempts >= 3) return true;
+  return false;
+}
+
+function getHintButtonState(state: TouchAttemptState): string {
+  if (state.hintsUsed === 0 && state.attempts === 0) {
+    return "disabled"; // Encourage trying first
+    // OR: "available" with text "💡 تلميح (مجاناً للمحاولة الأولى)"
+  }
+  
+  if (canUnlockNextHint(state)) {
+    return `available-hint-${state.hintsUsed + 1}`;
+  }
+  
+  if (state.hintsUsed === 3) {
+    return "exhausted"; // All used
+  }
+  
+  return "locked"; // Need more attempts
+}
+```
+
+### 4. Smart Button Behavior
+
+**Before first attempt:**
+- Button is subtle gray with text: "💡 جرّب أولاً"
+- Clicking shows: "جرّب كتابة الكود أولاً، التلميح بيصير متاح بعد المحاولة"
+
+**After 1 failed attempt:**
+- Button becomes active green: "💡 تلميح 1/3"
+- Pulsing animation to attract attention
+
+**After hint used + another failed attempt:**
+- Button shows: "💡 تلميح 2/3 (-10 XP)"
+- Still active
+
+**After all 3 hints used:**
+- Button becomes: "📖 عرض الحل النموذجي"
+- Click shows reference answer, student can learn and retry (-50 XP total)
+
+### 5. Edge Case: Student Nails It First Try
+
+If student submits correct code on first attempt:
+- +50 XP bonus for "First Try Hero!"
+- Celebration animation
+- No hints shown or offered
+
+## Visual Design
+
+**Hint Card:**
+- Background: `rgba(245, 184, 74, 0.08)` (amber tint)
+- Border-right: 3px solid `#f5b84a`
+- Padding: 16px
+- Border-radius: 12px
+- Animation: slide-in from top (300ms)
+
+**Hint Button States:**
+- Disabled: `#8c8c8c` text on `#1b1b1b` bg
+- Available: `#22c55e` text on `#1b1b1b` bg, with glow
+- Pulsing: subtle box-shadow pulse (2s cycle)
+- Exhausted: `#f5b84a` text, "📖 عرض الحل"
+
+**XP Penalty Indicator:**
+- Shows above textarea
+- Red text: "⚠️ -10 XP (تلميح 1)"
+- Updates in real-time
+
+## Testing Checklist
+
+- [ ] Button disabled before first attempt
+- [ ] Hint 1 unlocks after first failed submission
+- [ ] Hint 2 requires using Hint 1 + another failed attempt
+- [ ] Hint 3 requires using Hint 2 + another failed attempt
+- [ ] XP penalty displays correctly (0, 10, 20, 30)
+- [ ] After all 3 hints, "عرض الحل" button appears
+- [ ] First-try success shows +50 XP bonus
+- [ ] Hints are different content (not repeated)
+- [ ] All text in Arabic
+- [ ] Hints relevant to the specific concept being taught
+- [ ] Mobile-friendly
+
+## Critical Requirements
+
+1. **Preserve existing Touch 4 UI** - just add hint system
+2. **Gemini generates hints** - don't hardcode (each concept needs its own hints)
+3. **Hints must be helpful, not condescending** - teacher tone, not professor tone
+4. **XP penalty is cumulative but capped** - max -30 XP from hints, additional -20 if "show solution"
+5. **Progress bar in Touch 4** - show "محاولة X - تلميحات مستخدمة Y"
+
+## What NOT to Do
+
+- Do NOT show all 3 hints at once
+- Do NOT allow unlimited hints
+- Do NOT give full solution in Hint 1
+- Do NOT remove validation (hints + validation work together)
+- Do NOT modify other touches or pages
+
+## Expected Impact
+
+**Before:** Student stuck → closes browser → churn
+**After:** Student stuck → uses hint → learns → continues → retention
+
+**For judges:**
+> "Qodia uses progressive hints like elite coding schools - students learn by doing, with safety nets that teach rather than solve."
+
+## Cost & Time
+
+- Extended Thinking: Yes
+- Time: 25-35 minutes
+- Replit cost: $7-10
+- Impact: Dramatically improves student retention
+
+## Testing Scenarios
+
+**Scenario 1: Confident Student**
+```
+Attempt 1: Correct code
+Result: +50 XP bonus, no hints used
+```
+
+**Scenario 2: Needs One Nudge**
+```
+Attempt 1: Fails (syntax error)
+Clicks Hint 1 → sees general guidance
+Attempt 2: Correct
+Result: -10 XP, Score 90
+```
+
+**Scenario 3: Struggling Student**
+```
+Attempt 1: Fails
+Hint 1 → still confused
+Attempt 2: Fails  
+Hint 2 → sees similar example
+Attempt 3: Correct
+Result: -20 XP, Score 80, LEARNED
+```
+
+**Scenario 4: Very Stuck**
+```
+Attempts 1-3: All fail
+Uses all 3 hints
+Attempt 4: Correct
+Result: -30 XP, Score 70, LEARNED (not failed!)
+```
+
+All scenarios end with the student LEARNING. That's the Qodia promise.
