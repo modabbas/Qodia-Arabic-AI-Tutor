@@ -1,0 +1,81 @@
+# Fix Progressive Hints: Strict Sequential Unlock + Hint 3 Teaches, Doesn't Reveal
+
+## Context
+Progressive Hints system already works (3 tiers, XP penalty). This fixes two specific issues found in testing.
+
+## Issue 1: Hints can be opened out of order / re-opened freely
+
+Currently student can jump to Hint 3 directly or revisit hints without proper gating. Fix the unlock logic to be strictly sequential and one-way:
+
+```typescript
+interface HintState {
+  hintsUnlocked: number; // 0, 1, 2, or 3 — highest unlocked level
+  attempts: number;
+}
+
+function canUnlockNext(state: HintState): boolean {
+  // Hint 1 unlocks after 1st failed attempt
+  // Hint 2 unlocks after 2nd failed attempt AND hint 1 already unlocked
+  // Hint 3 unlocks after 3rd failed attempt AND hint 2 already unlocked
+  if (state.hintsUnlocked === 0 && state.attempts >= 1) return true;
+  if (state.hintsUnlocked === 1 && state.attempts >= 2) return true;
+  if (state.hintsUnlocked === 2 && state.attempts >= 3) return true;
+  return false;
+}
+```
+
+UI rules:
+- Only show buttons for hints already unlocked (hintsUnlocked count), plus the next one IF canUnlockNext is true — otherwise it's locked/greyed with a 🔒 icon and no click handler.
+- Once a hint is unlocked, student CAN revisit it (view again) — that's fine, no extra penalty for re-viewing. But they cannot unlock hint N+1 without the required additional failed attempt.
+- Remove any UI path that lets student click a hint tab before it's unlocked (currently all 3 tabs appear clickable — this must be disabled for locked ones).
+
+## Issue 2: Hint 3 gives away the answer instead of teaching
+
+Currently Hint 3 shows near-complete code with a blank to fill (e.g., `from django.core.management import ____`). This is too close to copy-paste.
+
+Fix the Gemini prompt that generates hints — change Hint 3's instruction:
+
+**Replace current Hint 3 generation rule with:**
+
+```
+تلميح 3 (الأخير) يجب أن يكون توجيه وظيفي، وليس سطر كود مع فراغ:
+- اشرح وظيفة الحل المطلوب بالكلام، بدون كتابة syntax قريب من الإجابة
+- اطرح سؤال موجّه يخلي الطالب يفكر بالاتجاه الصحيح
+- ممنوع عرض أي جزء من السطر الفعلي المطلوب كتابته
+
+مثال صح:
+"الدالة اللي بتحتاجها بتجي من management.commands وبتاخد sys.argv كمعامل.
+فكر: شو بتستدعي Django لما تشغل python manage.py؟"
+
+مثال غلط (ممنوع):
+"from django.core.management import ____"
+```
+
+Apply this instruction specifically to level 3 hint generation only — Hint 1 (general guidance) and Hint 2 (similar example from a different context) stay as they are.
+
+## Issue 3: XP penalty not visible enough
+
+Ensure the XP deduction indicator is always visible near the hint buttons, updating live:
+
+```
+التلميحات المستخدمة: ٢/٣  |  الخصم الحالي: -20 XP
+```
+
+Show this persistently above the hint button row, not just mentioned inside each hint card.
+
+## What NOT to Do
+- Do NOT change the validation logic (Level 1/2/3 checks) — unrelated system, already fixed separately
+- Do NOT change hints 1 and 2 generation logic — only hint 3
+- Do NOT remove the XP penalty system, just make it more visible
+
+## Testing
+- [ ] Hint 2 button is locked/disabled until Hint 1 used AND 2nd attempt failed
+- [ ] Hint 3 button is locked/disabled until Hint 2 used AND 3rd attempt failed
+- [ ] Hint 3 content never contains a near-complete code line — only guidance text
+- [ ] XP penalty counter visible and updates after each hint unlock
+- [ ] Previously unlocked hints remain viewable (not re-locked)
+
+## Cost & Time
+- Extended Thinking: recommended (touches generation logic + UI state)
+- Time: 20-25 minutes
+- Cost: $5-7

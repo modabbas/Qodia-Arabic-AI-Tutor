@@ -27,7 +27,7 @@ import {
   selectNextConcept,
   type LearningConcept,
 } from "../lib/learning-path";
-import { parseTouch4HintBundle } from "../lib/touch4-support-rules";
+import { hint3TeachingInstruction, parseTouch4HintBundle } from "../lib/touch4-support-rules";
 
 const router: IRouter = Router();
 const primaryModel = "gemini-3.1-flash-lite";
@@ -234,7 +234,7 @@ function assertExactShape(input: unknown, parsed: unknown): void {
   }
 }
 
-export function validateGeneratedPayload(input: unknown): GeneratedSession {
+export function validateGeneratedPayload(input: unknown, allowLegacyHints = false): GeneratedSession {
   const parsed = GetGeneratedSessionResponse.parse(input);
   assertExactShape(input, parsed);
   if (
@@ -250,7 +250,7 @@ export function validateGeneratedPayload(input: unknown): GeneratedSession {
   const referenceSolution = parsed.touch4_build.reference_solution;
   if (
     (hints === undefined) !== (referenceSolution === undefined)
-    || (hints !== undefined && !parseTouch4HintBundle({ hints, reference_solution: referenceSolution }))
+    || (hints !== undefined && !parseTouch4HintBundle({ hints, reference_solution: referenceSolution }, allowLegacyHints))
   ) {
     throw new Error("Touch 4 hint bundle must contain three valid graded hints and a reference solution");
   }
@@ -444,7 +444,7 @@ async function requestFromGemini(
       hints: [
         { level: 1, type: "guidance", text_ar: "توجيه عام باللهجة السورية بدون syntax الحل المحدد", example: "فكر بمكان إعداد العنصر ضمن الملف." },
         { level: 2, type: "similar_example", text_ar: "مثال قريب لكن لمهمة مختلفة", code_example: "مثال لمكتبة أو عنصر مختلف عن المطلوب" },
-        { level: 3, type: "partial_solution", text_ar: "قالب ناقص يقرب الحل مع فراغات واضحة ليكملها الطالب", code_example: "جزء من الحل مع ____ مكان الأجزاء الناقصة" },
+        { level: 3, type: "partial_solution", text_ar: "اشرح وظيفة الحل بالكلام، ثم اسأل سؤالاً موجهاً يدعو الطالب للتفكير؟" },
       ],
       reference_solution: "حل نموذجي كامل ومشروح للمهمة المحددة",
       validation: {
@@ -476,8 +476,9 @@ async function requestFromGemini(
     "في touch4_build، اكتب مهمة قابلة للحل بكود متوافق مع التقنية وتنفذ المفهوم المختار نفسه داخل ملف next_file المحدد بالضبط. target_file وfile_action يجب أن يطابقا next_file وfile_action في بيانات المشروع حرفياً. existing_content يجب أن يطابق النص المرسل حرفياً؛ عند modify اشرح الحفاظ على الأجزاء الحالية والبناء عليها، وعند create اتركه فارغاً. integration_note يوضح كيف يتكامل الملف مع الخطة والملفات المكتملة. لا تختر ملفاً آخر ولا تختلق كوداً محفوظاً.",
     "يجب أن تذكر الشروح والأسئلة ومهمة البناء مصطلحاً تقنياً محدداً من اسم المفهوم المختار وأن تشرحه أو تطبقه فعلياً. ارفض استبدال الدرس بهدف الملف العام. اختر expected_keywords كمعرفات/كلمات تقنية لازمة للحل، واجعل كل كلمة منها مذكورة حرفياً في task_description أو starter_code أو hint. اجعل starter_code بداية قابلة للبناء وليست TODO-only، ولا تضع الحل الكامل فيه.",
     "أضف touch4_build.validation: level2_rules لقواعد البنية اللازمة للحل وlevel3_question سؤال تقييم منطقي محدد للمهمة. pattern الآمن فقط اسم معرف ASCII (يمكن مع نقطة) أو اسم متبوع بـ \\s* ثم : أو = أو \\( أو [<(]. أمثلة: StreamBuilder\\s*[<(] وstream\\s*: وbuilder\\s*:. لا تستعمل بدائل أو تكرارات معقدة. error_if_missing توجيه عربي قصير. إن كانت المهمة إعدادات YAML/JSON فلا تفرض استدعاءات دوال.",
-    "أضف touch4_build.hints مصفوفة من ثلاثة عناصر بالضبط، بمستويات 1 ثم 2 ثم 3 وأنواع guidance ثم similar_example ثم partial_solution بالضبط وبالترتيب. اكتب النصوص بعربية سورية دافئة وبسيطة، وراعِ التقنية وtarget_file والمفهوم ومهمة البناء المحددة. level 1 توجيه مفاهيمي فقط بلا أي syntax أو سطر من الحل المحدد. level 2 مثال syntax لمهمة مختلفة لكن مشابهة، لا تنسخ الإجابة ولا تستخدم نفس الملف/المطلوب حرفياً. level 3 قالب يقارب 70% من الحل مع blanks صريحة تحتم على الطالب إكمال الباقي، لا تقدّم الحل كاملاً. اكتب example في الأول وcode_example في الثاني والثالث. أضف reference_solution كحل كامل صحيح للمهمة الحالية، وسيظهر فقط بعد استخدام التلميحات الثلاثة.",
-    "في التلميح الأول احذف code_example أو اتركه فارغاً. في الثاني والثالث code_example إلزامي وغير فارغ؛ يجب أن يحتوي الثالث تحديداً على ____ أو TODO كفراغ واضح، ولا تكرر نفس المثال في الثاني والثالث.",
+    "أضف touch4_build.hints مصفوفة من ثلاثة عناصر بالضبط، بمستويات 1 ثم 2 ثم 3 وأنواع guidance ثم similar_example ثم partial_solution بالضبط وبالترتيب. اكتب النصوص بعربية سورية دافئة وبسيطة، وراعِ التقنية وtarget_file والمفهوم ومهمة البناء المحددة. level 1 توجيه مفاهيمي فقط بلا أي syntax أو سطر من الحل المحدد. level 2 مثال syntax لمهمة مختلفة لكن مشابهة، لا تنسخ الإجابة ولا تستخدم نفس الملف/المطلوب حرفياً. اكتب example في الأول وcode_example في الثاني. المستوى 3 يحتفظ بمعرّف partial_solution للتوافق فقط، لكن محتواه توجيه وظيفي وسؤال بلا كود. أضف reference_solution كحل كامل صحيح للمهمة الحالية، وسيظهر فقط بعد استخدام التلميحات الثلاثة.",
+    "في التلميح الأول احذف code_example أو اتركه فارغاً. في الثاني code_example إلزامي وغير فارغ.",
+    hint3TeachingInstruction,
     "استعمل السكيما لتقييد أطوال النصوص: concept_name_en 100، concept_name_ar 140، intro 400؛ options نصوص حتى 300 في اللمسات 1-3 وحتى 400 في الدفاع؛ القيم 2-6؛ كلمات الحل 1-8 وكل واحدة حتى 80. أطوال بقية النصوص ملتزمة بقيود السكيما.",
     "يجب أن تكون source هي gemini. القيم الصحيحة متطابقة مع خياراتها وليست مجرد ضمن الحد الأقصى العام.",
     `الهيكل المطلوب (القيم أمثلة شكلية يجب استبدالها بمحتوى فعلي): ${JSON.stringify(outputSkeleton)}`,
@@ -558,7 +559,7 @@ async function requestFromGemini(
 
 function validateCacheForTarget(payload: unknown, context: ProjectBuildContext, expectedConceptId: string): GeneratedSession | null {
   try {
-    const generated = validateCachedBuildTarget(validateGeneratedPayload(payload), context);
+    const generated = validateCachedBuildTarget(validateGeneratedPayload(payload, true), context);
     return generated.concept_id === expectedConceptId && generated.lesson_id ? generated : null;
   } catch {
     return null;

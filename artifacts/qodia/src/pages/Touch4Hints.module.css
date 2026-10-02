@@ -1,5 +1,6 @@
 .progressBlock { margin: 16px 0 10px; }
-.summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: #b8b8b8; font-size: 12px; line-height: 1.8; }
+.summary { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: #d5d5d5; font-size: 13px; line-height: 1.8; border: 1px solid #333; border-radius: 8px; padding: 8px 12px; background: #181818; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .penalty { color: #f87171; }
 .muted { color: #8c8c8c; }
 .track { height: 4px; border-radius: 4px; background: #242424; margin-top: 8px; overflow: hidden; }
