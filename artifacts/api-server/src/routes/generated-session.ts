@@ -14,6 +14,7 @@ import { GetGeneratedSessionResponse } from "@workspace/api-zod";
 import { requireUser } from "../lib/qodia-auth";
 import { ensureLearningMap } from "../lib/learning-map-service";
 import { selectOwnedUnfinishedLesson } from "../lib/lesson-cache";
+import { conceptAnchoringReport } from "../lib/session-concept-validation";
 import {
   buildProjectBuildContext as createProjectBuildContext,
   ensureProjectPlan,
@@ -267,33 +268,13 @@ function validateCachedBuildTarget(payload: GeneratedSession, context: ProjectBu
   return payload;
 }
 
-function validateConceptAnchoring(payload: GeneratedSession, selectedConcept: LearningConcept): GeneratedSession {
-  const stackTerms = new Set(["django", "node", "nodejs", "react", "flutter", "python", "javascript", "typescript"]);
-  const tokens = selectedConcept.name_en.split(/[^A-Za-z0-9]+/)
-    .map((token) => normalizeConceptName(token))
-    .filter((token) => token.length >= 4 && !stackTerms.has(token));
-  const conceptTerms = tokens.length ? tokens : selectedConcept.name_en.split(/[^A-Za-z0-9]+/)
-    .map((token) => normalizeConceptName(token)).filter((token) => token.length >= 4);
-  const containsConceptTerm = (value: string) => conceptTerms.some((term) => normalizeConceptName(value).includes(term));
-  const revealContent = [
-    payload.touch2_reveal.explanation,
-    ...payload.touch2_reveal.values_table.flatMap((row) => [row.code, row.meaning]),
-  ].join(" ");
-  const taskContent = [
-    payload.touch4_build.task_description,
-    ...payload.touch4_build.expected_keywords,
-  ].join(" ");
-  const questionContent = [
-    payload.touch1_provoke.question,
-    payload.touch3_explore.question,
-    payload.touch5_defend.committee_question,
-  ].join(" ");
-  if (
-    !conceptTerms.length
-    || !containsConceptTerm(revealContent)
-    || !containsConceptTerm(taskContent)
-    || !containsConceptTerm(questionContent)
-  ) throw new Error("Gemini lesson does not teach, assess, and build the selected curriculum concept");
+function validateConceptAnchoring(payload: GeneratedSession, selectedConcept: LearningConcept, req: Request): GeneratedSession {
+  const report = conceptAnchoringReport(payload, selectedConcept);
+  if (report.failed_sections.length) {
+    req.log.warn({ step: "concept_anchoring", concept_id: selectedConcept.id, ...report },
+      "Generated lesson failed concept evidence validation");
+    throw new Error("Gemini lesson does not teach, assess, and build the selected curriculum concept");
+  }
   return payload;
 }
 
@@ -309,6 +290,8 @@ function safeErrorKind(error: unknown): string {
   const status = "status" in error ? Number((error as { status?: unknown }).status) : 0;
   if (status === 429) return "rate_limited";
   if (status === 404) return "model_not_found";
+  if (status === 400) return "provider_invalid_request";
+  if (status === 401 || status === 403) return "provider_authorization_failed";
   if (status >= 500) return "provider_server_error";
   if (error instanceof Error && /timed out/i.test(error.message)) return "timeout";
   if (error instanceof Error && /json|validation|outside its options|unsupported fields/i.test(error.message)) return "invalid_generated_payload";
@@ -457,7 +440,14 @@ async function requestFromGemini(
   const generateWithModel = async (model: string): Promise<GeneratedSession> => {
     let lastError: unknown;
     for (let attempt = 0; attempt < 2; attempt += 1) {
+      let step = "gemini_request";
       try {
+        req.log.info({
+          step, model, attempt: attempt + 1, concept_id: selectedConcept.id,
+          prompt_characters: userPrompt.length + systemInstruction.length,
+          existing_content_characters: buildContext.existingContent.length,
+          learned_concept_count: learnedConcepts.length, max_output_tokens: 8192,
+        }, "Calling Gemini for selected session concept");
         const response = await withTimeout(client.models.generateContent({
           model,
           contents: userPrompt,
@@ -469,12 +459,25 @@ async function requestFromGemini(
             maxOutputTokens: 8192,
           },
         }));
+        req.log.info({
+          step: "gemini_response", model, attempt: attempt + 1,
+          response_characters: response.text?.length ?? 0,
+          finish_reason: response.candidates?.[0]?.finishReason,
+          prompt_tokens: response.usageMetadata?.promptTokenCount,
+          output_tokens: response.usageMetadata?.candidatesTokenCount,
+          total_tokens: response.usageMetadata?.totalTokenCount,
+        }, "Gemini session response received");
         const text = response.text;
         if (!text) throw new Error("Gemini returned an empty response");
-        const generated = validateConceptAnchoring(
-          validateBuildTarget(validateGeneratedPayload(JSON.parse(cleanModelJson(text))), buildContext),
-          selectedConcept,
-        );
+        step = "json_parse";
+        const decoded = JSON.parse(cleanModelJson(text));
+        step = "payload_validation";
+        const validated = validateGeneratedPayload(decoded);
+        step = "build_target_validation";
+        validateBuildTarget(validated, buildContext);
+        step = "concept_anchoring";
+        const generated = validateConceptAnchoring(validated, selectedConcept, req);
+        step = "concept_identity_validation";
         if (
           generated.concept_name_en !== selectedConcept.name_en
           || generated.concept_name_ar.trim() !== selectedConcept.name_ar
@@ -485,9 +488,18 @@ async function requestFromGemini(
           && normalizeConceptName(generated.concept_name_en) !== normalizeConceptName(selectedConcept.name_en)) {
           throw new Error("Gemini returned a previously used concept");
         }
+        req.log.info({ step: "lesson_validated", concept_id: selectedConcept.id, model },
+          "Selected Gemini lesson passed all checks");
         return generated;
       } catch (error) {
         lastError = error;
+        req.log.warn({
+          step, model, attempt: attempt + 1, concept_id: selectedConcept.id,
+          reason: safeErrorKind(error),
+          provider_status: step === "gemini_request" && error && typeof error === "object" && "status" in error
+            ? Number(error.status) : undefined,
+          validation_error: step !== "gemini_request" && error instanceof Error ? error.message.slice(0, 500) : undefined,
+        }, "Gemini session attempt failed");
         if (attempt < 1) await wait(300 * (attempt + 1));
       }
     }
@@ -547,15 +559,32 @@ async function generateOrLoadLesson(
   profile: { projectName: string; techStack: TechStack },
   req: Request,
 ): Promise<GeneratedSession> {
+  let step = "learning_map";
+  const enterStep = (next: string) => {
+    step = next;
+    req.log.info({ step }, "Session generation step started");
+  };
+  try {
+  enterStep("learning_map");
   await ensureLearningMap(userId, profile.projectName, profile.techStack, req);
+  enterStep("project_plan");
   const planRow = await ensureProjectPlan(userId, profile.projectName, profile.techStack, req);
   const sessionDate = dayInDamascus(new Date());
 
-  return db.transaction(async (tx) => {
+  return await db.transaction(async (tx) => {
+    enterStep("learning_map_read");
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId})::bigint)`);
     const [mapRow] = await tx.select().from(learningMapsTable)
       .where(eq(learningMapsTable.userId, userId)).limit(1).for("update");
     if (!mapRow) throw new Error("LEARNING_MAP_UNAVAILABLE");
+    req.log.info({
+      step, map_exists: true, concept_count: mapRow.concepts.length,
+      status_counts: mapRow.concepts.reduce<Record<string, number>>((counts, concept) => {
+        counts[concept.status] = (counts[concept.status] ?? 0) + 1;
+        return counts;
+      }, {}),
+    }, "Session learning map loaded");
+    enterStep("active_lesson_cache");
     const cacheRows = await tx.select().from(generatedSessionsTable)
       .where(eq(generatedSessionsTable.userId, userId))
       .orderBy(desc(generatedSessionsTable.updatedAt))
@@ -578,7 +607,10 @@ async function generateOrLoadLesson(
         const context = createProjectBuildContext(planRow, files, concept.target_file, cachedMetadata.isReview);
         if (context) {
           const valid = validateCacheForTarget(unfinishedCache.payload, context, concept.id);
-          if (valid) return attachReviewDraft(tx, userId, valid);
+          if (valid) {
+            req.log.info({ step: "active_lesson_cache", concept_id: concept.id }, "Resuming saved session lesson");
+            return attachReviewDraft(tx, userId, valid);
+          }
         }
       }
       throw new Error("ACTIVE_LESSON_CACHE_INVALID");
@@ -597,8 +629,21 @@ async function generateOrLoadLesson(
         return mapRow.concepts.find((concept) => normalizeConceptName(concept.name_en) === normalizeConceptName(english))?.id;
       })
       .filter((id): id is string => Boolean(id)));
+    enterStep("concept_selection");
     const selected = selectNextConcept(mapRow.concepts, new Date(), earlyReviewIds);
+    req.log.info({
+      step, concept_id: selected?.concept.id ?? null,
+      concept_name: selected?.concept.name_en ?? null,
+      is_review: selected?.isReview ?? false,
+      prerequisites: selected?.concept.prerequisites ?? [],
+      prerequisite_mastery: selected?.concept.prerequisites.map((id) => {
+        const prerequisite = mapRow.concepts.find((concept) => concept.id === id);
+        return { id, status: prerequisite?.status, mastery: prerequisite?.mastery_score };
+      }),
+      excluded_early_review_count: earlyReviewIds.size,
+    }, "Session concept selection finished");
     if (!selected) throw new Error("NO_ELIGIBLE_CONCEPT");
+    enterStep("build_context");
     const files = await tx.select().from(projectFilesTable).where(eq(projectFilesTable.userId, userId));
     const buildContext = createProjectBuildContext(planRow, files, selected.concept.target_file, selected.isReview);
     if (!buildContext) throw new Error("PROJECT_FILE_CONFLICT");
@@ -612,6 +657,7 @@ async function generateOrLoadLesson(
       .filter((concept) => concept.status === "completed" || concept.status === "needs_review")
       .map((concept) => concept.name_ar);
     let payload: GeneratedSession;
+    enterStep("gemini_generation");
     try {
       payload = await requestFromGemini(
         profile.projectName,
@@ -628,6 +674,7 @@ async function generateOrLoadLesson(
       throw error;
     }
     const lessonId = randomUUID();
+    enterStep("lesson_persistence");
     payload = GetGeneratedSessionResponse.parse({
       ...payload,
       concept_name_en: selected.concept.name_en,
@@ -656,6 +703,13 @@ async function generateOrLoadLesson(
     });
     return payload;
   });
+  } catch (error) {
+    req.log.error({
+      step, reason: safeErrorKind(error),
+      validation_error: step !== "gemini_generation" && error instanceof Error ? error.message.slice(0, 500) : undefined,
+    }, "Session generation failed at named step");
+    throw error;
+  }
 }
 
 async function handleGenerateSession(req: Request, res: import("express").Response, user: NonNullable<Awaited<ReturnType<typeof requireUser>>>) {
@@ -672,6 +726,7 @@ async function handleGenerateSession(req: Request, res: import("express").Respon
     res.json(GetGeneratedSessionResponse.parse(payload));
   } catch (error) {
     const reason = error instanceof Error ? error.message : "lesson_generation_failed";
+    req.log.error({ reason: safeErrorKind(error) }, "Unable to generate the selected Kodia lesson; see correlated step logs");
     if (reason === "NO_ELIGIBLE_CONCEPT") {
       res.status(409).json({ error: "لا يوجد مفهوم آمن متاح الآن؛ راجع المتطلبات والإتقان قبل متابعة الخطة." });
       return;
@@ -680,7 +735,6 @@ async function handleGenerateSession(req: Request, res: import("express").Respon
       res.status(409).json({ error: "الملف المستهدف لهذا المفهوم مكتمل أو غير متاح للحفظ. لم نغيّر أي ملف محفوظ." });
       return;
     }
-    req.log.error({ reason }, "Unable to generate the selected Kodia lesson");
     res.status(503).json({ error: "تعذر إنشاء درس خارطة التعلّم حالياً. أعد المحاولة لاحقاً." });
   }
 }

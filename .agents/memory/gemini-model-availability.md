@@ -14,3 +14,9 @@ Complex curriculum schemas with outer-array `minItems`/`maxItems` set to 30 can 
 **Why:** Live structured-generation comparisons isolated those bounds as the rejection cause; a small boolean schema did not reveal it.
 
 **How to apply:** Enforce exactly 30 entries in the application validator, not those provider-side array bounds. Keep all identity, prerequisite, day, and approved-path validation intact.
+
+A working Gemini key and successful generation do not prove that a session will load: local concept-evidence validation can reject a valid Arabic lesson after the provider responds.
+
+**Why:** A Flutter dependency-management lesson was repeatedly rejected by English-only exact-term matching, even though its map and prerequisite selection were valid. Arabic descriptions and `dependencies` are not literal matches for `dependency`.
+
+**How to apply:** Distinguish provider errors from local validation failures using named-stage logs. Preserve pinned concept identity and evidence checks, but account for translated terminology and grammatical variants; do not resolve validation failures with renamed generic lessons.
