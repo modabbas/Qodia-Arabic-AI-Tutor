@@ -14,6 +14,8 @@ import { Touch4CodeMirror, Touch4DiffFeedback } from './touch4-code-feedback';
 import { CountUp, FxLayer, IdleMentor, caretPoint, readSound, useFx, useReducedMotion, writeSound } from './session-fx';
 import { getGetPrideMomentQueryKey, useGetPrideMoment } from '@workspace/api-client-react';
 import { PrideAnticipation, PrideMoment } from './pride-moment';
+import { Touch4FirstMove, Touch4Mentor } from './touch4-conversation';
+import { editableSelection, keepsLockedPrefix, resolveScaffold, restoreStudentDraft } from './touch4-editor-policy';
 
 type Mood = 'hyped' | 'normal' | 'tired';
 type Result = { name: string; concept: string; passed: boolean };
@@ -148,6 +150,15 @@ export default function Session() {
     return () => window.clearTimeout(id);
   }, [touch]);
   const [code, setCode] = useState('');
+  const [scaffoldUnlocked, setScaffoldUnlocked] = useState<string | null>(null);
+  const build = session?.touch4_build;
+  const scaffold = build?.scaffolding;
+  const scaffoldState = resolveScaffold(
+    scaffold?.tier ?? 'none', scaffold?.prefix ?? '',
+    scaffoldUnlocked === session?.lesson_id, code,
+  );
+  const scaffoldReady = scaffoldState.ready;
+  const lockedPrefix = scaffoldState.prefix;
   const [fileSaved, setFileSaved] = useState(false);
   const [fileSaveError, setFileSaveError] = useState(false);
   const [hintBusy, setHintBusy] = useState(false);
@@ -217,15 +228,21 @@ export default function Session() {
     if (restoredFileRef.current === path) return;
     if (session.is_review) {
       const reviewDraft = 'review_draft' in session ? session.review_draft : undefined;
-      if (typeof reviewDraft === 'string' && reviewDraft.trim()) setCode(current => current || reviewDraft);
+      if (typeof reviewDraft === 'string' && reviewDraft.trim()) setCode(current => restoreStudentDraft(current, reviewDraft, scaffold?.prefix ?? ''));
       restoredFileRef.current = path;
       return;
     }
     if (!project.data) return;
     const draft = project.data.files.find(file => file.path === path && file.status === 'in_progress');
-    if (draft?.content) setCode(current => current || draft.content || '');
+    if (draft?.content) setCode(current => restoreStudentDraft(current, draft.content || '', scaffold?.prefix ?? ''));
     restoredFileRef.current = path;
-  }, [touch, session, project.data]);
+  }, [touch, session, project.data, scaffold?.prefix]);
+
+  useEffect(() => {
+    if (touch === 4 && scaffoldReady && lockedPrefix && restoredFileRef.current === build?.target_file) {
+      setCode(current => current || lockedPrefix);
+    }
+  }, [touch, scaffoldReady, lockedPrefix, build?.target_file, project.data]);
 
   useEffect(() => {
     if (touch !== 5 || complete || correct || seconds <= 0) return;
@@ -258,8 +275,11 @@ export default function Session() {
   }, [touch, complete, correct, sound]);
 
   useEffect(() => {
-    if (touch === 4 && !correct) inputRef.current?.focus();
-  }, [touch, correct]);
+    if (touch === 4 && !correct && scaffoldReady) {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(lockedPrefix.length, lockedPrefix.length);
+    }
+  }, [touch, correct, scaffoldReady, lockedPrefix]);
   useEffect(() => {
     if (correct) nextRef.current?.focus();
   }, [correct, phase]);
@@ -394,6 +414,11 @@ export default function Session() {
   function onCodeChange(event: ChangeEvent<HTMLTextAreaElement>) {
     const el = event.currentTarget;
     const native = event.nativeEvent as InputEvent;
+    if (!keepsLockedPrefix(el.value, lockedPrefix)) {
+      el.value = code;
+      el.setSelectionRange(lockedPrefix.length, lockedPrefix.length);
+      return;
+    }
     const delta = el.value.length - code.length;
     setCode(el.value);
     setBuildValidation(null);
@@ -401,7 +426,7 @@ export default function Session() {
     creditTyping(el, typingRef.current.input({ inputType: native.inputType ?? '', data: native.data ?? null, isComposing: native.isComposing }, delta));
   }
   async function checkCode(event?: MouseEvent<HTMLButtonElement>) {
-    if (correct || !session || saveFile.isPending || codeCheckLock.current || hintBusy) return;
+    if (correct || !session || !scaffoldReady || saveFile.isPending || codeCheckLock.current || hintBusy) return;
     codeCheckLock.current = true;
     setCodeTries(count => count + 1);
     setBuildValidation(null);
@@ -413,7 +438,7 @@ export default function Session() {
       try {
         const saved = await saveFile.mutateAsync({ data: {
           file_path: session.touch4_build.target_file,
-          content: code,
+          content: code || lockedPrefix,
           concept_name_en: session.concept_name_en,
           ...(session.lesson_id ? { lesson_id: session.lesson_id } : {}),
           attempt_number: Math.min(10000, codeTries + 1),
@@ -451,7 +476,7 @@ export default function Session() {
     clearLater(); fx.clear(); lockRef.current = false; setLeaving(false); typingRef.current.reset(); setPractice(0);
     streakRef.current = 0; setStreak(0); setStreakMsg(null); setGain(0); setBroke(false); setShaking(false);
     setMistakes(0); setEarned(0);
-    setCode(''); setHintBusy(false); hintPenaltyApplied.current = 0; setCodeTries(0); setPhase('first');
+    setCode(''); setScaffoldUnlocked(null); setHintBusy(false); hintPenaltyApplied.current = 0; setCodeTries(0); setPhase('first');
     setFileSaved(false); setFileSaveError(false); saveFile.reset();
     setBuildValidation(null); codeCheckLock.current = false;
     setSeconds(30); setConfidence(100); setComplete(false); setCompletedSessionId(undefined); setResults([]);
@@ -510,7 +535,6 @@ export default function Session() {
   const baseXP = baselineRef.current ?? dashboard.data?.progress.total_xp ?? 0;
   const hudXP = complete ? (dashboard.data?.progress.total_xp ?? baseXP) : baseXP + earned;
   const perfect = complete && [0, 1, 2, 3, 4].every(i => results[i]?.passed) && mistakes === 0;
-  const build = session?.touch4_build;
   const defense = session?.touch5_defend;
 
   return <div className={s.session}>
@@ -536,28 +560,37 @@ export default function Session() {
           : <main className={s.stage}><div key={complete ? 'end' : `${touch}-${phase}`} className={`${s.slide} ${leaving ? s.leaving : ''}`}>
             {!complete && <>
               {touch === 1 && musicVisible && <div className={s.music}><span className={s.note}>🎵</span><span>{music[mood].label} —</span><a href={music[mood].url} target="_blank" rel="noopener noreferrer" data-testid="link-music">افتح بلايليست</a><button className={s.x} onClick={() => setMusicVisible(false)} data-testid="button-dismiss-music">إخفاء</button></div>}
-              <div className={`${s.touchlabel} ${touches[touch - 1].color}`}>اللمسة {arabic(touch)} · {touches[touch - 1].name}</div>
+              <div className={`${s.touchlabel} ${touches[touch - 1].color}`}>{touch === 4 ? 'نبنيها سوا' : <>اللمسة {arabic(touch)} · {touches[touch - 1].name}</>}</div>
               {session.is_review && <p className={s.fileNote} role="status" data-testid="status-review-session">مراجعة مفهوم سابق · {session.review_reason || 'عم نثبّت الفكرة قبل ما نكمل.'} التدريب منفصل، وما بيغيّر ملفات مشروعك المحفوظة.</p>}
               <div className={s.who}>مشرفك · <span data-testid="text-session-concept">{session.concept_name_ar} ({session.concept_name_en})</span></div>
               <p className={s.say}>{touch === 1
                 ? `${mood === 'hyped' ? 'يلا نشتغل! ' : mood === 'tired' ? 'ما تقلق، ' : ''}${session.concept_intro} سؤال قبل ما نبلش:`
                 : touch === 2 ? 'خلينا نكشف الفكرة ونرتّب خياراتها:'
                   : touch === 3 ? 'خليني جرّبك بشي بسيط قبل ما تكتب لحالك:'
-                    : touch === 4 ? 'دورك. طبّق الفكرة واكتبها بنفسك:'
+                    : touch === 4 ? 'خلّينا ناخدها خطوة خطوة، وبعدها بتكمّل بإيدك:'
                       : 'هلق دكتور من اللجنة رح يسألك:'}</p>
             </>}
             {!complete && touch === 1 && <section className={s.card}><div className={s.q}>{session.touch1_provoke.question}</div>
               {choices(session.touch1_provoke.options, session.touch1_provoke.correct_index, session.touch1_provoke.feedback_correct, session.touch1_provoke.feedback_wrong)}{feedbackNode}{nextNode}</section>}
             {!complete && touch === 2 && <section className={s.card}><p className={s.introtext}>{session.touch2_reveal.explanation}</p><p className={s.valueslabel}>خيارات ومفاهيم مرتبطة:</p><div className={s.values}>{session.touch2_reveal.values_table.map((row, index) => <div className={s.valuerow} key={`${row.code}-${index}`}><div className={s.valuename}>{row.code}</div><div className={s.valuedesc}>{row.meaning}</div></div>)}</div><div className={s.check}><div className={s.checkq}>قبل ما نكمّل — سؤال سريع:</div><div className={s.checkmain}>{session.touch2_reveal.verification_question}</div>{choices(session.touch2_reveal.verification_options, session.touch2_reveal.correct_index, session.touch2_reveal.feedback_correct, session.touch2_reveal.feedback_wrong, true)}</div>{feedbackNode}{nextNode}</section>}
             {!complete && touch === 3 && <section className={s.card}><div className={s.q}>{session.touch3_explore.question}</div>{choices(session.touch3_explore.options, session.touch3_explore.correct_index, session.touch3_explore.feedback_correct, session.touch3_explore.feedback_wrong)}{feedbackNode}{nextNode}</section>}
-            {!complete && touch === 4 && build && <section className={s.card}><div className={s.q}>{build.task_description}</div>
+            {!complete && touch === 4 && build && <section className={s.card} data-testid="touch4-conversation" data-scaffold-tier={scaffold?.tier ?? 'none'}><Touch4Mentor task={build.task_description} concept={session.concept_name_ar} />
               <p className={s.fileTarget}>{session.is_review ? 'تدريب مراجعة مرتبط بالملف:' : 'اليوم رح تضيف كود لـ:'} <span dir="ltr">{build.target_file}</span></p>
               <p className={s.fileNote}>{session.is_review ? 'الكود هون تدريب للمراجعة فقط، والملف الأصلي ما بيتغيّر.' : 'هذا الكود سيُحفظ في مشروعك الحقيقي.'} {build.integration_note}</p>
               {build.existing_content && <div className={s.priorFile}><strong>الملف الحالي (للقراءة فقط):</strong><pre dir="ltr"><code>{highlightCode(build.existing_content)}</code></pre></div>}
+              {!scaffoldReady && build.first_move_choice && <Touch4FirstMove key={session.lesson_id} choice={build.first_move_choice} onCorrect={() => {
+                setScaffoldUnlocked(session.lesson_id ?? '');
+                if (!code.trim()) setCode(scaffold?.prefix ?? '');
+              }} />}
+              {scaffold?.legacy_lesson && <p className={s.small}>هالجلسة محفوظة من قبل. فيك تكمّل كودك مباشرة، من دون ما نغيّر محاولتك.</p>}
+              {scaffoldReady && <>
+              {lockedPrefix && <p className={s.small} id="scaffold-prefix-note" data-testid="text-scaffold-prefix-note">🔒 جهّزنا بداية الكود. كمّل بعدها — اختيار البداية ما عليه نقاط أو خصم.</p>}
+              {scaffold?.tier === 'reduced' && <p className={s.small} data-testid="text-scaffold-reduced">بتعرف هالفكرة. تركنا بداية أقصر لتكمّلها لحالك.</p>}
+              {scaffold?.tier === 'none' && !scaffold.legacy_lesson && <p className={s.small} data-testid="text-scaffold-independent">هالمرة البداية إلك. جرّب تكتبها لحالك.</p>}
               <div className={s.editor}>
               {build.starter_code.split('\n').map((line, index) => <div className={s.ln} key={`${index}-${line}`}><span className={s.n}>{arabic(index + 1)}</span><span className={s.c}>{line || ' '}</span></div>)}
              </div>
-              <div className={s.codeEntry} onPointerMove={event => { if (event.pointerType === 'touch') return; const now = Date.now(); if (now - trailRef.current < 70) return; trailRef.current = now; fx.dot(event.clientX, event.clientY); }}><pre className={s.syntaxMirror} aria-hidden="true"><Touch4CodeMirror code={code} file={build.target_file} completed={correct} highlight={highlightCode} /></pre><textarea ref={inputRef} className={s.codeTextarea} value={code} disabled={correct || saveFile.isPending} onChange={onCodeChange} onCompositionStart={() => typingRef.current.compositionStart()} onCompositionEnd={event => creditTyping(event.currentTarget, typingRef.current.compositionEnd(event.data))} onScroll={event => { const mirror = event.currentTarget.previousElementSibling; if (mirror) { mirror.scrollTop = event.currentTarget.scrollTop; mirror.scrollLeft = event.currentTarget.scrollLeft; } }} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); void checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" aria-label={`اكتب كود الملف ${build.target_file}`} /></div>
+              <div className={s.codeEntry} onPointerMove={event => { if (event.pointerType === 'touch') return; const now = Date.now(); if (now - trailRef.current < 70) return; trailRef.current = now; fx.dot(event.clientX, event.clientY); }}><pre className={s.syntaxMirror} aria-hidden="true"><Touch4CodeMirror code={code || lockedPrefix} lockedPrefix={lockedPrefix} file={build.target_file} completed={correct} highlight={highlightCode} /></pre><textarea ref={inputRef} className={s.codeTextarea} value={code || lockedPrefix} disabled={correct || saveFile.isPending} onChange={onCodeChange} onSelect={event => { const el = event.currentTarget; const [start, end] = editableSelection(el.selectionStart, el.selectionEnd, lockedPrefix.length); if (start !== el.selectionStart || end !== el.selectionEnd) el.setSelectionRange(start, end); }} onCompositionStart={() => typingRef.current.compositionStart()} onCompositionEnd={event => creditTyping(event.currentTarget, typingRef.current.compositionEnd(event.data))} onScroll={event => { const mirror = event.currentTarget.previousElementSibling; if (mirror) { mirror.scrollTop = event.currentTarget.scrollTop; mirror.scrollLeft = event.currentTarget.scrollLeft; } }} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if (event.key === 'Backspace' && event.currentTarget.selectionStart <= lockedPrefix.length && event.currentTarget.selectionEnd <= lockedPrefix.length) event.preventDefault(); if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); void checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" aria-describedby={lockedPrefix ? 'scaffold-prefix-note' : undefined} aria-label={`اكتب كود الملف ${build.target_file}`} /></div>
               <p className={s.small}>الإشارات تحت الأسطر فحص محلي خفيف بعد التوقف عن الكتابة؛ ما بتمنع الحفظ. الفحص الكامل عند الإرسال.</p>
               <Touch4HintProgress support={support} attempts={codeTries} />
               <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><Touch4HintButton support={support} lessonId={session.lesson_id ?? ''} busy={saveFile.isPending || hintBusy} completed={correct} loadError={touch4Support.isError} onBusy={setHintBusy} onState={updateHintState} onSelect={level => setHintSelection({ lesson: session.lesson_id ?? '', level })} onRefresh={() => touch4Support.refetch()} /><button ref={checkBtnRef} className={`${s.btn} ${fileSaved ? s.savedPulse : ''}`} disabled={correct || saveFile.isPending || hintBusy} aria-busy={saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? <><LoaderCircle className={s.checkingSpinner} size={16} aria-hidden="true" /> عم أتفحص كودك...</> : session.is_review ? 'سجّل تدريب المراجعة' : 'احفظ في مشروعي'}</button></div>
@@ -567,7 +600,8 @@ export default function Session() {
               <Touch4HintCards support={support} completed={correct} selectedLevel={hintSelection && hintSelection.lesson === session.lesson_id ? hintSelection.level : undefined} />
               <div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div><div className={s.practice} data-testid="text-typing-practice">نقاط تدريب: <b>+{arabic(practice)}</b> · كل ٥ أحرف تكتبها بإيدك = +١ للتشجيع فقط، وما بتغيّر نقاطك المحفوظة.</div>{buildValidation?.diff && !buildValidation.valid && buildValidation.level < 3 ? null : feedbackNode}
               {fileSaveError && <p className={s.error} role="alert">{session.is_review ? 'تدريب المراجعة لم يُسجّل بعد.' : 'الكود لم يُحفظ بعد.'} أعد المحاولة بنفس الزر.</p>}
-              {fileSaved && <Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link>}{nextNode}</section>}
+              {fileSaved && <Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link>}{nextNode}</>}
+            </section>}
             {!complete && touch === 5 && defense && <section className={`${s.card} ${s.boss}`}><div className={s.bosshead}><div className={`${s.ring} ${!correct && seconds > 0 && seconds <= 10 ? seconds <= 5 ? s.urgent2 : s.urgent1 : ''}`}><svg width="52" height="52" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" className={s.ringbg} /><circle cx="24" cy="24" r="20" className={s.ringfg} strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - seconds / 30)} /></svg><span data-testid="text-countdown">{arabic(seconds)}</span></div><div className={s.hp}><div className={s.hpl}><span>ثقتك قدام اللجنة</span><span data-testid="text-confidence">{arabic(confidence)}٪</span></div><div className={s.hpb}><i style={{ width: `${confidence}%` }} /></div></div></div><div className={s.judge}>{phase === 'first' ? 'عضو لجنة المناقشة:' : 'الدكتور ما اكتفى:'}</div>
               <div className={s.q}>{phase === 'first' ? defense.committee_question : defense.followup_question}</div>
               {phase === 'first'

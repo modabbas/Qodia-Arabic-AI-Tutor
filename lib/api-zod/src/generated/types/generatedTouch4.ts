@@ -7,9 +7,13 @@
  */
 import type { BuildValidation } from './buildValidation';
 import type { GeneratedTouch4FileAction } from './generatedTouch4FileAction';
+import type { Touch4FirstMove } from './touch4FirstMove';
 import type { Touch4Hint } from './touch4Hint';
+import type { Touch4Scaffolding } from './touch4Scaffolding';
 
 export interface GeneratedTouch4 {
+  first_move_choice?: Touch4FirstMove;
+  scaffolding?: Touch4Scaffolding;
   /**
      * @minLength 1
      * @maxLength 700

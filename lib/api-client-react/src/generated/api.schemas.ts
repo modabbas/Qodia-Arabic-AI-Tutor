@@ -450,6 +450,62 @@ export interface GeneratedTouch3 {
   feedback_wrong: string;
 }
 
+export interface Touch4FirstMoveOption {
+  /**
+     * @minLength 1
+     * @maxLength 20
+     */
+  id: string;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  text_ar: string;
+  correct: boolean;
+}
+
+export interface Touch4FirstMove {
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  question_ar: string;
+  /**
+     * @minItems 2
+     * @maxItems 3
+     */
+  options: Touch4FirstMoveOption[];
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  scaffold_code_on_correct: string;
+}
+
+export type Touch4ScaffoldingTier = typeof Touch4ScaffoldingTier[keyof typeof Touch4ScaffoldingTier];
+
+
+export const Touch4ScaffoldingTier = {
+  guided: 'guided',
+  reduced: 'reduced',
+  none: 'none',
+} as const;
+
+export interface Touch4Scaffolding {
+  tier: Touch4ScaffoldingTier;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  mastery_score: number | null;
+  /** @minimum 0 */
+  completed_encounters: number;
+  /** @maxLength 2000 */
+  prefix: string;
+  legacy_lesson: boolean;
+}
+
 export type GeneratedTouch4FileAction = typeof GeneratedTouch4FileAction[keyof typeof GeneratedTouch4FileAction];
 
 
@@ -509,6 +565,8 @@ export interface Touch4Hint {
 }
 
 export interface GeneratedTouch4 {
+  first_move_choice?: Touch4FirstMove;
+  scaffolding?: Touch4Scaffolding;
   /**
      * @minLength 1
      * @maxLength 700

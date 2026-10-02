@@ -534,6 +534,24 @@ export const getGeneratedSessionResponseTouch3ExploreFeedbackCorrectMax = 400;
 
 export const getGeneratedSessionResponseTouch3ExploreFeedbackWrongMax = 400;
 
+export const getGeneratedSessionResponseTouch4BuildFirstMoveChoiceQuestionArMax = 300;
+
+export const getGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsItemIdMax = 20;
+
+export const getGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsItemTextArMax = 300;
+
+export const getGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsMin = 2;
+export const getGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsMax = 3;
+
+export const getGeneratedSessionResponseTouch4BuildFirstMoveChoiceScaffoldCodeOnCorrectMax = 2000;
+
+export const getGeneratedSessionResponseTouch4BuildScaffoldingMasteryScoreMin = 0;
+export const getGeneratedSessionResponseTouch4BuildScaffoldingMasteryScoreMax = 100;
+
+export const getGeneratedSessionResponseTouch4BuildScaffoldingCompletedEncountersMin = 0;
+
+export const getGeneratedSessionResponseTouch4BuildScaffoldingPrefixMax = 2000;
+
 export const getGeneratedSessionResponseTouch4BuildTaskDescriptionMax = 700;
 
 export const getGeneratedSessionResponseTouch4BuildStarterCodeMax = 2000;
@@ -644,6 +662,22 @@ export const GetGeneratedSessionResponse = zod.object({
   "feedback_wrong": zod.string().min(1).max(getGeneratedSessionResponseTouch3ExploreFeedbackWrongMax)
 }),
   "touch4_build": zod.object({
+  "first_move_choice": zod.object({
+  "question_ar": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildFirstMoveChoiceQuestionArMax),
+  "options": zod.array(zod.object({
+  "id": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsItemIdMax),
+  "text_ar": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsItemTextArMax),
+  "correct": zod.boolean()
+})).min(getGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsMin).max(getGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsMax),
+  "scaffold_code_on_correct": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildFirstMoveChoiceScaffoldCodeOnCorrectMax)
+}).optional(),
+  "scaffolding": zod.object({
+  "tier": zod.enum(['guided', 'reduced', 'none']),
+  "mastery_score": zod.number().min(getGeneratedSessionResponseTouch4BuildScaffoldingMasteryScoreMin).max(getGeneratedSessionResponseTouch4BuildScaffoldingMasteryScoreMax).nullable(),
+  "completed_encounters": zod.number().int().min(getGeneratedSessionResponseTouch4BuildScaffoldingCompletedEncountersMin),
+  "prefix": zod.string().max(getGeneratedSessionResponseTouch4BuildScaffoldingPrefixMax),
+  "legacy_lesson": zod.boolean()
+}).optional(),
   "task_description": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildTaskDescriptionMax),
   "starter_code": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildStarterCodeMax),
   "expected_keywords": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildExpectedKeywordsItemMax)).min(1).max(getGeneratedSessionResponseTouch4BuildExpectedKeywordsMax),
@@ -750,6 +784,24 @@ export const createGeneratedSessionResponseTouch3ExploreCorrectIndexMax = 2;
 export const createGeneratedSessionResponseTouch3ExploreFeedbackCorrectMax = 400;
 
 export const createGeneratedSessionResponseTouch3ExploreFeedbackWrongMax = 400;
+
+export const createGeneratedSessionResponseTouch4BuildFirstMoveChoiceQuestionArMax = 300;
+
+export const createGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsItemIdMax = 20;
+
+export const createGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsItemTextArMax = 300;
+
+export const createGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsMin = 2;
+export const createGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsMax = 3;
+
+export const createGeneratedSessionResponseTouch4BuildFirstMoveChoiceScaffoldCodeOnCorrectMax = 2000;
+
+export const createGeneratedSessionResponseTouch4BuildScaffoldingMasteryScoreMin = 0;
+export const createGeneratedSessionResponseTouch4BuildScaffoldingMasteryScoreMax = 100;
+
+export const createGeneratedSessionResponseTouch4BuildScaffoldingCompletedEncountersMin = 0;
+
+export const createGeneratedSessionResponseTouch4BuildScaffoldingPrefixMax = 2000;
 
 export const createGeneratedSessionResponseTouch4BuildTaskDescriptionMax = 700;
 
@@ -861,6 +913,22 @@ export const CreateGeneratedSessionResponse = zod.object({
   "feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch3ExploreFeedbackWrongMax)
 }),
   "touch4_build": zod.object({
+  "first_move_choice": zod.object({
+  "question_ar": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildFirstMoveChoiceQuestionArMax),
+  "options": zod.array(zod.object({
+  "id": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsItemIdMax),
+  "text_ar": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsItemTextArMax),
+  "correct": zod.boolean()
+})).min(createGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsMin).max(createGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsMax),
+  "scaffold_code_on_correct": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildFirstMoveChoiceScaffoldCodeOnCorrectMax)
+}).optional(),
+  "scaffolding": zod.object({
+  "tier": zod.enum(['guided', 'reduced', 'none']),
+  "mastery_score": zod.number().min(createGeneratedSessionResponseTouch4BuildScaffoldingMasteryScoreMin).max(createGeneratedSessionResponseTouch4BuildScaffoldingMasteryScoreMax).nullable(),
+  "completed_encounters": zod.number().int().min(createGeneratedSessionResponseTouch4BuildScaffoldingCompletedEncountersMin),
+  "prefix": zod.string().max(createGeneratedSessionResponseTouch4BuildScaffoldingPrefixMax),
+  "legacy_lesson": zod.boolean()
+}).optional(),
   "task_description": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildTaskDescriptionMax),
   "starter_code": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildStarterCodeMax),
   "expected_keywords": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildExpectedKeywordsItemMax)).min(1).max(createGeneratedSessionResponseTouch4BuildExpectedKeywordsMax),

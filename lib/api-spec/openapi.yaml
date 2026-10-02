@@ -1121,6 +1121,10 @@ components:
       type: object
       additionalProperties: false
       properties:
+        first_move_choice:
+          $ref: "#/components/schemas/Touch4FirstMove"
+        scaffolding:
+          $ref: "#/components/schemas/Touch4Scaffolding"
         task_description: { type: string, minLength: 1, maxLength: 700 }
         starter_code: { type: string, minLength: 1, maxLength: 2000 }
         expected_keywords: { type: array, minItems: 1, maxItems: 8, items: { type: string, minLength: 1, maxLength: 80 } }
@@ -1149,6 +1153,37 @@ components:
           items: { $ref: "#/components/schemas/Touch4Hint" }
         reference_solution: { type: string, minLength: 1, maxLength: 4000 }
       required: [task_description, starter_code, expected_keywords, success_message, hint, code_placeholder, target_file, file_action, existing_content, integration_note]
+    Touch4FirstMove:
+      type: object
+      additionalProperties: false
+      properties:
+        question_ar: { type: string, minLength: 1, maxLength: 300 }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/Touch4FirstMoveOption"
+        scaffold_code_on_correct: { type: string, minLength: 1, maxLength: 2000 }
+      required: [question_ar, options, scaffold_code_on_correct]
+    Touch4FirstMoveOption:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, minLength: 1, maxLength: 20 }
+        text_ar: { type: string, minLength: 1, maxLength: 300 }
+        correct: { type: boolean }
+      required: [id, text_ar, correct]
+    Touch4Scaffolding:
+      type: object
+      additionalProperties: false
+      properties:
+        tier: { type: string, enum: [guided, reduced, none] }
+        mastery_score: { type: [number, "null"], minimum: 0, maximum: 100 }
+        completed_encounters: { type: integer, minimum: 0 }
+        prefix: { type: string, maxLength: 2000 }
+        legacy_lesson: { type: boolean }
+      required: [tier, mastery_score, completed_encounters, prefix, legacy_lesson]
     Touch4Hint:
       type: object
       additionalProperties: false

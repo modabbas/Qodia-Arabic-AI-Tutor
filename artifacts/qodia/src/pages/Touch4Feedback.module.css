@@ -14,4 +14,5 @@
 .label{font-size:11px;flex-shrink:0;color:#e7af63}
 .liveError{text-decoration:underline wavy #ea7971;text-underline-offset:4px;background:#ea797112}
 .liveGood{border-left:2px solid #65b48b;background:#65b48b08}
+.lockedPrefix,.lockedPrefix *{color:#8f9b94!important}
 @media(max-width:480px){.label{font-size:10px}.source{gap:5px}.diff{padding:9px}}

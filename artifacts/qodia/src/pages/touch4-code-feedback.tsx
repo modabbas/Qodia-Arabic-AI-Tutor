@@ -3,22 +3,25 @@ import type { CodeDiffResult } from '@workspace/api-client-react';
 import { liveSyntaxIssues, type LiveSyntaxIssue } from './touch4-live-syntax';
 import s from './Touch4Feedback.module.css';
 
-export function Touch4CodeMirror({ code, file, completed, highlight }: {
-  code: string; file: string; completed: boolean; highlight: (value: string) => ReactNode;
+export function Touch4CodeMirror({ code, file, completed, highlight, lockedPrefix = '' }: {
+  code: string; file: string; completed: boolean; highlight: (value: string) => ReactNode; lockedPrefix?: string;
 }) {
   const [issues, setIssues] = useState<LiveSyntaxIssue[]>([]);
   useEffect(() => {
     setIssues([]);
-    if (completed) return;
+    if (completed || (lockedPrefix && code === lockedPrefix)) return;
     const timer = window.setTimeout(() => setIssues(liveSyntaxIssues(code, file)), 500);
     return () => window.clearTimeout(timer);
-  }, [code, file, completed]);
+  }, [code, file, completed, lockedPrefix]);
   const lines = code.split('\n');
+  let offset = 0;
   return <code data-testid="touch4-live-mirror">{lines.map((line, index) => {
+    const locked = Math.max(0, Math.min(line.length, lockedPrefix.length - offset));
+    offset += line.length + 1;
     const issue = issues.find(item => item.lineNumber === index + 1);
     return <span key={index} className={issue ? s.liveError : completed ? s.liveGood : undefined}
       data-line-number={index + 1} data-syntax-issue={issue ? 'true' : undefined}
-      title={issue?.hint}>{highlight(line) || ' '}{index < lines.length - 1 ? '\n' : ''}</span>;
+      title={issue?.hint}>{locked > 0 ? <><span className={s.lockedPrefix} data-testid="code-locked-prefix">{highlight(line.slice(0, locked))}</span>{highlight(line.slice(locked))}</> : highlight(line) || ' '}{index < lines.length - 1 ? '\n' : ''}</span>;
   })}</code>;
 }
 

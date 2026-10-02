@@ -28,6 +28,7 @@ import {
   type LearningConcept,
 } from "../lib/learning-path";
 import { hint3TeachingInstruction, parseTouch4HintBundle } from "../lib/touch4-support-rules";
+import { completedConceptEncounters, scaffoldingFor, validFirstMove } from "../lib/touch4-scaffolding";
 
 const router: IRouter = Router();
 const primaryModel = "gemini-3.1-flash-lite";
@@ -103,6 +104,16 @@ const generatedSessionResponseSchema: Schema = objectSchema({
     feedback_wrong: stringSchema(400),
   }, ["question", "options", "correct_index", "feedback_correct", "feedback_wrong"]),
   touch4_build: objectSchema({
+    first_move_choice: objectSchema({
+      question_ar: stringSchema(300),
+      options: {
+        type: Type.ARRAY, minItems: "2", maxItems: "3",
+        items: objectSchema({
+          id: stringSchema(20), text_ar: stringSchema(300), correct: { type: Type.BOOLEAN },
+        }, ["id", "text_ar", "correct"]),
+      },
+      scaffold_code_on_correct: stringSchema(2000),
+    }, ["question_ar", "options", "scaffold_code_on_correct"]),
     task_description: stringSchema(700),
     starter_code: stringSchema(2000),
     expected_keywords: {
@@ -131,7 +142,7 @@ const generatedSessionResponseSchema: Schema = objectSchema({
       },
       level3_question: stringSchema(500),
     }, ["level2_rules", "level3_question"]),
-  }, ["task_description", "starter_code", "expected_keywords", "success_message", "hint", "code_placeholder", "target_file", "file_action", "existing_content", "integration_note", "hints", "reference_solution", "validation"]),
+  }, ["first_move_choice", "task_description", "starter_code", "expected_keywords", "success_message", "hint", "code_placeholder", "target_file", "file_action", "existing_content", "integration_note", "hints", "reference_solution", "validation"]),
   touch5_defend: objectSchema({
     committee_question: stringSchema(700),
     options: stringArraySchema(3, 400),
@@ -248,6 +259,10 @@ export function validateGeneratedPayload(input: unknown, allowLegacyHints = fals
   }
   const hints = parsed.touch4_build.hints;
   const referenceSolution = parsed.touch4_build.reference_solution;
+  const firstMove = parsed.touch4_build.first_move_choice;
+  if ((!allowLegacyHints && !firstMove) || (firstMove && !validFirstMove(firstMove, referenceSolution))) {
+    throw new Error("Touch 4 first move must have one correct option and an incomplete exact reference prefix");
+  }
   if (
     (hints === undefined) !== (referenceSolution === undefined)
     || (hints !== undefined && !parseTouch4HintBundle({ hints, reference_solution: referenceSolution }, allowLegacyHints))
@@ -431,6 +446,15 @@ async function requestFromGemini(
       feedback_wrong: "توجيه لطيف",
     },
     touch4_build: {
+      first_move_choice: {
+        question_ar: "شو أول شي لازم تعمل؟",
+        options: [
+          { id: "a", text_ar: "الخطوة التقنية الصحيحة للمهمة", correct: true },
+          { id: "b", text_ar: "خطوة بديلة منطقية لكنها ليست الأولى", correct: false },
+          { id: "c", text_ar: "خطوة تقنية لاحقة وليست البداية", correct: false },
+        ],
+        scaffold_code_on_correct: "بداية حرفية من reference_solution، دون القيمة أو باقي السطر",
+      },
       task_description: "مهمة كود بالعربي، واذكر كل expected_keywords حرفياً ضمن المطلوب.",
       starter_code: "// بداية صالحة مرتبطة بالمفهوم المختار، وليست مهمة عامة أو TODO-only",
       expected_keywords: ["RelevantIdentifier", "RelevantMethod"],
@@ -474,6 +498,7 @@ async function requestFromGemini(
     "كل correct_index وfollowup_correct_index عدد صحيح يبدأ من صفر وأصغر من طول مصفوفة خياراته بالضبط.",
     "يجب أن تكون الأسئلة والتغذية الراجعة والشرح والمهمة والتلميح بالعربية الشامية/الخليجية البسيطة؛ الأسماء التقنية والكود تبقى بلغتها المعتادة.",
     "في touch4_build، اكتب مهمة قابلة للحل بكود متوافق مع التقنية وتنفذ المفهوم المختار نفسه داخل ملف next_file المحدد بالضبط. target_file وfile_action يجب أن يطابقا next_file وfile_action في بيانات المشروع حرفياً. existing_content يجب أن يطابق النص المرسل حرفياً؛ عند modify اشرح الحفاظ على الأجزاء الحالية والبناء عليها، وعند create اتركه فارغاً. integration_note يوضح كيف يتكامل الملف مع الخطة والملفات المكتملة. لا تختر ملفاً آخر ولا تختلق كوداً محفوظاً.",
+    "أضف first_move_choice داخل touch4_build في نفس الإجابة: question_ar يسأل عن أول خطوة فعلية لهذه المهمة، وoptions فيها 2-3 خيارات بمعرفات فريدة ونصوص مختلفة، واحد فقط correct=true والبقية خطوات تقنية محتملة لكنها ليست الخطوة الأولى، بلا خيارات سخيفة. scaffold_code_on_correct بداية حرفية غير فارغة من reference_solution؛ يجب أن يبدأ الحل المرجعي بها تماماً ويبقى بعدها كود حقيقي للطالب، لا تكشف القيمة أو بقية السطر ولا تعطِ الحل الكامل. يصلح جمع هذه البداية مع تكملة الطالب للتحقق والحفظ كملف كامل؛ في modify حافظ على المحتوى السابق في الحل الكامل. لا تضف scaffolding فهو بيانات خادم لا يولدها النموذج.",
     "يجب أن تذكر الشروح والأسئلة ومهمة البناء مصطلحاً تقنياً محدداً من اسم المفهوم المختار وأن تشرحه أو تطبقه فعلياً. ارفض استبدال الدرس بهدف الملف العام. اختر expected_keywords كمعرفات/كلمات تقنية لازمة للحل، واجعل كل كلمة منها مذكورة حرفياً في task_description أو starter_code أو hint. اجعل starter_code بداية قابلة للبناء وليست TODO-only، ولا تضع الحل الكامل فيه.",
     "أضف touch4_build.validation: level2_rules لقواعد البنية اللازمة للحل وlevel3_question سؤال تقييم منطقي محدد للمهمة. pattern الآمن فقط اسم معرف ASCII (يمكن مع نقطة) أو اسم متبوع بـ \\s* ثم : أو = أو \\( أو [<(]. أمثلة: StreamBuilder\\s*[<(] وstream\\s*: وbuilder\\s*:. لا تستعمل بدائل أو تكرارات معقدة. error_if_missing توجيه عربي قصير. إن كانت المهمة إعدادات YAML/JSON فلا تفرض استدعاءات دوال.",
     "أضف touch4_build.hints مصفوفة من ثلاثة عناصر بالضبط، بمستويات 1 ثم 2 ثم 3 وأنواع guidance ثم similar_example ثم partial_solution بالضبط وبالترتيب. اكتب النصوص بعربية سورية دافئة وبسيطة، وراعِ التقنية وtarget_file والمفهوم ومهمة البناء المحددة. level 1 توجيه مفاهيمي فقط بلا أي syntax أو سطر من الحل المحدد. level 2 مثال syntax لمهمة مختلفة لكن مشابهة، لا تنسخ الإجابة ولا تستخدم نفس الملف/المطلوب حرفياً. اكتب example في الأول وcode_example في الثاني. المستوى 3 يحتفظ بمعرّف partial_solution للتوافق فقط، لكن محتواه توجيه وظيفي وسؤال بلا كود. أضف reference_solution كحل كامل صحيح للمهمة الحالية، وسيظهر فقط بعد استخدام التلميحات الثلاثة.",
@@ -649,6 +674,8 @@ async function generateOrLoadLesson(
       .for("update");
     const progressRows = await tx.select({
       userId: sessionsTable.userId,
+      conceptId: sessionsTable.conceptId,
+      concept: sessionsTable.concept,
       lessonId: sessionsTable.lessonId,
       touchesCompleted: sessionsTable.touchesCompleted,
     }).from(sessionsTable).where(eq(sessionsTable.userId, userId));
@@ -667,7 +694,13 @@ async function generateOrLoadLesson(
           const valid = validateCacheForTarget(unfinishedCache.payload, context, concept.id);
           if (valid) {
             req.log.info({ step: "active_lesson_cache", concept_id: concept.id }, "Resuming saved session lesson");
-            return attachReviewDraft(tx, userId, valid);
+            const result = await attachReviewDraft(tx, userId, valid);
+            result.touch4_build.scaffolding = scaffoldingFor(
+              result.touch4_build.first_move_choice, concept.mastery_score,
+              completedConceptEncounters(progressRows, concept.id, concept.name_en, result.lesson_id),
+              !!result.is_review,
+            );
+            return result;
           }
         }
       }
@@ -759,6 +792,11 @@ async function generateOrLoadLesson(
       target: [generatedSessionsTable.userId, generatedSessionsTable.sessionDate],
       set: { payload, previousConcepts, expiresAt, updatedAt: now },
     });
+    payload.touch4_build.scaffolding = scaffoldingFor(
+      payload.touch4_build.first_move_choice, selected.concept.mastery_score,
+      completedConceptEncounters(progressRows, selected.concept.id, selected.concept.name_en, payload.lesson_id),
+      selected.isReview,
+    );
     return payload;
   });
   } catch (error) {
