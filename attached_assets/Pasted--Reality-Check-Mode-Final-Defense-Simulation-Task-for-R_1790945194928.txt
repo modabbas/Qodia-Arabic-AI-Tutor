@@ -1,0 +1,400 @@
+# Reality Check Mode - Final Defense Simulation
+
+## Task for Replit Agent
+
+**IMPORTANT: Enable Extended Thinking (🧠)**
+
+Build Qodia's crown feature: `/final-defense` — a stress-tested simulation of a real graduation project defense committee.
+
+## The Vision
+
+After a student completes their 30-concept learning journey, they face **the ultimate test**: a 5-question defense simulation with 3 virtual professors. This proves whether they're truly ready for their real defense.
+
+**For the student:** The moment of truth
+**For the judges:** The feature that proves Qodia delivers on its promise
+
+## Prerequisites (Must Already Exist)
+
+- ✅ Learning Path Engine (concepts with mastery scores)
+- ✅ Cumulative Project (student's accumulated code files)
+- ✅ Code Validation (3-level system)
+- ✅ Progressive Hints
+- ✅ Session completion tracking
+
+These are already built. This feature USES them, doesn't rebuild them.
+
+## Page Structure: `/final-defense`
+
+### Phase 1: Entry Screen (10 seconds)
+
+**Design:**
+- Full dark screen (`#0a0a0a`)
+- Centered content, no distractions
+- Subtle red glow at edges (urgency without panic)
+
+**Content:**
+```
+المناقشة النهائية
+محاكاة لحظة الحقيقة
+
+مشروعك: منصة إدارة مطار
+التقنية: Flutter
+المفاهيم المدروسة: ١٨/٣٠
+جاهزيتك الحالية: ٨٧٪
+
+لجنة المناقشة ستسألك ٥ أسئلة
+وقت الإجابة: ٦٠ ثانية لكل سؤال
+لا تلميحات. لا إعادة.
+
+[ابدأ المناقشة]  [أجّل حتى أكمل المفاهيم]
+```
+
+**Button logic:**
+- "ابدأ المناقشة" is DISABLED if student has < 10 completed concepts
+- Shows tooltip: "تحتاج إكمال ١٠ مفاهيم على الأقل"
+
+### Phase 2: Countdown (3 seconds)
+
+Full screen dark, large text in center:
+```
+دكتور حسن سيبدأ المناقشة في...
+
+٣
+٢
+١
+```
+
+With subtle heartbeat animation and sound (optional, muted by default).
+
+### Phase 3: Professor Panel Reveal
+
+Three professor avatars appear with slide-in animation (left to right):
+
+```
+┌───────────────┐  ┌───────────────┐  ┌───────────────┐
+│  د. حسن     │  │  د. فاطمة   │  │  د. أحمد    │
+│  (رئيس اللجنة)│  │  (مُقيّم تقني) │  │  (المشرف)    │
+│  🎓 PhD CS    │  │  🎓 PhD SE   │  │  🎓 Flutter   │
+└───────────────┘  └───────────────┘  └───────────────┘
+```
+
+**Avatar styles:**
+- Subtle gradient backgrounds (purple/teal/amber)
+- Not photorealistic — use clean illustrated avatars
+- Mild glow around active professor during question
+
+### Phase 4: The 5-Question Interrogation
+
+**Each question follows this flow:**
+
+```
+┌────────────────────────────────────────┐
+│ السؤال ٢ من ٥                          │
+│ د. فاطمة (مُقيّم تقني) 💬               │
+│                                        │
+│ "لماذا اخترت StreamBuilder في          │
+│  flight_list.dart بدل FutureBuilder؟   │
+│  وماذا لو كانت الرحلات ثابتة؟"         │
+│                                        │
+│ ⏱️ ٤٥ ثانية                            │
+│ ┌──────────────────────────────────┐   │
+│ │ [اكتب إجابتك هنا...]              │   │
+│ │                                   │   │
+│ │                                   │   │
+│ └──────────────────────────────────┘   │
+│                                        │
+│ [إرسال الإجابة]                        │
+└────────────────────────────────────────┘
+```
+
+### Question Generation (via Gemini)
+
+**Prompt for Gemini:**
+
+```
+أنت لجنة مناقشة لمشروع تخرج طالب علوم حاسوب.
+
+معلومات المشروع:
+- المشروع: {project_name}
+- التقنية: {tech_stack}
+- الملفات المكتوبة: {list of completed files with brief descriptions}
+- المفاهيم المدروسة: {list of completed concepts}
+- مستوى الإتقان العام: {avg mastery score}
+
+مهمتك: اطرح 5 أسئلة متدرجة الصعوبة لاختبار فهم الطالب الحقيقي.
+
+قواعد الأسئلة:
+1. السؤال 1: أساسي - عن مفهوم رئيسي استخدمه
+2. السؤال 2: متوسط - "لماذا اخترت X بدل Y؟"
+3. السؤال 3: تطبيقي - "ماذا لو تغير سيناريو كذا؟"
+4. السؤال 4: صعب - سؤال ترابطي بين مفهومين
+5. السؤال 5: الأصعب - "ما نقطة الضعف في تصميمك؟"
+
+كل سؤال يجب:
+- يذكر ملف محدد من مشروع الطالب (realism)
+- يستخدم مصطلحات تقنية دقيقة
+- يحمل اسم الدكتور الذي يسأله (دوّر بين د. حسن، د. فاطمة، د. أحمد)
+- باللغة العربية الفصحى (رسمية لأنها لجنة أكاديمية)
+
+أرجع JSON:
+{
+  "questions": [
+    {
+      "number": 1,
+      "professor": "د. حسن",
+      "role": "رئيس اللجنة",
+      "question": "...",
+      "difficulty": "basic|intermediate|advanced",
+      "concept_tested": "اسم المفهوم",
+      "file_reference": "lib/widgets/flight_list.dart",
+      "ideal_answer_points": [
+        "النقطة 1 المتوقعة",
+        "النقطة 2",
+        "النقطة 3"
+      ],
+      "time_limit_seconds": 45
+    },
+    ...
+  ]
+}
+```
+
+### Answer Evaluation (via Gemini)
+
+After student submits each answer:
+
+**Evaluation prompt:**
+
+```
+السؤال: {question}
+النقاط المتوقعة في الإجابة الممتازة: {ideal_answer_points}
+إجابة الطالب: {student_answer}
+الوقت المستغرق: {time_used} ثانية من {time_limit}
+
+قيّم الإجابة من ٠-١٠٠ وأعطِ تحليل مختصر:
+
+{
+  "score": 85,
+  "strengths": ["ذكر الفرق بين Stream و Future بوضوح", "..."],
+  "weaknesses": ["لم يذكر implications على الأداء"],
+  "professor_reaction": "جيد. فهم عميق للمفهوم. لكن...",
+  "would_pass": true/false,
+  "mini_feedback": "جملة مختصرة بصوت الدكتور الذي سأل"
+}
+
+الرد يكون باللغة العربية الفصحى.
+```
+
+### Phase 5: Live Professor Reactions
+
+After each answer, show the professor's reaction before next question:
+
+```
+┌────────────────────────────────────────┐
+│  د. فاطمة 💭                            │
+│                                        │
+│  "إجابة جيدة. فهمت الفرق بين            │
+│  StreamBuilder و FutureBuilder. لكن    │
+│  هل فكرت في أثر هذا على الأداء؟"       │
+│                                        │
+│  النقاط: ٨٥/١٠٠                       │
+└────────────────────────────────────────┘
+
+[السؤال التالي ←]
+```
+
+### Phase 6: Final Verdict Screen
+
+After all 5 questions:
+
+```
+┌────────────────────────────────────────┐
+│          انتهت المناقشة                │
+│                                        │
+│          جاهزيتك: ٨٧٪                 │
+│                                        │
+│  ✓ اجتزت ٤ من ٥ أسئلة                 │
+│  ⚠️ تحتاج مراجعة: Concept X            │
+│                                        │
+│  رأي اللجنة:                           │
+│  "طالب جاد. يُلاحظ عليه الفهم.         │
+│   نوصي بالاستعداد الإضافي في          │
+│   موضوع X قبل المناقشة الحقيقية."     │
+│                                        │
+│  📊 تفاصيل كاملة                       │
+│  🔄 إعادة محاكاة                       │
+│  📄 تحميل التقرير PDF                  │
+└────────────────────────────────────────┘
+```
+
+## Technical Implementation
+
+### Database Schema
+
+**New table: `defense_simulations`**
+```typescript
+{
+  id: uuid,
+  user_id: string,
+  started_at: timestamp,
+  completed_at: timestamp,
+  overall_score: number (0-100),
+  questions: [
+    {
+      question_number: number,
+      professor: string,
+      question_text: string,
+      concept_tested: string,
+      student_answer: string,
+      score: number,
+      time_used: number,
+      feedback: string
+    }
+  ],
+  final_verdict: string,
+  weak_concepts: string[]
+}
+```
+
+### API Routes
+
+**POST `/api/defense/start`**
+- Checks if student eligible (10+ concepts)
+- Calls Gemini to generate 5 questions
+- Creates defense_simulation record
+- Returns questions
+
+**POST `/api/defense/submit-answer`**
+- Takes question_id + answer + time_used
+- Calls Gemini for evaluation
+- Updates defense_simulation record
+- Returns feedback + score
+
+**POST `/api/defense/complete`**
+- Calculates overall score
+- Generates final verdict
+- Returns full report
+
+### Timer Behavior
+
+- Shows large countdown in top-right
+- Changes color at thresholds:
+  - 60-30s: Green
+  - 29-15s: Amber
+  - 14-0s: Red (gentle pulse)
+- Auto-submits when timer hits 0
+- Does NOT penalize for using full time
+
+## Design Specifications
+
+**Colors:**
+- Base: `#0a0a0a` (darker than usual for tension)
+- Professor cards: `#121212` with subtle glows
+- Primary action: `#22c55e`
+- Timer warning: `#f5b84a`
+- Timer critical: `#f2545b`
+
+**Typography:**
+- Questions: 18px, bold, high contrast
+- Student answer area: Monospace or clear sans
+- Professor reactions: Italic, slightly muted
+
+**Animations:**
+- Countdown: smooth number transitions
+- Professor avatars: slide-in sequential
+- Question appearance: fade + slight scale
+- Answer submission: smooth loading state
+- Final verdict: celebratory if passed, supportive if not
+
+## Dashboard Integration
+
+Add to `/dashboard`:
+
+```
+┌────────────────────────────────────┐
+│ 🎓 المناقشة النهائية               │
+│                                    │
+│ آخر محاولة: منذ ٣ أيام             │
+│ أعلى نتيجة: ٨٧٪                   │
+│ عدد المحاولات: ٢                   │
+│                                    │
+│ [خض المحاكاة الآن]                 │
+└────────────────────────────────────┘
+```
+
+## Edge Cases
+
+**1. Student has only 10 concepts:**
+- Allow entry but show warning: "موصى بإكمال ٢٠+ مفهوم أولاً"
+
+**2. Internet drops mid-defense:**
+- Save progress every answer
+- On reconnect: "تريد إكمال المحاكاة؟"
+
+**3. Student quits early:**
+- Save partial result
+- Allow restart (new questions)
+
+**4. Gemini fails:**
+- Fallback to curated question bank (store 20 generic questions per tech stack)
+
+## Testing Checklist
+
+- [ ] Entry screen shows correct eligibility
+- [ ] Countdown animation smooth
+- [ ] 3 professor avatars appear
+- [ ] 5 questions generated by Gemini
+- [ ] Timer counts down correctly
+- [ ] Answer submission works
+- [ ] Professor reactions display
+- [ ] Final verdict calculates correctly
+- [ ] Dashboard shows last attempt
+- [ ] Mobile responsive
+
+## What NOT to Do
+
+- Do NOT allow re-answering (realistic defense = no re-takes)
+- Do NOT show hints during defense (tests real knowledge)
+- Do NOT modify: Learning Path, Cumulative Project, Validation, Hints
+- Do NOT change existing dashboards drastically
+
+## Success Criteria
+
+The feature works when:
+1. Student completes real defense simulation feeling the pressure
+2. Questions are specific to their actual project files
+3. Evaluation feels fair and educational
+4. Judges see "this is a real preparation tool"
+
+## The Winning Moment in Pitch
+
+```
+Second 150-180 of 3-minute pitch:
+
+"But here's the real question — is the student ACTUALLY ready?
+Let me show you..."
+
+[Click to /final-defense]
+
+Dark screen. "دكتور حسن سيبدأ المناقشة في... 3... 2... 1..."
+
+Three professor avatars slide in.
+
+"Dr. Fatima: Why did you choose StreamBuilder in flight_list.dart?"
+
+[60 second timer starts]
+
+Judges silent. Tension palpable.
+
+"This is Qodia. Not learning. Real preparation."
+```
+
+This single moment can win the entire competition.
+
+## Cost & Time Estimate
+
+- Extended Thinking: Yes
+- Time: 60-75 minutes
+- Replit cost: $14-18
+- Gemini API: Free tier (3-6 calls per defense)
+- Impact: Championship-level feature

@@ -14,6 +14,8 @@ tags:
     description: Account and session authentication
   - name: learning
     description: Student setup and learning progress
+  - name: defense
+    description: Final-defense simulations and readiness summaries
 paths:
   /healthz:
     get:
@@ -522,6 +524,239 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /defense/start:
+    post:
+      operationId: startDefense
+      tags: [defense]
+      summary: Start an eligible final-defense simulation
+      responses:
+        "201":
+          description: New simulation with private grading keys withheld
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DefenseSimulation" }
+        "400":
+          description: Student is not eligible or has no saved complete project files
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: An active simulation already exists
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /defense/submit-answer:
+    post:
+      operationId: submitDefenseAnswer
+      tags: [defense]
+      summary: Lock an answer and evaluate the immutable submission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DefenseAnswerInput" }
+      responses:
+        "200":
+          description: Persisted answer and evaluation state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DefenseSimulation" }
+        "400":
+          description: Invalid answer request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Simulation not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Answer is locked, changed on retry, or question is not current
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /defense/complete:
+    post:
+      operationId: completeDefense
+      tags: [defense]
+      summary: Complete a fully evaluated simulation idempotently
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DefenseIdInput" }
+      responses:
+        "200":
+          description: Completed result and private grading material released to owner
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DefenseSimulation" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Simulation not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: All questions must be scored before completion
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /defense/summary:
+    get:
+      operationId: getDefenseSummary
+      tags: [defense]
+      summary: Get authenticated student's eligibility and actual simulation history
+      responses:
+        "200":
+          description: Readiness and defense-attempt summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DefenseSummary" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /defense/{id}:
+    get:
+      operationId: getDefense
+      tags: [defense]
+      summary: Resume or inspect an owned simulation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Simulation state with only safely releasable grading data
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DefenseSimulation" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Simulation not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /defense/{id}/advance:
+    post:
+      operationId: advanceDefense
+      tags: [defense]
+      summary: Advance after the current question has been scored
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Current question advanced with a fresh server deadline
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DefenseSimulation" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Simulation not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Current answer is not yet scored
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /defense/{id}/abandon:
+    post:
+      operationId: abandonDefense
+      tags: [defense]
+      summary: Abandon an active simulation without fabricating an overall score
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Abandoned simulation with honest partial results
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DefenseSimulation" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Simulation not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /defense/{id}/draft:
+    patch:
+      operationId: saveDefenseDraft
+      tags: [defense]
+      summary: Save the current unlocked question's draft before its deadline
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DefenseDraftInput" }
+      responses:
+        "200":
+          description: Draft saved and simulation returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DefenseSimulation" }
+        "400":
+          description: Invalid draft
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "404":
+          description: Simulation not found
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "409":
+          description: Question is locked, stale, or deadline has elapsed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
 components:
   schemas:
     HealthStatus:
@@ -1017,3 +1252,88 @@ components:
         followup_explanation: { type: string, minLength: 1, maxLength: 800 }
         followup_feedback_wrong: { type: string, minLength: 1, maxLength: 400 }
       required: [committee_question, options, correct_index, explanation, feedback_wrong, followup_question, followup_options, followup_correct_index, followup_explanation, followup_feedback_wrong]
+    DefenseAnswerInput:
+      type: object
+      additionalProperties: false
+      properties:
+        simulation_id: { type: string, format: uuid }
+        question_number: { type: integer, minimum: 1, maximum: 5 }
+        answer: { type: string, maxLength: 12000 }
+      required: [simulation_id, question_number, answer]
+    DefenseIdInput:
+      type: object
+      additionalProperties: false
+      properties:
+        simulation_id: { type: string, format: uuid }
+      required: [simulation_id]
+    DefenseDraftInput:
+      type: object
+      additionalProperties: false
+      properties:
+        question_number: { type: integer, minimum: 1, maximum: 5 }
+        draft: { type: string, maxLength: 12000 }
+      required: [question_number, draft]
+    DefenseQuestion:
+      type: object
+      additionalProperties: false
+      properties:
+        question_number: { type: integer, minimum: 1, maximum: 5 }
+        professor: { type: string }
+        role: { type: string }
+        question_text: { type: string }
+        difficulty: { type: string, enum: [basic, intermediate, advanced] }
+        concept_tested: { type: string }
+        file_reference: { type: string }
+        time_limit_seconds: { type: integer, enum: [60] }
+        student_answer: { type: ["string", "null"] }
+        draft: { type: string }
+        answered_at: { type: ["string", "null"], format: date-time }
+        points: { type: ["integer", "null"], minimum: 0, maximum: 100 }
+        time_used_seconds: { type: ["integer", "null"], minimum: 0, maximum: 60 }
+        evaluation_status: { type: string, enum: [unanswered, pending, failed, scored] }
+        strengths: { type: array, items: { type: string } }
+        weaknesses: { type: array, items: { type: string } }
+        professor_reaction: { type: ["string", "null"] }
+        mini_feedback: { type: ["string", "null"] }
+        would_pass: { type: ["boolean", "null"] }
+        ideal_answer_points: { type: array, items: { type: string } }
+      required: [question_number, professor, role, question_text, difficulty, concept_tested, file_reference, time_limit_seconds, student_answer, draft, answered_at, points, time_used_seconds, evaluation_status, strengths, weaknesses, professor_reaction, mini_feedback, would_pass, ideal_answer_points]
+    DefenseSimulation:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [active, completed, abandoned] }
+        source: { type: string, enum: [gemini, curated] }
+        project_name: { type: string }
+        tech_stack: { type: string }
+        questions: { type: array, minItems: 5, maxItems: 5, items: { $ref: "#/components/schemas/DefenseQuestion" } }
+        current_index: { type: integer, minimum: 0, maximum: 5 }
+        current_question_started_at: { type: ["string", "null"], format: date-time }
+        deadline_at: { type: ["string", "null"], format: date-time }
+        server_now: { type: string, format: date-time }
+        remaining_seconds: { type: integer, minimum: 0, maximum: 60 }
+        overall_score: { type: ["integer", "null"], minimum: 0, maximum: 100 }
+        verdict: { type: ["string", "null"] }
+        weak_concepts: { type: array, items: { type: string } }
+        completed_at: { type: ["string", "null"], format: date-time }
+        answered_count: { type: integer, minimum: 0, maximum: 5 }
+      required: [id, status, source, project_name, tech_stack, questions, current_index, current_question_started_at, deadline_at, server_now, remaining_seconds, overall_score, verdict, weak_concepts, completed_at, answered_count]
+    DefenseSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        project_name: { type: ["string", "null"] }
+        tech_stack: { type: ["string", "null"] }
+        completed_concepts: { type: integer, minimum: 0 }
+        total_concepts: { type: integer, minimum: 0 }
+        average_mastery: { type: ["number", "null"], minimum: 0, maximum: 100 }
+        eligible: { type: boolean }
+        warning: { type: ["string", "null"] }
+        no_saved_files: { type: boolean }
+        completed_files: { type: integer, minimum: 0 }
+        total_attempts: { type: integer, minimum: 0 }
+        best_score: { type: ["integer", "null"], minimum: 0, maximum: 100 }
+        last_attempt_at: { type: ["string", "null"], format: date-time }
+        latest_active: { anyOf: [{ $ref: "#/components/schemas/DefenseSimulation" }, { type: "null" }] }
+      required: [project_name, tech_stack, completed_concepts, total_concepts, average_mastery, eligible, warning, no_saved_files, completed_files, total_attempts, best_score, last_attempt_at, latest_active]

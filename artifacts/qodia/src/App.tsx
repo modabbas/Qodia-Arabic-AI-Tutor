@@ -12,6 +12,7 @@ import Onboarding from '@/pages/onboarding';
 import Dashboard from '@/pages/dashboard';
 import MyProject from '@/pages/my-project';
 import Session from '@/pages/session';
+import FinalDefense from '@/pages/final-defense';
 import UniversityDashboard from '@/pages/university-dashboard';
 import CompanyDashboard from '@/pages/company-dashboard';
 import NotFound from '@/pages/not-found';
@@ -25,6 +26,7 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
   '/dashboard': { title: 'لوحة تقدّمك | كوديا', description: 'تابع نقاط الخبرة وسلسلة التدريب وجلساتك السابقة في كوديا.' },
   '/my-project': { title: 'مشروعي | كوديا', description: 'راجع ملفات مشروع تخرجك الحقيقية، الكود المحفوظ، وتقدم البناء في كوديا.' },
   '/session': { title: 'تدريب المناقشة | كوديا', description: 'تدرّب على Django ForeignKey و on_delete عبر خمس لمسات تفاعلية.' },
+  '/final-defense': { title: 'المناقشة النهائية | كوديا', description: 'محاكاة مناقشة افتراضية من خمسة أسئلة عن ملفات مشروعك ومفاهيمك المتعلَّمة.' },
   '/university-dashboard': { title: 'لوحة الجامعة | كوديا', description: 'نظرة تجريبية على تقدم الطلاب وجاهزيتهم للتوظيف في كوديا.' },
   '/company-dashboard': { title: 'لوحة الشركات | كوديا', description: 'استكشف مرشحين تجريبيين ومؤشرات Talent Bridge في كوديا.' },
 };
@@ -73,6 +75,7 @@ function AppRoutes() {
     <Route path="/dashboard">{() => <Guard><Dashboard /></Guard>}</Route>
     <Route path="/my-project">{() => <Guard><MyProject /></Guard>}</Route>
     <Route path="/session">{() => <Guard><Session /></Guard>}</Route>
+    <Route path="/final-defense">{() => <Guard><FinalDefense /></Guard>}</Route>
     {/* Demo only: before connecting real student data, restrict access to university_admin. */}
     <Route path="/university-dashboard" component={UniversityDashboard} />
     {/* Demo only: require authorized company access before showing real candidate data. */}

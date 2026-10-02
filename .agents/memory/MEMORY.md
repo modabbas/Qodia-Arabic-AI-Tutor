@@ -8,3 +8,5 @@
 - [Touch 4 validation policy](touch4-validation-policy.md) — assessment outages may pass local checks, but must be labelled; negative assessments are not outage fallbacks.
 - [Artifact build context](artifact-build-context.md) — one-off shell builds do not inherit a managed workflow’s injected serving settings.
 - [Progressive hint contract](progressive-hint-contract.md) — keep fresh and cached-lesson hint prompts aligned with pedagogical content constraints.
+- [Final-defense boundaries](final-defense-boundaries.md) — a separate practice assessment; strict answer locking, bounded delivery tolerance, and no progress-engine changes.
+- [Arabic PDF verification](arabic-pdf-verification.md) — valid, extractable PDF text can still display reversed Arabic, numbers, or Latin paths; inspect rendered pages.

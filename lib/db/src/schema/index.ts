@@ -7,3 +7,4 @@ export * from "./project-files";
 export * from "./learning-maps";
 export * from "./lesson-evidence";
 export * from "./touch4-support";
+export * from "./defense-simulations";

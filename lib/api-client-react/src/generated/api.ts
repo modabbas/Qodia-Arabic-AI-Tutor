@@ -22,6 +22,11 @@ import type {
 import type {
   AuthResponse,
   Dashboard,
+  DefenseAnswerInput,
+  DefenseDraftInput,
+  DefenseIdInput,
+  DefenseSimulation,
+  DefenseSummary,
   ErrorResponse,
   GeneratedSession,
   GetTouch4SupportParams,
@@ -1686,5 +1691,646 @@ export const useSaveProjectFile = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getSaveProjectFileMutationOptions(options));
+    }
+
+export const getStartDefenseUrl = () => {
+
+
+
+
+  return `/api/defense/start`
+}
+
+/**
+ * @summary Start an eligible final-defense simulation
+ */
+export const startDefense = async ( options?: Parameters<typeof customFetch>[1]): Promise<DefenseSimulation> => {
+
+  return customFetch<DefenseSimulation>(getStartDefenseUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartDefenseMutationKey = () => ['startDefense'] as const;
+
+export const getStartDefenseMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startDefense>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startDefense>>, TError,void, TContext> => {
+
+const mutationKey = getStartDefenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startDefense>>, void> = () => {
+
+
+          return  startDefense(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartDefenseMutationResult = NonNullable<Awaited<ReturnType<typeof startDefense>>>
+
+    export type StartDefenseMutationError = ErrorType<ErrorResponse>
+
+
+    /**
+ * @summary Start an eligible final-defense simulation
+ */
+export const useStartDefense = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startDefense>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startDefense>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStartDefenseMutationOptions(options));
+    }
+
+export const getSubmitDefenseAnswerUrl = () => {
+
+
+
+
+  return `/api/defense/submit-answer`
+}
+
+/**
+ * @summary Lock an answer and evaluate the immutable submission
+ */
+export const submitDefenseAnswer = async (defenseAnswerInput: DefenseAnswerInput, options?: Parameters<typeof customFetch>[1]): Promise<DefenseSimulation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DefenseSimulation>(getSubmitDefenseAnswerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(defenseAnswerInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitDefenseAnswerMutationKey = () => ['submitDefenseAnswer'] as const;
+
+export const getSubmitDefenseAnswerMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitDefenseAnswer>>, TError,SubmitDefenseAnswerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitDefenseAnswer>>, TError,SubmitDefenseAnswerMutationVariables, TContext> => {
+
+const mutationKey = getSubmitDefenseAnswerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitDefenseAnswer>>, SubmitDefenseAnswerMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitDefenseAnswer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitDefenseAnswerMutationResult = NonNullable<Awaited<ReturnType<typeof submitDefenseAnswer>>>
+    export type SubmitDefenseAnswerMutationBody = BodyType<DefenseAnswerInput>
+    export type SubmitDefenseAnswerMutationError = ErrorType<ErrorResponse>
+    export type SubmitDefenseAnswerMutationVariables = {data: BodyType<DefenseAnswerInput>}
+
+    /**
+ * @summary Lock an answer and evaluate the immutable submission
+ */
+export const useSubmitDefenseAnswer = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitDefenseAnswer>>, TError,SubmitDefenseAnswerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitDefenseAnswer>>,
+        TError,
+        SubmitDefenseAnswerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSubmitDefenseAnswerMutationOptions(options));
+    }
+
+export const getCompleteDefenseUrl = () => {
+
+
+
+
+  return `/api/defense/complete`
+}
+
+/**
+ * @summary Complete a fully evaluated simulation idempotently
+ */
+export const completeDefense = async (defenseIdInput: DefenseIdInput, options?: Parameters<typeof customFetch>[1]): Promise<DefenseSimulation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DefenseSimulation>(getCompleteDefenseUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(defenseIdInput)
+  }
+);}
+
+
+
+
+
+export const getCompleteDefenseMutationKey = () => ['completeDefense'] as const;
+
+export const getCompleteDefenseMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeDefense>>, TError,CompleteDefenseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeDefense>>, TError,CompleteDefenseMutationVariables, TContext> => {
+
+const mutationKey = getCompleteDefenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeDefense>>, CompleteDefenseMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeDefense(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteDefenseMutationResult = NonNullable<Awaited<ReturnType<typeof completeDefense>>>
+    export type CompleteDefenseMutationBody = BodyType<DefenseIdInput>
+    export type CompleteDefenseMutationError = ErrorType<ErrorResponse>
+    export type CompleteDefenseMutationVariables = {data: BodyType<DefenseIdInput>}
+
+    /**
+ * @summary Complete a fully evaluated simulation idempotently
+ */
+export const useCompleteDefense = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeDefense>>, TError,CompleteDefenseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeDefense>>,
+        TError,
+        CompleteDefenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteDefenseMutationOptions(options));
+    }
+
+export const getGetDefenseSummaryUrl = () => {
+
+
+
+
+  return `/api/defense/summary`
+}
+
+/**
+ * @summary Get authenticated student's eligibility and actual simulation history
+ */
+export const getDefenseSummary = async ( options?: Parameters<typeof customFetch>[1]): Promise<DefenseSummary> => {
+
+  return customFetch<DefenseSummary>(getGetDefenseSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDefenseSummaryQueryKey = () => {
+    return [
+    `/api/defense/summary`
+    ] as const;
+    }
+
+
+export const getGetDefenseSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getDefenseSummary>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDefenseSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDefenseSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDefenseSummary>>> = ({ signal }) => getDefenseSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDefenseSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDefenseSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getDefenseSummary>>>
+export type GetDefenseSummaryQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get authenticated student's eligibility and actual simulation history
+ */
+
+export function useGetDefenseSummary<TData = Awaited<ReturnType<typeof getDefenseSummary>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDefenseSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDefenseSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetDefenseUrl = (id: string,) => {
+
+
+
+
+  return `/api/defense/${id}`
+}
+
+/**
+ * @summary Resume or inspect an owned simulation
+ */
+export const getDefense = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<DefenseSimulation> => {
+
+  return customFetch<DefenseSimulation>(getGetDefenseUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDefenseQueryKey = (id: string,) => {
+    return [
+    `/api/defense/${id}`
+    ] as const;
+    }
+
+
+export const getGetDefenseQueryOptions = <TData = Awaited<ReturnType<typeof getDefense>>, TError = ErrorType<ErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDefense>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDefenseQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDefense>>> = ({ signal }) => getDefense(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDefense>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDefenseQueryResult = NonNullable<Awaited<ReturnType<typeof getDefense>>>
+export type GetDefenseQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Resume or inspect an owned simulation
+ */
+
+export function useGetDefense<TData = Awaited<ReturnType<typeof getDefense>>, TError = ErrorType<ErrorResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDefense>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDefenseQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdvanceDefenseUrl = (id: string,) => {
+
+
+
+
+  return `/api/defense/${id}/advance`
+}
+
+/**
+ * @summary Advance after the current question has been scored
+ */
+export const advanceDefense = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<DefenseSimulation> => {
+
+  return customFetch<DefenseSimulation>(getAdvanceDefenseUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdvanceDefenseMutationKey = () => ['advanceDefense'] as const;
+
+export const getAdvanceDefenseMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof advanceDefense>>, TError,AdvanceDefenseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof advanceDefense>>, TError,AdvanceDefenseMutationVariables, TContext> => {
+
+const mutationKey = getAdvanceDefenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof advanceDefense>>, AdvanceDefenseMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  advanceDefense(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdvanceDefenseMutationResult = NonNullable<Awaited<ReturnType<typeof advanceDefense>>>
+
+    export type AdvanceDefenseMutationError = ErrorType<ErrorResponse>
+    export type AdvanceDefenseMutationVariables = {id: string}
+
+    /**
+ * @summary Advance after the current question has been scored
+ */
+export const useAdvanceDefense = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof advanceDefense>>, TError,AdvanceDefenseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof advanceDefense>>,
+        TError,
+        AdvanceDefenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAdvanceDefenseMutationOptions(options));
+    }
+
+export const getAbandonDefenseUrl = (id: string,) => {
+
+
+
+
+  return `/api/defense/${id}/abandon`
+}
+
+/**
+ * @summary Abandon an active simulation without fabricating an overall score
+ */
+export const abandonDefense = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<DefenseSimulation> => {
+
+  return customFetch<DefenseSimulation>(getAbandonDefenseUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAbandonDefenseMutationKey = () => ['abandonDefense'] as const;
+
+export const getAbandonDefenseMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof abandonDefense>>, TError,AbandonDefenseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof abandonDefense>>, TError,AbandonDefenseMutationVariables, TContext> => {
+
+const mutationKey = getAbandonDefenseMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof abandonDefense>>, AbandonDefenseMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  abandonDefense(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AbandonDefenseMutationResult = NonNullable<Awaited<ReturnType<typeof abandonDefense>>>
+
+    export type AbandonDefenseMutationError = ErrorType<ErrorResponse>
+    export type AbandonDefenseMutationVariables = {id: string}
+
+    /**
+ * @summary Abandon an active simulation without fabricating an overall score
+ */
+export const useAbandonDefense = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof abandonDefense>>, TError,AbandonDefenseMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof abandonDefense>>,
+        TError,
+        AbandonDefenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAbandonDefenseMutationOptions(options));
+    }
+
+export const getSaveDefenseDraftUrl = (id: string,) => {
+
+
+
+
+  return `/api/defense/${id}/draft`
+}
+
+/**
+ * @summary Save the current unlocked question's draft before its deadline
+ */
+export const saveDefenseDraft = async (id: string,
+    defenseDraftInput: DefenseDraftInput, options?: Parameters<typeof customFetch>[1]): Promise<DefenseSimulation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DefenseSimulation>(getSaveDefenseDraftUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(defenseDraftInput)
+  }
+);}
+
+
+
+
+
+export const getSaveDefenseDraftMutationKey = () => ['saveDefenseDraft'] as const;
+
+export const getSaveDefenseDraftMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDefenseDraft>>, TError,SaveDefenseDraftMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveDefenseDraft>>, TError,SaveDefenseDraftMutationVariables, TContext> => {
+
+const mutationKey = getSaveDefenseDraftMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveDefenseDraft>>, SaveDefenseDraftMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveDefenseDraft(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveDefenseDraftMutationResult = NonNullable<Awaited<ReturnType<typeof saveDefenseDraft>>>
+    export type SaveDefenseDraftMutationBody = BodyType<DefenseDraftInput>
+    export type SaveDefenseDraftMutationError = ErrorType<ErrorResponse>
+    export type SaveDefenseDraftMutationVariables = {id: string;data: BodyType<DefenseDraftInput>}
+
+    /**
+ * @summary Save the current unlocked question's draft before its deadline
+ */
+export const useSaveDefenseDraft = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDefenseDraft>>, TError,SaveDefenseDraftMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveDefenseDraft>>,
+        TError,
+        SaveDefenseDraftMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveDefenseDraftMutationOptions(options));
     }
 

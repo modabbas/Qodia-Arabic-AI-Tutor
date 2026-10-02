@@ -1107,3 +1107,626 @@ export const SaveProjectFileResponse = zod.object({
 })
 
 
+/**
+ * @summary Start an eligible final-defense simulation
+ */
+export const startDefenseResponseQuestionsItemQuestionNumberMax = 5;
+
+export const startDefenseResponseQuestionsItemPointsMin = 0;
+export const startDefenseResponseQuestionsItemPointsMax = 100;
+
+export const startDefenseResponseQuestionsItemTimeUsedSecondsMin = 0;
+export const startDefenseResponseQuestionsItemTimeUsedSecondsMax = 60;
+
+export const startDefenseResponseQuestionsMin = 5;
+export const startDefenseResponseQuestionsMax = 5;
+
+export const startDefenseResponseCurrentIndexMin = 0;
+export const startDefenseResponseCurrentIndexMax = 5;
+
+export const startDefenseResponseRemainingSecondsMin = 0;
+export const startDefenseResponseRemainingSecondsMax = 60;
+
+export const startDefenseResponseOverallScoreMin = 0;
+export const startDefenseResponseOverallScoreMax = 100;
+
+export const startDefenseResponseAnsweredCountMin = 0;
+export const startDefenseResponseAnsweredCountMax = 5;
+
+
+
+export const StartDefenseResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['active', 'completed', 'abandoned']),
+  "source": zod.enum(['gemini', 'curated']),
+  "project_name": zod.string(),
+  "tech_stack": zod.string(),
+  "questions": zod.array(zod.object({
+  "question_number": zod.number().int().min(1).max(startDefenseResponseQuestionsItemQuestionNumberMax),
+  "professor": zod.string(),
+  "role": zod.string(),
+  "question_text": zod.string(),
+  "difficulty": zod.enum(['basic', 'intermediate', 'advanced']),
+  "concept_tested": zod.string(),
+  "file_reference": zod.string(),
+  "time_limit_seconds": zod.literal(60),
+  "student_answer": zod.string().nullable(),
+  "draft": zod.string(),
+  "answered_at": zod.coerce.date().nullable(),
+  "points": zod.number().int().min(startDefenseResponseQuestionsItemPointsMin).max(startDefenseResponseQuestionsItemPointsMax).nullable(),
+  "time_used_seconds": zod.number().int().min(startDefenseResponseQuestionsItemTimeUsedSecondsMin).max(startDefenseResponseQuestionsItemTimeUsedSecondsMax).nullable(),
+  "evaluation_status": zod.enum(['unanswered', 'pending', 'failed', 'scored']),
+  "strengths": zod.array(zod.string()),
+  "weaknesses": zod.array(zod.string()),
+  "professor_reaction": zod.string().nullable(),
+  "mini_feedback": zod.string().nullable(),
+  "would_pass": zod.boolean().nullable(),
+  "ideal_answer_points": zod.array(zod.string())
+})).min(startDefenseResponseQuestionsMin).max(startDefenseResponseQuestionsMax),
+  "current_index": zod.number().int().min(startDefenseResponseCurrentIndexMin).max(startDefenseResponseCurrentIndexMax),
+  "current_question_started_at": zod.coerce.date().nullable(),
+  "deadline_at": zod.coerce.date().nullable(),
+  "server_now": zod.coerce.date(),
+  "remaining_seconds": zod.number().int().min(startDefenseResponseRemainingSecondsMin).max(startDefenseResponseRemainingSecondsMax),
+  "overall_score": zod.number().int().min(startDefenseResponseOverallScoreMin).max(startDefenseResponseOverallScoreMax).nullable(),
+  "verdict": zod.string().nullable(),
+  "weak_concepts": zod.array(zod.string()),
+  "completed_at": zod.coerce.date().nullable(),
+  "answered_count": zod.number().int().min(startDefenseResponseAnsweredCountMin).max(startDefenseResponseAnsweredCountMax)
+})
+
+
+/**
+ * @summary Lock an answer and evaluate the immutable submission
+ */
+export const submitDefenseAnswerBodyQuestionNumberMax = 5;
+
+export const submitDefenseAnswerBodyAnswerMax = 12000;
+
+
+
+export const SubmitDefenseAnswerBody = zod.object({
+  "simulation_id": zod.string().uuid(),
+  "question_number": zod.number().int().min(1).max(submitDefenseAnswerBodyQuestionNumberMax),
+  "answer": zod.string().max(submitDefenseAnswerBodyAnswerMax)
+})
+
+export const submitDefenseAnswerResponseQuestionsItemQuestionNumberMax = 5;
+
+export const submitDefenseAnswerResponseQuestionsItemPointsMin = 0;
+export const submitDefenseAnswerResponseQuestionsItemPointsMax = 100;
+
+export const submitDefenseAnswerResponseQuestionsItemTimeUsedSecondsMin = 0;
+export const submitDefenseAnswerResponseQuestionsItemTimeUsedSecondsMax = 60;
+
+export const submitDefenseAnswerResponseQuestionsMin = 5;
+export const submitDefenseAnswerResponseQuestionsMax = 5;
+
+export const submitDefenseAnswerResponseCurrentIndexMin = 0;
+export const submitDefenseAnswerResponseCurrentIndexMax = 5;
+
+export const submitDefenseAnswerResponseRemainingSecondsMin = 0;
+export const submitDefenseAnswerResponseRemainingSecondsMax = 60;
+
+export const submitDefenseAnswerResponseOverallScoreMin = 0;
+export const submitDefenseAnswerResponseOverallScoreMax = 100;
+
+export const submitDefenseAnswerResponseAnsweredCountMin = 0;
+export const submitDefenseAnswerResponseAnsweredCountMax = 5;
+
+
+
+export const SubmitDefenseAnswerResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['active', 'completed', 'abandoned']),
+  "source": zod.enum(['gemini', 'curated']),
+  "project_name": zod.string(),
+  "tech_stack": zod.string(),
+  "questions": zod.array(zod.object({
+  "question_number": zod.number().int().min(1).max(submitDefenseAnswerResponseQuestionsItemQuestionNumberMax),
+  "professor": zod.string(),
+  "role": zod.string(),
+  "question_text": zod.string(),
+  "difficulty": zod.enum(['basic', 'intermediate', 'advanced']),
+  "concept_tested": zod.string(),
+  "file_reference": zod.string(),
+  "time_limit_seconds": zod.literal(60),
+  "student_answer": zod.string().nullable(),
+  "draft": zod.string(),
+  "answered_at": zod.coerce.date().nullable(),
+  "points": zod.number().int().min(submitDefenseAnswerResponseQuestionsItemPointsMin).max(submitDefenseAnswerResponseQuestionsItemPointsMax).nullable(),
+  "time_used_seconds": zod.number().int().min(submitDefenseAnswerResponseQuestionsItemTimeUsedSecondsMin).max(submitDefenseAnswerResponseQuestionsItemTimeUsedSecondsMax).nullable(),
+  "evaluation_status": zod.enum(['unanswered', 'pending', 'failed', 'scored']),
+  "strengths": zod.array(zod.string()),
+  "weaknesses": zod.array(zod.string()),
+  "professor_reaction": zod.string().nullable(),
+  "mini_feedback": zod.string().nullable(),
+  "would_pass": zod.boolean().nullable(),
+  "ideal_answer_points": zod.array(zod.string())
+})).min(submitDefenseAnswerResponseQuestionsMin).max(submitDefenseAnswerResponseQuestionsMax),
+  "current_index": zod.number().int().min(submitDefenseAnswerResponseCurrentIndexMin).max(submitDefenseAnswerResponseCurrentIndexMax),
+  "current_question_started_at": zod.coerce.date().nullable(),
+  "deadline_at": zod.coerce.date().nullable(),
+  "server_now": zod.coerce.date(),
+  "remaining_seconds": zod.number().int().min(submitDefenseAnswerResponseRemainingSecondsMin).max(submitDefenseAnswerResponseRemainingSecondsMax),
+  "overall_score": zod.number().int().min(submitDefenseAnswerResponseOverallScoreMin).max(submitDefenseAnswerResponseOverallScoreMax).nullable(),
+  "verdict": zod.string().nullable(),
+  "weak_concepts": zod.array(zod.string()),
+  "completed_at": zod.coerce.date().nullable(),
+  "answered_count": zod.number().int().min(submitDefenseAnswerResponseAnsweredCountMin).max(submitDefenseAnswerResponseAnsweredCountMax)
+})
+
+
+/**
+ * @summary Complete a fully evaluated simulation idempotently
+ */
+export const CompleteDefenseBody = zod.object({
+  "simulation_id": zod.string().uuid()
+})
+
+export const completeDefenseResponseQuestionsItemQuestionNumberMax = 5;
+
+export const completeDefenseResponseQuestionsItemPointsMin = 0;
+export const completeDefenseResponseQuestionsItemPointsMax = 100;
+
+export const completeDefenseResponseQuestionsItemTimeUsedSecondsMin = 0;
+export const completeDefenseResponseQuestionsItemTimeUsedSecondsMax = 60;
+
+export const completeDefenseResponseQuestionsMin = 5;
+export const completeDefenseResponseQuestionsMax = 5;
+
+export const completeDefenseResponseCurrentIndexMin = 0;
+export const completeDefenseResponseCurrentIndexMax = 5;
+
+export const completeDefenseResponseRemainingSecondsMin = 0;
+export const completeDefenseResponseRemainingSecondsMax = 60;
+
+export const completeDefenseResponseOverallScoreMin = 0;
+export const completeDefenseResponseOverallScoreMax = 100;
+
+export const completeDefenseResponseAnsweredCountMin = 0;
+export const completeDefenseResponseAnsweredCountMax = 5;
+
+
+
+export const CompleteDefenseResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['active', 'completed', 'abandoned']),
+  "source": zod.enum(['gemini', 'curated']),
+  "project_name": zod.string(),
+  "tech_stack": zod.string(),
+  "questions": zod.array(zod.object({
+  "question_number": zod.number().int().min(1).max(completeDefenseResponseQuestionsItemQuestionNumberMax),
+  "professor": zod.string(),
+  "role": zod.string(),
+  "question_text": zod.string(),
+  "difficulty": zod.enum(['basic', 'intermediate', 'advanced']),
+  "concept_tested": zod.string(),
+  "file_reference": zod.string(),
+  "time_limit_seconds": zod.literal(60),
+  "student_answer": zod.string().nullable(),
+  "draft": zod.string(),
+  "answered_at": zod.coerce.date().nullable(),
+  "points": zod.number().int().min(completeDefenseResponseQuestionsItemPointsMin).max(completeDefenseResponseQuestionsItemPointsMax).nullable(),
+  "time_used_seconds": zod.number().int().min(completeDefenseResponseQuestionsItemTimeUsedSecondsMin).max(completeDefenseResponseQuestionsItemTimeUsedSecondsMax).nullable(),
+  "evaluation_status": zod.enum(['unanswered', 'pending', 'failed', 'scored']),
+  "strengths": zod.array(zod.string()),
+  "weaknesses": zod.array(zod.string()),
+  "professor_reaction": zod.string().nullable(),
+  "mini_feedback": zod.string().nullable(),
+  "would_pass": zod.boolean().nullable(),
+  "ideal_answer_points": zod.array(zod.string())
+})).min(completeDefenseResponseQuestionsMin).max(completeDefenseResponseQuestionsMax),
+  "current_index": zod.number().int().min(completeDefenseResponseCurrentIndexMin).max(completeDefenseResponseCurrentIndexMax),
+  "current_question_started_at": zod.coerce.date().nullable(),
+  "deadline_at": zod.coerce.date().nullable(),
+  "server_now": zod.coerce.date(),
+  "remaining_seconds": zod.number().int().min(completeDefenseResponseRemainingSecondsMin).max(completeDefenseResponseRemainingSecondsMax),
+  "overall_score": zod.number().int().min(completeDefenseResponseOverallScoreMin).max(completeDefenseResponseOverallScoreMax).nullable(),
+  "verdict": zod.string().nullable(),
+  "weak_concepts": zod.array(zod.string()),
+  "completed_at": zod.coerce.date().nullable(),
+  "answered_count": zod.number().int().min(completeDefenseResponseAnsweredCountMin).max(completeDefenseResponseAnsweredCountMax)
+})
+
+
+/**
+ * @summary Get authenticated student's eligibility and actual simulation history
+ */
+export const getDefenseSummaryResponseCompletedConceptsMin = 0;
+
+export const getDefenseSummaryResponseTotalConceptsMin = 0;
+
+export const getDefenseSummaryResponseAverageMasteryMin = 0;
+export const getDefenseSummaryResponseAverageMasteryMax = 100;
+
+export const getDefenseSummaryResponseCompletedFilesMin = 0;
+
+export const getDefenseSummaryResponseTotalAttemptsMin = 0;
+
+export const getDefenseSummaryResponseBestScoreMin = 0;
+export const getDefenseSummaryResponseBestScoreMax = 100;
+
+export const getDefenseSummaryResponseLatestActiveOneQuestionsItemQuestionNumberMax = 5;
+
+export const getDefenseSummaryResponseLatestActiveOneQuestionsItemPointsMin = 0;
+export const getDefenseSummaryResponseLatestActiveOneQuestionsItemPointsMax = 100;
+
+export const getDefenseSummaryResponseLatestActiveOneQuestionsItemTimeUsedSecondsMin = 0;
+export const getDefenseSummaryResponseLatestActiveOneQuestionsItemTimeUsedSecondsMax = 60;
+
+export const getDefenseSummaryResponseLatestActiveOneQuestionsMin = 5;
+export const getDefenseSummaryResponseLatestActiveOneQuestionsMax = 5;
+
+export const getDefenseSummaryResponseLatestActiveOneCurrentIndexMin = 0;
+export const getDefenseSummaryResponseLatestActiveOneCurrentIndexMax = 5;
+
+export const getDefenseSummaryResponseLatestActiveOneRemainingSecondsMin = 0;
+export const getDefenseSummaryResponseLatestActiveOneRemainingSecondsMax = 60;
+
+export const getDefenseSummaryResponseLatestActiveOneOverallScoreMin = 0;
+export const getDefenseSummaryResponseLatestActiveOneOverallScoreMax = 100;
+
+export const getDefenseSummaryResponseLatestActiveOneAnsweredCountMin = 0;
+export const getDefenseSummaryResponseLatestActiveOneAnsweredCountMax = 5;
+
+
+
+export const GetDefenseSummaryResponse = zod.object({
+  "project_name": zod.string().nullable(),
+  "tech_stack": zod.string().nullable(),
+  "completed_concepts": zod.number().int().min(getDefenseSummaryResponseCompletedConceptsMin),
+  "total_concepts": zod.number().int().min(getDefenseSummaryResponseTotalConceptsMin),
+  "average_mastery": zod.number().min(getDefenseSummaryResponseAverageMasteryMin).max(getDefenseSummaryResponseAverageMasteryMax).nullable(),
+  "eligible": zod.boolean(),
+  "warning": zod.string().nullable(),
+  "no_saved_files": zod.boolean(),
+  "completed_files": zod.number().int().min(getDefenseSummaryResponseCompletedFilesMin),
+  "total_attempts": zod.number().int().min(getDefenseSummaryResponseTotalAttemptsMin),
+  "best_score": zod.number().int().min(getDefenseSummaryResponseBestScoreMin).max(getDefenseSummaryResponseBestScoreMax).nullable(),
+  "last_attempt_at": zod.coerce.date().nullable(),
+  "latest_active": zod.union([zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['active', 'completed', 'abandoned']),
+  "source": zod.enum(['gemini', 'curated']),
+  "project_name": zod.string(),
+  "tech_stack": zod.string(),
+  "questions": zod.array(zod.object({
+  "question_number": zod.number().int().min(1).max(getDefenseSummaryResponseLatestActiveOneQuestionsItemQuestionNumberMax),
+  "professor": zod.string(),
+  "role": zod.string(),
+  "question_text": zod.string(),
+  "difficulty": zod.enum(['basic', 'intermediate', 'advanced']),
+  "concept_tested": zod.string(),
+  "file_reference": zod.string(),
+  "time_limit_seconds": zod.literal(60),
+  "student_answer": zod.string().nullable(),
+  "draft": zod.string(),
+  "answered_at": zod.coerce.date().nullable(),
+  "points": zod.number().int().min(getDefenseSummaryResponseLatestActiveOneQuestionsItemPointsMin).max(getDefenseSummaryResponseLatestActiveOneQuestionsItemPointsMax).nullable(),
+  "time_used_seconds": zod.number().int().min(getDefenseSummaryResponseLatestActiveOneQuestionsItemTimeUsedSecondsMin).max(getDefenseSummaryResponseLatestActiveOneQuestionsItemTimeUsedSecondsMax).nullable(),
+  "evaluation_status": zod.enum(['unanswered', 'pending', 'failed', 'scored']),
+  "strengths": zod.array(zod.string()),
+  "weaknesses": zod.array(zod.string()),
+  "professor_reaction": zod.string().nullable(),
+  "mini_feedback": zod.string().nullable(),
+  "would_pass": zod.boolean().nullable(),
+  "ideal_answer_points": zod.array(zod.string())
+})).min(getDefenseSummaryResponseLatestActiveOneQuestionsMin).max(getDefenseSummaryResponseLatestActiveOneQuestionsMax),
+  "current_index": zod.number().int().min(getDefenseSummaryResponseLatestActiveOneCurrentIndexMin).max(getDefenseSummaryResponseLatestActiveOneCurrentIndexMax),
+  "current_question_started_at": zod.coerce.date().nullable(),
+  "deadline_at": zod.coerce.date().nullable(),
+  "server_now": zod.coerce.date(),
+  "remaining_seconds": zod.number().int().min(getDefenseSummaryResponseLatestActiveOneRemainingSecondsMin).max(getDefenseSummaryResponseLatestActiveOneRemainingSecondsMax),
+  "overall_score": zod.number().int().min(getDefenseSummaryResponseLatestActiveOneOverallScoreMin).max(getDefenseSummaryResponseLatestActiveOneOverallScoreMax).nullable(),
+  "verdict": zod.string().nullable(),
+  "weak_concepts": zod.array(zod.string()),
+  "completed_at": zod.coerce.date().nullable(),
+  "answered_count": zod.number().int().min(getDefenseSummaryResponseLatestActiveOneAnsweredCountMin).max(getDefenseSummaryResponseLatestActiveOneAnsweredCountMax)
+}),zod.null()])
+})
+
+
+/**
+ * @summary Resume or inspect an owned simulation
+ */
+export const GetDefenseParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const getDefenseResponseQuestionsItemQuestionNumberMax = 5;
+
+export const getDefenseResponseQuestionsItemPointsMin = 0;
+export const getDefenseResponseQuestionsItemPointsMax = 100;
+
+export const getDefenseResponseQuestionsItemTimeUsedSecondsMin = 0;
+export const getDefenseResponseQuestionsItemTimeUsedSecondsMax = 60;
+
+export const getDefenseResponseQuestionsMin = 5;
+export const getDefenseResponseQuestionsMax = 5;
+
+export const getDefenseResponseCurrentIndexMin = 0;
+export const getDefenseResponseCurrentIndexMax = 5;
+
+export const getDefenseResponseRemainingSecondsMin = 0;
+export const getDefenseResponseRemainingSecondsMax = 60;
+
+export const getDefenseResponseOverallScoreMin = 0;
+export const getDefenseResponseOverallScoreMax = 100;
+
+export const getDefenseResponseAnsweredCountMin = 0;
+export const getDefenseResponseAnsweredCountMax = 5;
+
+
+
+export const GetDefenseResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['active', 'completed', 'abandoned']),
+  "source": zod.enum(['gemini', 'curated']),
+  "project_name": zod.string(),
+  "tech_stack": zod.string(),
+  "questions": zod.array(zod.object({
+  "question_number": zod.number().int().min(1).max(getDefenseResponseQuestionsItemQuestionNumberMax),
+  "professor": zod.string(),
+  "role": zod.string(),
+  "question_text": zod.string(),
+  "difficulty": zod.enum(['basic', 'intermediate', 'advanced']),
+  "concept_tested": zod.string(),
+  "file_reference": zod.string(),
+  "time_limit_seconds": zod.literal(60),
+  "student_answer": zod.string().nullable(),
+  "draft": zod.string(),
+  "answered_at": zod.coerce.date().nullable(),
+  "points": zod.number().int().min(getDefenseResponseQuestionsItemPointsMin).max(getDefenseResponseQuestionsItemPointsMax).nullable(),
+  "time_used_seconds": zod.number().int().min(getDefenseResponseQuestionsItemTimeUsedSecondsMin).max(getDefenseResponseQuestionsItemTimeUsedSecondsMax).nullable(),
+  "evaluation_status": zod.enum(['unanswered', 'pending', 'failed', 'scored']),
+  "strengths": zod.array(zod.string()),
+  "weaknesses": zod.array(zod.string()),
+  "professor_reaction": zod.string().nullable(),
+  "mini_feedback": zod.string().nullable(),
+  "would_pass": zod.boolean().nullable(),
+  "ideal_answer_points": zod.array(zod.string())
+})).min(getDefenseResponseQuestionsMin).max(getDefenseResponseQuestionsMax),
+  "current_index": zod.number().int().min(getDefenseResponseCurrentIndexMin).max(getDefenseResponseCurrentIndexMax),
+  "current_question_started_at": zod.coerce.date().nullable(),
+  "deadline_at": zod.coerce.date().nullable(),
+  "server_now": zod.coerce.date(),
+  "remaining_seconds": zod.number().int().min(getDefenseResponseRemainingSecondsMin).max(getDefenseResponseRemainingSecondsMax),
+  "overall_score": zod.number().int().min(getDefenseResponseOverallScoreMin).max(getDefenseResponseOverallScoreMax).nullable(),
+  "verdict": zod.string().nullable(),
+  "weak_concepts": zod.array(zod.string()),
+  "completed_at": zod.coerce.date().nullable(),
+  "answered_count": zod.number().int().min(getDefenseResponseAnsweredCountMin).max(getDefenseResponseAnsweredCountMax)
+})
+
+
+/**
+ * @summary Advance after the current question has been scored
+ */
+export const AdvanceDefenseParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const advanceDefenseResponseQuestionsItemQuestionNumberMax = 5;
+
+export const advanceDefenseResponseQuestionsItemPointsMin = 0;
+export const advanceDefenseResponseQuestionsItemPointsMax = 100;
+
+export const advanceDefenseResponseQuestionsItemTimeUsedSecondsMin = 0;
+export const advanceDefenseResponseQuestionsItemTimeUsedSecondsMax = 60;
+
+export const advanceDefenseResponseQuestionsMin = 5;
+export const advanceDefenseResponseQuestionsMax = 5;
+
+export const advanceDefenseResponseCurrentIndexMin = 0;
+export const advanceDefenseResponseCurrentIndexMax = 5;
+
+export const advanceDefenseResponseRemainingSecondsMin = 0;
+export const advanceDefenseResponseRemainingSecondsMax = 60;
+
+export const advanceDefenseResponseOverallScoreMin = 0;
+export const advanceDefenseResponseOverallScoreMax = 100;
+
+export const advanceDefenseResponseAnsweredCountMin = 0;
+export const advanceDefenseResponseAnsweredCountMax = 5;
+
+
+
+export const AdvanceDefenseResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['active', 'completed', 'abandoned']),
+  "source": zod.enum(['gemini', 'curated']),
+  "project_name": zod.string(),
+  "tech_stack": zod.string(),
+  "questions": zod.array(zod.object({
+  "question_number": zod.number().int().min(1).max(advanceDefenseResponseQuestionsItemQuestionNumberMax),
+  "professor": zod.string(),
+  "role": zod.string(),
+  "question_text": zod.string(),
+  "difficulty": zod.enum(['basic', 'intermediate', 'advanced']),
+  "concept_tested": zod.string(),
+  "file_reference": zod.string(),
+  "time_limit_seconds": zod.literal(60),
+  "student_answer": zod.string().nullable(),
+  "draft": zod.string(),
+  "answered_at": zod.coerce.date().nullable(),
+  "points": zod.number().int().min(advanceDefenseResponseQuestionsItemPointsMin).max(advanceDefenseResponseQuestionsItemPointsMax).nullable(),
+  "time_used_seconds": zod.number().int().min(advanceDefenseResponseQuestionsItemTimeUsedSecondsMin).max(advanceDefenseResponseQuestionsItemTimeUsedSecondsMax).nullable(),
+  "evaluation_status": zod.enum(['unanswered', 'pending', 'failed', 'scored']),
+  "strengths": zod.array(zod.string()),
+  "weaknesses": zod.array(zod.string()),
+  "professor_reaction": zod.string().nullable(),
+  "mini_feedback": zod.string().nullable(),
+  "would_pass": zod.boolean().nullable(),
+  "ideal_answer_points": zod.array(zod.string())
+})).min(advanceDefenseResponseQuestionsMin).max(advanceDefenseResponseQuestionsMax),
+  "current_index": zod.number().int().min(advanceDefenseResponseCurrentIndexMin).max(advanceDefenseResponseCurrentIndexMax),
+  "current_question_started_at": zod.coerce.date().nullable(),
+  "deadline_at": zod.coerce.date().nullable(),
+  "server_now": zod.coerce.date(),
+  "remaining_seconds": zod.number().int().min(advanceDefenseResponseRemainingSecondsMin).max(advanceDefenseResponseRemainingSecondsMax),
+  "overall_score": zod.number().int().min(advanceDefenseResponseOverallScoreMin).max(advanceDefenseResponseOverallScoreMax).nullable(),
+  "verdict": zod.string().nullable(),
+  "weak_concepts": zod.array(zod.string()),
+  "completed_at": zod.coerce.date().nullable(),
+  "answered_count": zod.number().int().min(advanceDefenseResponseAnsweredCountMin).max(advanceDefenseResponseAnsweredCountMax)
+})
+
+
+/**
+ * @summary Abandon an active simulation without fabricating an overall score
+ */
+export const AbandonDefenseParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const abandonDefenseResponseQuestionsItemQuestionNumberMax = 5;
+
+export const abandonDefenseResponseQuestionsItemPointsMin = 0;
+export const abandonDefenseResponseQuestionsItemPointsMax = 100;
+
+export const abandonDefenseResponseQuestionsItemTimeUsedSecondsMin = 0;
+export const abandonDefenseResponseQuestionsItemTimeUsedSecondsMax = 60;
+
+export const abandonDefenseResponseQuestionsMin = 5;
+export const abandonDefenseResponseQuestionsMax = 5;
+
+export const abandonDefenseResponseCurrentIndexMin = 0;
+export const abandonDefenseResponseCurrentIndexMax = 5;
+
+export const abandonDefenseResponseRemainingSecondsMin = 0;
+export const abandonDefenseResponseRemainingSecondsMax = 60;
+
+export const abandonDefenseResponseOverallScoreMin = 0;
+export const abandonDefenseResponseOverallScoreMax = 100;
+
+export const abandonDefenseResponseAnsweredCountMin = 0;
+export const abandonDefenseResponseAnsweredCountMax = 5;
+
+
+
+export const AbandonDefenseResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['active', 'completed', 'abandoned']),
+  "source": zod.enum(['gemini', 'curated']),
+  "project_name": zod.string(),
+  "tech_stack": zod.string(),
+  "questions": zod.array(zod.object({
+  "question_number": zod.number().int().min(1).max(abandonDefenseResponseQuestionsItemQuestionNumberMax),
+  "professor": zod.string(),
+  "role": zod.string(),
+  "question_text": zod.string(),
+  "difficulty": zod.enum(['basic', 'intermediate', 'advanced']),
+  "concept_tested": zod.string(),
+  "file_reference": zod.string(),
+  "time_limit_seconds": zod.literal(60),
+  "student_answer": zod.string().nullable(),
+  "draft": zod.string(),
+  "answered_at": zod.coerce.date().nullable(),
+  "points": zod.number().int().min(abandonDefenseResponseQuestionsItemPointsMin).max(abandonDefenseResponseQuestionsItemPointsMax).nullable(),
+  "time_used_seconds": zod.number().int().min(abandonDefenseResponseQuestionsItemTimeUsedSecondsMin).max(abandonDefenseResponseQuestionsItemTimeUsedSecondsMax).nullable(),
+  "evaluation_status": zod.enum(['unanswered', 'pending', 'failed', 'scored']),
+  "strengths": zod.array(zod.string()),
+  "weaknesses": zod.array(zod.string()),
+  "professor_reaction": zod.string().nullable(),
+  "mini_feedback": zod.string().nullable(),
+  "would_pass": zod.boolean().nullable(),
+  "ideal_answer_points": zod.array(zod.string())
+})).min(abandonDefenseResponseQuestionsMin).max(abandonDefenseResponseQuestionsMax),
+  "current_index": zod.number().int().min(abandonDefenseResponseCurrentIndexMin).max(abandonDefenseResponseCurrentIndexMax),
+  "current_question_started_at": zod.coerce.date().nullable(),
+  "deadline_at": zod.coerce.date().nullable(),
+  "server_now": zod.coerce.date(),
+  "remaining_seconds": zod.number().int().min(abandonDefenseResponseRemainingSecondsMin).max(abandonDefenseResponseRemainingSecondsMax),
+  "overall_score": zod.number().int().min(abandonDefenseResponseOverallScoreMin).max(abandonDefenseResponseOverallScoreMax).nullable(),
+  "verdict": zod.string().nullable(),
+  "weak_concepts": zod.array(zod.string()),
+  "completed_at": zod.coerce.date().nullable(),
+  "answered_count": zod.number().int().min(abandonDefenseResponseAnsweredCountMin).max(abandonDefenseResponseAnsweredCountMax)
+})
+
+
+/**
+ * @summary Save the current unlocked question's draft before its deadline
+ */
+export const SaveDefenseDraftParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const saveDefenseDraftBodyQuestionNumberMax = 5;
+
+export const saveDefenseDraftBodyDraftMax = 12000;
+
+
+
+export const SaveDefenseDraftBody = zod.object({
+  "question_number": zod.number().int().min(1).max(saveDefenseDraftBodyQuestionNumberMax),
+  "draft": zod.string().max(saveDefenseDraftBodyDraftMax)
+})
+
+export const saveDefenseDraftResponseQuestionsItemQuestionNumberMax = 5;
+
+export const saveDefenseDraftResponseQuestionsItemPointsMin = 0;
+export const saveDefenseDraftResponseQuestionsItemPointsMax = 100;
+
+export const saveDefenseDraftResponseQuestionsItemTimeUsedSecondsMin = 0;
+export const saveDefenseDraftResponseQuestionsItemTimeUsedSecondsMax = 60;
+
+export const saveDefenseDraftResponseQuestionsMin = 5;
+export const saveDefenseDraftResponseQuestionsMax = 5;
+
+export const saveDefenseDraftResponseCurrentIndexMin = 0;
+export const saveDefenseDraftResponseCurrentIndexMax = 5;
+
+export const saveDefenseDraftResponseRemainingSecondsMin = 0;
+export const saveDefenseDraftResponseRemainingSecondsMax = 60;
+
+export const saveDefenseDraftResponseOverallScoreMin = 0;
+export const saveDefenseDraftResponseOverallScoreMax = 100;
+
+export const saveDefenseDraftResponseAnsweredCountMin = 0;
+export const saveDefenseDraftResponseAnsweredCountMax = 5;
+
+
+
+export const SaveDefenseDraftResponse = zod.object({
+  "id": zod.string().uuid(),
+  "status": zod.enum(['active', 'completed', 'abandoned']),
+  "source": zod.enum(['gemini', 'curated']),
+  "project_name": zod.string(),
+  "tech_stack": zod.string(),
+  "questions": zod.array(zod.object({
+  "question_number": zod.number().int().min(1).max(saveDefenseDraftResponseQuestionsItemQuestionNumberMax),
+  "professor": zod.string(),
+  "role": zod.string(),
+  "question_text": zod.string(),
+  "difficulty": zod.enum(['basic', 'intermediate', 'advanced']),
+  "concept_tested": zod.string(),
+  "file_reference": zod.string(),
+  "time_limit_seconds": zod.literal(60),
+  "student_answer": zod.string().nullable(),
+  "draft": zod.string(),
+  "answered_at": zod.coerce.date().nullable(),
+  "points": zod.number().int().min(saveDefenseDraftResponseQuestionsItemPointsMin).max(saveDefenseDraftResponseQuestionsItemPointsMax).nullable(),
+  "time_used_seconds": zod.number().int().min(saveDefenseDraftResponseQuestionsItemTimeUsedSecondsMin).max(saveDefenseDraftResponseQuestionsItemTimeUsedSecondsMax).nullable(),
+  "evaluation_status": zod.enum(['unanswered', 'pending', 'failed', 'scored']),
+  "strengths": zod.array(zod.string()),
+  "weaknesses": zod.array(zod.string()),
+  "professor_reaction": zod.string().nullable(),
+  "mini_feedback": zod.string().nullable(),
+  "would_pass": zod.boolean().nullable(),
+  "ideal_answer_points": zod.array(zod.string())
+})).min(saveDefenseDraftResponseQuestionsMin).max(saveDefenseDraftResponseQuestionsMax),
+  "current_index": zod.number().int().min(saveDefenseDraftResponseCurrentIndexMin).max(saveDefenseDraftResponseCurrentIndexMax),
+  "current_question_started_at": zod.coerce.date().nullable(),
+  "deadline_at": zod.coerce.date().nullable(),
+  "server_now": zod.coerce.date(),
+  "remaining_seconds": zod.number().int().min(saveDefenseDraftResponseRemainingSecondsMin).max(saveDefenseDraftResponseRemainingSecondsMax),
+  "overall_score": zod.number().int().min(saveDefenseDraftResponseOverallScoreMin).max(saveDefenseDraftResponseOverallScoreMax).nullable(),
+  "verdict": zod.string().nullable(),
+  "weak_concepts": zod.array(zod.string()),
+  "completed_at": zod.coerce.date().nullable(),
+  "answered_count": zod.number().int().min(saveDefenseDraftResponseAnsweredCountMin).max(saveDefenseDraftResponseAnsweredCountMax)
+})
+
+

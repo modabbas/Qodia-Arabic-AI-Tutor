@@ -759,6 +759,194 @@ export interface ProjectFileInput {
   attempt_number?: number;
 }
 
+export interface DefenseAnswerInput {
+  simulation_id: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  question_number: number;
+  /** @maxLength 12000 */
+  answer: string;
+}
+
+export interface DefenseIdInput {
+  simulation_id: string;
+}
+
+export interface DefenseDraftInput {
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  question_number: number;
+  /** @maxLength 12000 */
+  draft: string;
+}
+
+export type DefenseQuestionDifficulty = typeof DefenseQuestionDifficulty[keyof typeof DefenseQuestionDifficulty];
+
+
+export const DefenseQuestionDifficulty = {
+  basic: 'basic',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export type DefenseQuestionTimeLimitSeconds = typeof DefenseQuestionTimeLimitSeconds[keyof typeof DefenseQuestionTimeLimitSeconds];
+
+
+export const DefenseQuestionTimeLimitSeconds = {
+  NUMBER_60: 60,
+} as const;
+
+export type DefenseQuestionEvaluationStatus = typeof DefenseQuestionEvaluationStatus[keyof typeof DefenseQuestionEvaluationStatus];
+
+
+export const DefenseQuestionEvaluationStatus = {
+  unanswered: 'unanswered',
+  pending: 'pending',
+  failed: 'failed',
+  scored: 'scored',
+} as const;
+
+export interface DefenseQuestion {
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  question_number: number;
+  professor: string;
+  role: string;
+  question_text: string;
+  difficulty: DefenseQuestionDifficulty;
+  concept_tested: string;
+  file_reference: string;
+  time_limit_seconds: DefenseQuestionTimeLimitSeconds;
+  /** @nullable */
+  student_answer: string | null;
+  draft: string;
+  /** @nullable */
+  answered_at: string | null;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  points: number | null;
+  /**
+     * @minimum 0
+     * @maximum 60
+     * @nullable
+     */
+  time_used_seconds: number | null;
+  evaluation_status: DefenseQuestionEvaluationStatus;
+  strengths: string[];
+  weaknesses: string[];
+  /** @nullable */
+  professor_reaction: string | null;
+  /** @nullable */
+  mini_feedback: string | null;
+  /** @nullable */
+  would_pass: boolean | null;
+  ideal_answer_points: string[];
+}
+
+export type DefenseSimulationStatus = typeof DefenseSimulationStatus[keyof typeof DefenseSimulationStatus];
+
+
+export const DefenseSimulationStatus = {
+  active: 'active',
+  completed: 'completed',
+  abandoned: 'abandoned',
+} as const;
+
+export type DefenseSimulationSource = typeof DefenseSimulationSource[keyof typeof DefenseSimulationSource];
+
+
+export const DefenseSimulationSource = {
+  gemini: 'gemini',
+  curated: 'curated',
+} as const;
+
+export interface DefenseSimulation {
+  id: string;
+  status: DefenseSimulationStatus;
+  source: DefenseSimulationSource;
+  project_name: string;
+  tech_stack: string;
+  /**
+     * @minItems 5
+     * @maxItems 5
+     */
+  questions: DefenseQuestion[];
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  current_index: number;
+  /** @nullable */
+  current_question_started_at: string | null;
+  /** @nullable */
+  deadline_at: string | null;
+  server_now: string;
+  /**
+     * @minimum 0
+     * @maximum 60
+     */
+  remaining_seconds: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  overall_score: number | null;
+  /** @nullable */
+  verdict: string | null;
+  weak_concepts: string[];
+  /** @nullable */
+  completed_at: string | null;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  answered_count: number;
+}
+
+export interface DefenseSummary {
+  /** @nullable */
+  project_name: string | null;
+  /** @nullable */
+  tech_stack: string | null;
+  /** @minimum 0 */
+  completed_concepts: number;
+  /** @minimum 0 */
+  total_concepts: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  average_mastery: number | null;
+  eligible: boolean;
+  /** @nullable */
+  warning: string | null;
+  no_saved_files: boolean;
+  /** @minimum 0 */
+  completed_files: number;
+  /** @minimum 0 */
+  total_attempts: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  best_score: number | null;
+  /** @nullable */
+  last_attempt_at: string | null;
+  latest_active: DefenseSimulation | null;
+}
+
 export type GetTouch4SupportParams = {
 lesson_id: string;
 };

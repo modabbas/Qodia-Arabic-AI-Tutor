@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowUpLeft, CalendarDays, Flame, Layers3, LoaderCircle, Spa
 import { Link } from 'wouter';
 import { getGetGeneratedSessionQueryKey, useGetDashboard, useGetGeneratedSession, useGetProjectStructure, useGetSessions } from '@workspace/api-client-react';
 import { AppHeader, ErrorState, LoadingState } from '@/components/qodia-ui';
+import { DefenseDashboardCard } from '@/components/final-defense/defense-card';
 import './my-project.css';
 
 export default function Dashboard() {
@@ -38,6 +39,7 @@ export default function Dashboard() {
           <Link href="/my-project" className="btn btn-outline" data-testid="link-my-project">افتح مشروعي <ArrowLeft size={16} /></Link>
         </div>
       </section>
+      <DefenseDashboardCard />
       <section style={{ marginTop: 68 }}><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'end', marginBottom: 12 }}><div><span className="eyebrow">سجلّك</span><h2 style={{ fontSize: 27, letterSpacing: '-.04em', margin: '9px 0' }}>جلساتك السابقة</h2></div><span className="muted" style={{ fontSize: 12 }}>{history.length} جلسة</span></div>
         {history.length ? <div className="panel" style={{ padding: '8px 26px' }}>{history.map(item => <div className="history-row" key={item.id} data-testid={`row-session-${item.id}`}><div><strong style={{ fontSize: 15 }}>{item.concept}</strong><div className="muted" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}><CalendarDays size={13} />{new Date(item.timestamp).toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric' })}</div></div><div style={{ textAlign: 'left' }}><span className="mono" style={{ color: '#22c55e', fontSize: 14 }}>+{item.xp_earned} XP</span><div className="muted" style={{ fontSize: 11, marginTop: 5 }}>{item.touches_completed} من ٥ لمسات</div></div></div>)}</div> : <div className="panel" style={{ padding: '45px 30px', display: 'flex', flexDirection: 'column', alignItems: 'start', gap: 12 }} data-testid="status-empty-sessions"><span className="eyebrow">البداية من هنا</span><h3 style={{ fontSize: 23, margin: 0 }}>أول جلسة رح تظهر هون.</h3><p className="muted" style={{ margin: 0 }}>ابدأ التدريب وخلّي تقدّمك يحكي عنك.</p><Link href="/session" style={{ color: '#22c55e', display: 'flex', alignItems: 'center', gap: 7, marginTop: 10 }} data-testid="link-empty-start">ابدأ الآن <ArrowUpLeft size={16} /></Link></div>}
       </section>

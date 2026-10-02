@@ -5,6 +5,7 @@ import learningRouter from "./learning";
 import generatedSessionRouter from "./generated-session";
 import learningMapRouter from "./learning-map";
 import touch4SupportRouter from "./touch4-support";
+import defenseRouter from "./defense";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(learningRouter);
 router.use(learningMapRouter);
 router.use(generatedSessionRouter);
 router.use(touch4SupportRouter);
+router.use(defenseRouter);
 
 export default router;
