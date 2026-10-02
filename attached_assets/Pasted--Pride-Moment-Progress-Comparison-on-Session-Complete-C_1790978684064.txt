@@ -1,0 +1,118 @@
+# "Pride Moment" - Progress Comparison on Session Complete
+
+## Context
+This is a small UI addition to the existing "Session Complete" screen (end of Touch 5). Do NOT rebuild that screen — only add a new section to it.
+
+## What to Build
+
+After every 5th completed session (session count % 5 === 0), on the Session Complete screen, add an extra card ABOVE the existing XP/streak stats:
+
+```
+┌─────────────────────────────────────────┐
+│  🏆 شوف وين وصلت                        │
+│                                         │
+│  أول كود كتبته (اليوم ١):               │
+│  ┌───────────────────────────────┐     │
+│  │ name: airport_platform         │     │
+│  └───────────────────────────────┘     │
+│                                         │
+│  آخر كود كتبته (اليوم ٨):                │
+│  ┌───────────────────────────────┐     │
+│  │ StreamBuilder<List<Flight>>(   │     │
+│  │   stream: flightService...     │     │
+│  │ )                               │     │
+│  └───────────────────────────────┘     │
+│                                         │
+│  من سطر وحدة لكود حقيقي. هيك بتبني      │
+│  مشروع تخرجك.                           │
+└─────────────────────────────────────────┘
+```
+
+## Data Source
+
+Pull from the existing `project_files` / session history already stored (from Cumulative Project feature):
+- "First code": the earliest saved code snippet for this user (shortest/simplest one, first by timestamp)
+- "Latest code": the most recently saved code snippet (just completed this session)
+
+No new database tables needed — query existing records only.
+
+## Logic
+
+```typescript
+function shouldShowPrideMoment(completedSessionsCount: number): boolean {
+  return completedSessionsCount > 0 && completedSessionsCount % 5 === 0;
+}
+
+async function getPrideMomentData(userId: string) {
+  const firstFile = await getEarliestCodeSnippet(userId); // by created_at ASC, limit 1
+  const latestFile = await getLatestCodeSnippet(userId);  // by created_at DESC, limit 1
+  return { firstFile, latestFile };
+}
+```
+
+## Display Rules
+
+- Only show on sessions 5, 10, 15, 20, 25, 30 (not every session — would get repetitive, this scarcity is intentional and part of the addictive design)
+- Truncate long code snippets to first 3-4 lines with "..." if longer
+- Use simple syntax highlighting (reuse existing code display component if one exists from /my-project page)
+
+## Make It Addictive (Dopamine Design)
+
+This moment should feel like a reward milestone the student anticipates, not a plain summary. Apply these:
+
+**1. Build anticipation before it appears**
+On sessions 3 and 4 (leading up to session 5), add a small subtle badge near the XP display: "🔒 إنجاز خاص خلال جلستين" (updates countdown: "خلال جلسة وحدة"). This creates expectation — student knows something is coming.
+
+**2. Entrance animation (distinct from regular session-complete)**
+Unlike the regular session-complete screen, this card should feel like unlocking something:
+- Card starts scaled down (0.9) and slightly blurred, then scales to 1.0 with a quick spring animation (400ms) + unblur
+- A brief gold/green shimmer sweeps across the card border once on appearance
+- Small sound cue if sound is enabled (reuse existing sound toggle from Micro-wins feature) — a distinct "unlock" tone, different from the regular correct-answer ding
+
+**3. A number that grows in front of them**
+Add a counting animation: "من ١ سطر كود إلى ٤٧ سطر" — the numbers count up rapidly (300-500ms) when the card appears, not just static text. Reuse the counting-number pattern already built for XP totals in Micro-wins.
+
+**4. A streak-style label tied to identity, not just stats**
+Below the code comparison, add one short line that frames progress as identity change, varying by milestone:
+- Session 5: "صرت تكتب كود حقيقي 💪"
+- Session 10: "عشر جلسات. هيك المطورين الحقيقيين بيبدأو"
+- Session 15: "نص الطريق. مشروعك عم يصير حقيقة"
+- Session 20-30: escalating variants in the same spirit (Gemini can generate these dynamically per milestone using session count + project name, OR use a small hardcoded array if simpler — hardcoded preferred here to avoid unnecessary AI cost for a UI string)
+
+**5. A reason to come back**
+End the card with a forward-looking hook, not just a closing: "كمان ٥ جلسات وبتشوف قفزة تانية 🚀" (dynamically calculate: next milestone - current session count). This is the hook that makes the student want session 6, not just reflect on session 5.
+
+**6. Shareable framing (optional but cheap to add)**
+Add a small "📸 خذ لقطة شاشة وشاركها" text hint near the card (no actual screenshot/share API needed — just a text nudge; students already know how to screenshot). This plants the idea of external sharing without building share infrastructure.
+
+Keep the overall tone warm and earned, not gimmicky — the dopamine techniques above should feel like a well-designed game milestone (think Duolingo's streak milestones), not a popup ad.
+
+## Styling
+
+- Card background: `#121212`, border-right: 3px solid `#22c55e`
+- Code blocks: monospace font, `#0a0a0a` background, subtle padding
+- Caption text under each code block: small, muted gray, Arabic
+- Milestone label: larger, bold, colored `#22c55e` or gold tone for emphasis
+
+## What NOT to Do
+- Do NOT touch the existing XP/streak/level stats display — this is an ADDITIONAL card before them
+- Do NOT modify Cumulative Project, Learning Path, Validation, or Hints logic
+- Do NOT show this on every session — only every 5th
+- Do NOT fetch data via a new Gemini call — this is pure database query, zero AI cost
+
+## Testing
+- [ ] Shows only on session count 5, 10, 15, etc.
+- [ ] Does not show on sessions 1-4, 6-9, etc.
+- [ ] First and latest code snippets are accurate
+- [ ] Long code truncates cleanly
+- [ ] No layout break on mobile
+- [ ] Countdown badge appears on sessions 3-4 before milestone
+- [ ] Entrance animation (scale+unblur+shimmer) plays once, not repeatedly
+- [ ] Line-count number animates/counts up, not static
+- [ ] Milestone label text matches session count correctly
+- [ ] "Next milestone" hook calculates correctly (e.g., on session 10, shows "5 more to next")
+
+## Cost & Time
+- Extended Thinking: not needed (simple UI + existing data query, hardcoded milestone strings)
+- Time: 15-20 minutes
+- Cost: $4-6

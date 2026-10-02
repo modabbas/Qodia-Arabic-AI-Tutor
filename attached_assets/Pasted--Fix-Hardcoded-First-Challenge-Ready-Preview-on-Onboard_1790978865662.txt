@@ -1,0 +1,58 @@
+# Fix Hardcoded "First Challenge Ready" Preview on Onboarding
+
+## Bug
+On the onboarding page (project + tech stack selection), there's a card titled "أول تحدي جاهز" that shows HARDCODED content:
+
+"ForeignKey و on_delete في Django — خمس لمسات بينك وبين جواب أوضح"
+
+This is wrong regardless of what tech stack the user selects. Confirmed: selecting React still shows Django/ForeignKey content.
+
+This is the SAME root cause pattern as the dashboard challenge card bug fixed earlier (fix-dashboard-challenge.md) — just occurring on a different page (onboarding, before first session).
+
+## Fix
+
+Make the "أول تحدي جاهز" card reflect the user's just-selected tech stack dynamically.
+
+### Option A (Preferred): Static per-tech-stack preview, no AI call
+
+Since this is just a preview/teaser shown instantly as the user fills the form (before any session is generated), avoid an extra Gemini call here — use a small hardcoded mapping instead:
+
+```typescript
+const firstChallengePreview: Record<string, { title: string; description: string }> = {
+  react: {
+    title: "useState وإدارة الحالة في React",
+    description: "خمس لمسات بينك وبين جواب أوضح"
+  },
+  flutter: {
+    title: "StatefulWidget و دورة حياة الـ Widget في Flutter",
+    description: "خمس لمسات بينك وبين جواب أوضح"
+  },
+  django: {
+    title: "ForeignKey و on_delete في Django",
+    description: "خمس لمسات بينك وبين جواب أوضح"
+  },
+  // add other supported tech stacks already in the system
+};
+```
+
+Update this card to read from the user's currently selected tech stack in the form state (live, as they pick it — not after submit) and render the matching entry. Fallback to a generic neutral message if tech stack not yet selected or not in the map.
+
+### Option B (if tech stacks are too numerous/dynamic for a static map)
+
+Use the same lightweight logic already built for the dashboard fix — pull the first planned concept from the tech stack's typical path if one exists, without a live Gemini call (to keep onboarding fast and free).
+
+## What NOT to Do
+- Do NOT call Gemini here — this is a pre-signup preview, must stay instant and free
+- Do NOT touch the actual session generation logic (/api/generate-session) — unrelated
+- Do NOT modify other onboarding fields or flow
+
+## Testing
+- [ ] Select React → card shows React-relevant preview
+- [ ] Select Flutter → card shows Flutter-relevant preview
+- [ ] Select Django → card shows Django-relevant preview
+- [ ] Card updates live as user changes selection (if selection is changeable before submit)
+
+## Cost & Time
+- Extended Thinking: not needed (simple static mapping fix)
+- Time: 10 minutes
+- Cost: $2-3

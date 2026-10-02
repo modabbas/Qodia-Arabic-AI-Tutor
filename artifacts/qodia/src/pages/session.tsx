@@ -12,6 +12,8 @@ import { getGetTouch4SupportQueryKey, useGetTouch4Support, type Touch4Support } 
 import { Touch4HintButton, Touch4HintCards, Touch4HintProgress } from './touch4-hints';
 import { Touch4CodeMirror, Touch4DiffFeedback } from './touch4-code-feedback';
 import { CountUp, FxLayer, IdleMentor, caretPoint, readSound, useFx, useReducedMotion, writeSound } from './session-fx';
+import { getGetPrideMomentQueryKey, useGetPrideMoment } from '@workspace/api-client-react';
+import { PrideAnticipation, PrideMoment } from './pride-moment';
 
 type Mood = 'hyped' | 'normal' | 'tired';
 type Result = { name: string; concept: string; passed: boolean };
@@ -45,11 +47,11 @@ const music: Record<Mood, { url: string; label: string }> = {
   tired: { url: 'https://www.youtube.com/results?search_query=calm+ambient+study+music', label: 'أمبيانت مريحة' },
 };
 
-function playTone(kind: 'good' | 'bad' | 'big', enabled: boolean) {
+function playTone(kind: 'good' | 'bad' | 'big' | 'unlock', enabled: boolean) {
   if (!enabled) return;
   try {
     const context = new window.AudioContext();
-    const notes = kind === 'big' ? [330, 392, 440, 523] : kind === 'bad' ? [300] : [392, 494];
+    const notes = kind === 'unlock' ? [659, 830, 988] : kind === 'big' ? [330, 392, 440, 523] : kind === 'bad' ? [300] : [392, 494];
     notes.forEach((frequency, i) => {
       const oscillator = context.createOscillator();
       const gain = context.createGain();
@@ -158,6 +160,14 @@ export default function Session() {
   const [seconds, setSeconds] = useState(30);
   const [confidence, setConfidence] = useState(100);
   const [complete, setComplete] = useState(false);
+  const [completedSessionId, setCompletedSessionId] = useState<string | undefined>();
+  const prideParams = complete ? { session_id: completedSessionId } : {};
+  const pride = useGetPrideMoment(prideParams, { query: {
+    queryKey: getGetPrideMomentQueryKey(prideParams),
+    enabled: !!dashboard.data && touch > 0,
+    staleTime: complete ? Infinity : 30_000,
+    refetchOnWindowFocus: !complete,
+  } });
   const [sound, setSound] = useState(readSound);
   const soundRef = useRef(sound);
   soundRef.current = sound;
@@ -333,11 +343,13 @@ export default function Session() {
     create.mutate({ data: payload }, {
       onSuccess: async (saved) => {
         setEarned(saved.xp_earned);
+        setCompletedSessionId(saved.id);
         // A resumed lesson may already have credited partial XP. Its final reward
         // is the whole lesson total, not an additional award on that baseline.
         const synced = await dashboard.refetch();
         if (!synced.isError && synced.data) baselineRef.current = synced.data.progress.total_xp - saved.xp_earned;
         setComplete(true);
+        void queryClient.invalidateQueries({ queryKey: getGetPrideMomentQueryKey({}), refetchType: 'none' });
         void queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetProjectStructureQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetLearningMapQueryKey() });
@@ -442,7 +454,7 @@ export default function Session() {
     setCode(''); setHintBusy(false); hintPenaltyApplied.current = 0; setCodeTries(0); setPhase('first');
     setFileSaved(false); setFileSaveError(false); saveFile.reset();
     setBuildValidation(null); codeCheckLock.current = false;
-    setSeconds(30); setConfidence(100); setComplete(false); setResults([]);
+    setSeconds(30); setConfidence(100); setComplete(false); setCompletedSessionId(undefined); setResults([]);
     setSavePayload(null); timedOutRef.current = false; savingRef.current = false;
     restoredFileRef.current = null;
     baselineRef.current = null; create.reset();
@@ -514,6 +526,7 @@ export default function Session() {
           <Link href="/dashboard" className={s.logo} aria-label="العودة إلى اللوحة" data-testid="link-dashboard"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="18" fill="none" stroke="#f2f2f2" strokeWidth="4" /><path d="M19.5 16.5 L29 24 L19.5 31.5" fill="none" stroke="#f2f2f2" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" /></svg></Link>
           <div className={`${s.rail} ${complete ? s.gold : ''}`} data-testid="text-lesson-progress">{touches.map((item, index) => <div key={item.name} className={`${s.seg} ${index < (complete ? 5 : touch - 1) ? s.done : index === touch - 1 && !complete ? s.now : ''} ${index === glow ? `${s.wave} ${s.glowseg}` : ''}`} />)}</div>
           <div className={s.meta}><span className={`${s.run} ${broke ? s.broke : ''} ${shaking ? s.shaking : ''}`} style={{ transform: `scale(${1 + Math.min(streak, 5) * .06})` }} data-testid="text-run-streak">{broke ? 'انكسرت السلسلة' : `🔥 ${arabic(streak)} صح ورا بعض`}</span><span className={s.streak} data-testid="text-streak">🔥 {arabic(dashboard.data.progress.streak_days)}</span><div className={s.xpbox}><div className={s.lvl} data-testid="text-level">{arabic(Math.floor(hudXP / 100) + 1)}</div><div className={s.xpbar}><i style={{ width: `${hudXP % 100}%` }} /></div><span className={s.xpnum} data-testid="text-xp">{arabic(hudXP)}</span></div><button className={s.sound} onClick={() => { const on = !sound; setSound(on); writeSound(on); }} aria-pressed={sound} aria-label={sound ? 'إيقاف الصوت' : 'تشغيل الصوت'} data-testid="button-toggle-sound">{sound ? <Volume2 size={16} /> : <VolumeX size={16} />}</button></div>
+          {!complete && pride.data && !pride.isFetching && <PrideAnticipation completed={pride.data.completed_sessions_count} />}
         </header>}
         <FxLayer items={fx.items} />
         {streakMsg && <div className={s.toast} role="status" data-testid="status-streak-message">{streakMsg}</div>}
@@ -562,7 +575,10 @@ export default function Session() {
                 : choices(defense.followup_options, defense.followup_correct_index, defense.followup_explanation, defense.followup_feedback_wrong)}
               {feedbackNode}{seconds === 0 && !correct && <button className={`${s.btn} ${s.ghost}`} style={{ marginTop: 16 }} onClick={() => { setSeconds(30); setSelected(null); setFeedback(null); timedOutRef.current = false; }} data-testid="button-retry-defense">جرّب مرة ثانية</button>}{nextNode}</section>}
             {!complete && create.isError && savePayload && <div className={s.error} role="alert" data-testid="status-save-error">خلصت التدريب، بس ما قدرنا نحفظ نتيجتك. <button className={`${s.btn} ${s.ghost}`} onClick={() => save(savePayload)} data-testid="button-retry-save">إعادة المحاولة</button></div>}
-            {complete && <section className={s.end}><div className={`${s.endtitle} ${s.drop} ${perfect ? s.perfect : ''}`} data-testid="text-session-complete">{perfect ? 'جلسة مثالية! خمس من خمس بلا ولا غلطة 🎉' : 'خلّصت جلستك 🎉'}</div><div className={s.small} data-testid="text-completed-concept">{session.concept_name_ar} · {session.concept_name_en}</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div><div className={s.stats}><div className={s.stat} style={{ animationDelay: '.4s' }} data-testid="text-earned-xp">+<b><CountUp value={earned} reduced={reduced} delay={400} /></b> نقطة</div><div className={s.stat} style={{ animationDelay: '.7s' }}>متتاليتك: <b>{arabic(dashboard.data.progress.streak_days)}</b> يوم 🔥</div><div className={s.stat} style={{ animationDelay: '1s' }}>مستوى <b>{arabic(Math.floor(hudXP / 100) + 1)}</b> · <b>{arabic(hudXP % 100)}٪</b> للتالي</div></div><ul className={s.results}>{results.map((result, i) => <li key={i} className={result.passed ? s.pass : s.soft} data-testid={`row-touch-result-${i + 1}`}><span className={s.ri}>{result.passed ? '✓' : '↺'}</span><span className={s.name}>{result.name}</span><span className={s.concept}>{result.concept}</span></li>)}</ul><Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link><button className={`${s.btn} ${s.big} ${s.pulsebtn}`} style={{ background: 'transparent', color: '#22c55e', border: '1px solid #22c55e' }} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-new-session">{freshPending ? 'عم نحضّر جلستك...' : 'جلسة جديدة بمفهوم آخر ↺'}</button>{freshError && <div className={s.error} role="alert" data-testid="status-fresh-error">ما قدرنا نحمّل جلسة جديدة. تقدمك محفوظ؛ حاول مرة ثانية.</div>}{freshError && <button className={`${s.btn} ${s.ghost}`} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-retry-fresh">إعادة المحاولة</button>}<Link href="/dashboard" className={s.small} style={{ marginTop: 10 }} data-testid="link-return-dashboard">ارجع للوحتي ←</Link></section>}
+            {complete && <section className={s.end}><div className={`${s.endtitle} ${s.drop} ${perfect ? s.perfect : ''}`} data-testid="text-session-complete">{perfect ? 'جلسة مثالية! خمس من خمس بلا ولا غلطة 🎉' : 'خلّصت جلستك 🎉'}</div><div className={s.small} data-testid="text-completed-concept">{session.concept_name_ar} · {session.concept_name_en}</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div>
+              {pride.data && <PrideMoment key={completedSessionId} data={pride.data} reduced={reduced} renderCode={highlightCode} onUnlock={() => playTone('unlock', soundRef.current)} />}
+              {pride.isError && <p className={s.small} role="alert">تقدمك محفوظ، بس ما قدرنا نحمّل مقارنة الكود. <button type="button" className={s.btn} onClick={() => { void pride.refetch(); }}>حاول مرة ثانية</button></p>}
+              <div className={s.stats}><div className={s.stat} style={{ animationDelay: '.4s' }} data-testid="text-earned-xp">+<b><CountUp value={earned} reduced={reduced} delay={400} /></b> نقطة</div><div className={s.stat} style={{ animationDelay: '.7s' }}>متتاليتك: <b>{arabic(dashboard.data.progress.streak_days)}</b> يوم 🔥</div><div className={s.stat} style={{ animationDelay: '1s' }}>مستوى <b>{arabic(Math.floor(hudXP / 100) + 1)}</b> · <b>{arabic(hudXP % 100)}٪</b> للتالي</div></div><ul className={s.results}>{results.map((result, i) => <li key={i} className={result.passed ? s.pass : s.soft} data-testid={`row-touch-result-${i + 1}`}><span className={s.ri}>{result.passed ? '✓' : '↺'}</span><span className={s.name}>{result.name}</span><span className={s.concept}>{result.concept}</span></li>)}</ul><Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link><button className={`${s.btn} ${s.big} ${s.pulsebtn}`} style={{ background: 'transparent', color: '#22c55e', border: '1px solid #22c55e' }} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-new-session">{freshPending ? 'عم نحضّر جلستك...' : 'جلسة جديدة بمفهوم آخر ↺'}</button>{freshError && <div className={s.error} role="alert" data-testid="status-fresh-error">ما قدرنا نحمّل جلسة جديدة. تقدمك محفوظ؛ حاول مرة ثانية.</div>}{freshError && <button className={`${s.btn} ${s.ghost}`} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-retry-fresh">إعادة المحاولة</button>}<Link href="/dashboard" className={s.small} style={{ marginTop: 10 }} data-testid="link-return-dashboard">ارجع للوحتي ←</Link></section>}
           </div></main>}
       </>}
   </div>;

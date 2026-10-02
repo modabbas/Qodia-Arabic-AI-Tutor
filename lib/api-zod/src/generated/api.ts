@@ -339,6 +339,44 @@ export const GetDashboardResponse = zod.object({
 
 
 /**
+ * @summary Read the learner's completed-session count and saved-code milestone
+ */
+export const GetPrideMomentQueryParams = zod.object({
+  "session_id": zod.coerce.string().uuid().optional()
+})
+
+export const getPrideMomentResponseCompletedSessionsCountMin = 0;
+
+export const getPrideMomentResponseComparisonOneFirstLineCountMin = 0;
+
+
+export const getPrideMomentResponseComparisonOneLatestLineCountMin = 0;
+
+
+
+
+export const GetPrideMomentResponse = zod.object({
+  "completed_sessions_count": zod.number().int().min(getPrideMomentResponseCompletedSessionsCountMin),
+  "comparison": zod.union([zod.object({
+  "first": zod.object({
+  "path": zod.string(),
+  "preview": zod.string(),
+  "line_count": zod.number().int().min(getPrideMomentResponseComparisonOneFirstLineCountMin),
+  "day": zod.number().int().min(1),
+  "modified_since_creation": zod.boolean()
+}),
+  "latest": zod.object({
+  "path": zod.string(),
+  "preview": zod.string(),
+  "line_count": zod.number().int().min(getPrideMomentResponseComparisonOneLatestLineCountMin),
+  "day": zod.number().int().min(1),
+  "modified_since_creation": zod.boolean()
+})
+}),zod.null()])
+})
+
+
+/**
  * @summary List the signed-in user's recent learning sessions
  */
 export const getSessionsResponseMasteryEarnedMin = 0;

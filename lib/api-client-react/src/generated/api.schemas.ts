@@ -5,6 +5,27 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+export interface PrideCodeSnippet {
+  path: string;
+  preview: string;
+  /** @minimum 0 */
+  line_count: number;
+  /** @minimum 1 */
+  day: number;
+  modified_since_creation: boolean;
+}
+
+export interface PrideComparison {
+  first: PrideCodeSnippet;
+  latest: PrideCodeSnippet;
+}
+
+export interface PrideMoment {
+  /** @minimum 0 */
+  completed_sessions_count: number;
+  comparison: PrideComparison | null;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -971,6 +992,10 @@ export interface DefenseSummary {
   last_attempt_at: string | null;
   latest_active: DefenseSimulation | null;
 }
+
+export type GetPrideMomentParams = {
+session_id?: string;
+};
 
 export type GetTouch4SupportParams = {
 lesson_id: string;

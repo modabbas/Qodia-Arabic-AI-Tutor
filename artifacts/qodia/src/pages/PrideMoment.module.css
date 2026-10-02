@@ -1,0 +1,20 @@
+.card { position:relative; isolation:isolate; width:100%; box-sizing:border-box; text-align:right; padding:24px; margin:22px 0; background:#121212; border:1px solid #34362b; border-right:3px solid #22c55e; border-radius:14px; overflow:hidden; animation:pride-unlock 400ms cubic-bezier(.22,.8,.3,1) both; }
+.card::before { content:''; position:absolute; inset:0; border-radius:inherit; padding:1px; pointer-events:none; background:linear-gradient(110deg,transparent 30%,#f5b84a 45%,#22c55e 52%,transparent 66%); background-size:250% 100%; mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); mask-composite:exclude; opacity:0; animation:pride-shimmer 650ms 200ms ease-out both; }
+.card h2 { margin:0 0 5px; font-size:23px; color:#f5b84a; }
+.session { font-size:12px; color:#a7a7a7; }
+.comparison { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
+.comparison > div { min-width:0; }
+.comparison h3 { font-size:14px; font-weight:600; margin:0 0 9px; }
+.comparison pre { max-width:100%; overflow:auto; margin:0; padding:14px; min-height:84px; box-sizing:border-box; border:1px solid #262626; border-radius:8px; background:#0a0a0a; color:#ddd; font:12px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace; text-align:left; }
+.caption { color:#a4a4a4; font-size:12px; line-height:1.8; margin:8px 0; overflow-wrap:anywhere; }
+.lines { font-size:18px; margin:20px 0 5px; }
+.lines b { color:#f5b84a; font-variant-numeric:tabular-nums; }
+.identity { font-size:19px; font-weight:700; color:#22c55e; margin:20px 0 9px; line-height:1.6; }
+.hook { margin:0; font-size:14px; color:#e6e6e6; }
+.share { margin:14px 0 0; font-size:11px; color:#919191; }
+.badge { position:absolute; top:calc(100% + 5px); inset-inline-end:54px; display:inline-flex; align-items:center; gap:5px; border:1px solid #f5b84a40; border-radius:99px; padding:4px 8px; background:#171710; color:#d8b264; font-size:11px; line-height:1.5; pointer-events:none; }
+@keyframes pride-unlock { from { transform:scale(.9); filter:blur(4px); opacity:0; } 70% { transform:scale(1.015); filter:blur(0); opacity:1; } to { transform:scale(1); filter:blur(0); opacity:1; } }
+@keyframes pride-shimmer { from { opacity:0; background-position:150% 0; } 25% { opacity:1; } 75% { opacity:1; } to { opacity:0; background-position:-150% 0; } }
+@media(max-width:600px) { .card { padding:18px; } .comparison { grid-template-columns:1fr; gap:14px; } .card h2 { font-size:21px; } .identity { font-size:17px; } .badge { max-width:150px; } }
+.card[data-reduced=true], .card[data-reduced=true]::before { animation:none; }
+@media(prefers-reduced-motion:reduce) { .card, .card::before { animation:none; } }

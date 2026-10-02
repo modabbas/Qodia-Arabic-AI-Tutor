@@ -247,6 +247,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /pride-moment:
+    get:
+      operationId: getPrideMoment
+      summary: Read the learner's completed-session count and saved-code milestone
+      parameters:
+        - in: query
+          name: session_id
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Private, read-only milestone data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrideMoment"
+        "404":
+          description: Completed session not found
   /sessions:
     get:
       operationId: getSessions
@@ -759,6 +779,41 @@ paths:
               schema: { $ref: "#/components/schemas/ErrorResponse" }
 components:
   schemas:
+    PrideCodeSnippet:
+      type: object
+      required: [path, preview, line_count, day, modified_since_creation]
+      properties:
+        path:
+          type: string
+        preview:
+          type: string
+        line_count:
+          type: integer
+          minimum: 0
+        day:
+          type: integer
+          minimum: 1
+        modified_since_creation:
+          type: boolean
+    PrideComparison:
+      type: object
+      required: [first, latest]
+      properties:
+        first:
+          $ref: "#/components/schemas/PrideCodeSnippet"
+        latest:
+          $ref: "#/components/schemas/PrideCodeSnippet"
+    PrideMoment:
+      type: object
+      required: [completed_sessions_count, comparison]
+      properties:
+        completed_sessions_count:
+          type: integer
+          minimum: 0
+        comparison:
+          anyOf:
+            - $ref: "#/components/schemas/PrideComparison"
+            - type: "null"
     HealthStatus:
       type: object
       properties:

@@ -10,3 +10,4 @@
 - [Progressive hint contract](progressive-hint-contract.md) — keep fresh and cached-lesson hint prompts aligned with pedagogical content constraints.
 - [Final-defense boundaries](final-defense-boundaries.md) — a separate practice assessment; strict answer locking, bounded delivery tolerance, and no progress-engine changes.
 - [Arabic PDF verification](arabic-pdf-verification.md) — valid, extractable PDF text can still display reversed Arabic, numbers, or Latin paths; inspect rendered pages.
+- [Pride milestone honesty](pride-milestone-honesty.md) — reward milestones are read-only; distinguish the oldest file's current version from an original code snapshot.
