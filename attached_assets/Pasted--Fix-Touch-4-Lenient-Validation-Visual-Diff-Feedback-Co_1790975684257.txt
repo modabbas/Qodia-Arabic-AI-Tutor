@@ -1,0 +1,97 @@
+# Fix Touch 4: Lenient Validation + Visual Diff Feedback
+
+## Context
+The 3-level validation system (Level 1 syntax, Level 2 structure, Level 3 Gemini) already works correctly and should NOT be rebuilt. This task ADDS tolerance and better feedback on top of it.
+
+## Problem
+Students get rejected for trivial formatting issues (extra/missing spaces, minor indentation differences) that don't affect code correctness. This causes frustration and students give up. Error messages are too vague ("something's wrong") without showing exactly where.
+
+## Fix 1: Lenient Comparison Logic
+
+Before running Level 1/2 checks, normalize the student's code and the reference code:
+
+```typescript
+function normalizeForComparison(code: string): string {
+  return code
+    .split('\n')
+    .map(line => line.trimEnd())          // remove trailing spaces
+    .join('\n')
+    .replace(/[ \t]+/g, ' ')                // collapse multiple spaces/tabs to one
+    .replace(/\n{3,}/g, '\n\n')             // collapse excessive blank lines
+    .trim();
+}
+```
+
+For YAML specifically: treat 2-space and 4-space indentation as equivalent IF the relative nesting structure matches (don't require exact space count, just consistent hierarchy).
+
+For Python: keep indentation requirement (it's syntactically meaningful) but allow tabs vs spaces interchangeably if consistent within the block.
+
+Apply this normalization BEFORE Level 1 and Level 2 checks run. Level 3 (Gemini) already handles semantic tolerance well — no change needed there.
+
+## Fix 2: Visual Diff on Rejection
+
+When Level 1 or Level 2 rejects, instead of only a text message, compute and show a line-by-line diff between student code and the reference/expected pattern.
+
+### Backend
+
+Use a simple diff algorithm (e.g., `diff` npm package or custom line comparison) to produce:
+
+```typescript
+interface DiffResult {
+  lines: {
+    lineNumber: number;
+    studentContent: string;
+    status: 'match' | 'mismatch' | 'missing' | 'extra';
+    hint?: string; // e.g., "تأكد ما في مسافة زايدة بالأول"
+  }[];
+}
+```
+
+### Frontend Display
+
+Replace the current plain-text error with a side-by-side or inline diff view:
+
+```
+┌─────────────────────────────────────────┐
+│ راجع هالأسطر:                            │
+│                                           │
+│  ٣  intl: ^0.18.0          🔴            │
+│     ↑ فيه مسافة زايدة بالبداية، احذفها    │
+│                                           │
+│  ٢  provider: ^6.0.0       🟢 صح         │
+└─────────────────────────────────────────┘
+```
+
+Styling:
+- 🟢 Matching lines: subtle green left-border, no distraction
+- 🔴 Mismatched lines: amber/red left-border + inline hint directly under that line
+- Missing lines: show as ghost/dashed placeholder with "ناقص هون: ..."
+- Keep it compact — don't overwhelm, only highlight problem lines plus 1 line of context above/below
+
+## Fix 3: Live Inline Feedback While Typing (lightweight)
+
+As the student types in the Touch 4 editor, run ONLY Level 1 (syntax) checks client-side on debounce (500ms after typing stops) — no API call, no cost.
+
+- Balanced brackets/quotes → normal
+- Obvious indentation break (Python/YAML) → subtle red underline on that line, no popup, no blocking
+
+This is a lightweight local check only, separate from the full submit validation. It should never block typing or submission — just a soft visual cue.
+
+## What NOT to Do
+- Do NOT remove Level 1/2/3 validation — only make comparison more tolerant of formatting
+- Do NOT change the Gemini Level 3 prompts
+- Do NOT modify other pages, Learning Path, Hints system, or Cumulative Project logic
+- Do NOT make Python indentation fully optional — it's syntactically required, just tolerant of tabs/spaces consistency
+
+## Testing
+- [ ] Extra/missing trailing spaces no longer cause rejection
+- [ ] YAML with 2-space vs 4-space (consistent) both pass
+- [ ] Python with wrong indentation still correctly rejected (it's a real error)
+- [ ] Diff view shows exact problem line with inline hint
+- [ ] Live typing shows subtle red underline on broken syntax, doesn't block typing
+- [ ] Correct code still passes and shows green across all lines
+
+## Cost & Time
+- Extended Thinking: Yes (touches validation logic carefully)
+- Time: 30-40 minutes
+- Cost: $8-10

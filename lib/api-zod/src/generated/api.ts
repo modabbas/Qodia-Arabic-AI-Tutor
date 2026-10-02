@@ -989,6 +989,9 @@ export const getProjectStructureResponseFilesItemBuildValidationScoreMax = 100;
 export const getProjectStructureResponseFilesItemBuildValidationSuggestionsMax = 3;
 
 
+export const getProjectStructureResponseFilesItemBuildValidationDiffLinesMax = 80;
+
+
 
 export const GetProjectStructureResponse = zod.object({
   "project_name": zod.string(),
@@ -1014,7 +1017,16 @@ export const GetProjectStructureResponse = zod.object({
   "hint_ar": zod.string().optional(),
   "suggestions": zod.array(zod.string()).max(getProjectStructureResponseFilesItemBuildValidationSuggestionsMax),
   "can_retry": zod.boolean(),
-  "semantic_status": zod.enum(['not_run', 'checked', 'unavailable'])
+  "semantic_status": zod.enum(['not_run', 'checked', 'unavailable']),
+  "diff": zod.object({
+  "truncated": zod.boolean(),
+  "lines": zod.array(zod.object({
+  "lineNumber": zod.number().int().min(1),
+  "studentContent": zod.string(),
+  "status": zod.enum(['match', 'mismatch', 'missing', 'extra']),
+  "hint": zod.string().optional()
+})).max(getProjectStructureResponseFilesItemBuildValidationDiffLinesMax)
+}).optional()
 }).optional()
 }))
 })
@@ -1084,6 +1096,9 @@ export const saveProjectFileResponseBuildValidationScoreMax = 100;
 export const saveProjectFileResponseBuildValidationSuggestionsMax = 3;
 
 
+export const saveProjectFileResponseBuildValidationDiffLinesMax = 80;
+
+
 
 export const SaveProjectFileResponse = zod.object({
   "path": zod.string().min(1).max(saveProjectFileResponsePathMax).regex(saveProjectFileResponsePathRegExp),
@@ -1102,7 +1117,16 @@ export const SaveProjectFileResponse = zod.object({
   "hint_ar": zod.string().optional(),
   "suggestions": zod.array(zod.string()).max(saveProjectFileResponseBuildValidationSuggestionsMax),
   "can_retry": zod.boolean(),
-  "semantic_status": zod.enum(['not_run', 'checked', 'unavailable'])
+  "semantic_status": zod.enum(['not_run', 'checked', 'unavailable']),
+  "diff": zod.object({
+  "truncated": zod.boolean(),
+  "lines": zod.array(zod.object({
+  "lineNumber": zod.number().int().min(1),
+  "studentContent": zod.string(),
+  "status": zod.enum(['match', 'mismatch', 'missing', 'extra']),
+  "hint": zod.string().optional()
+})).max(saveProjectFileResponseBuildValidationDiffLinesMax)
+}).optional()
 }).optional()
 })
 

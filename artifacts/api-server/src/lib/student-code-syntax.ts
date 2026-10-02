@@ -4,7 +4,7 @@ import { extname } from "node:path";
 import { transform } from "esbuild";
 import { parseDocument } from "yaml";
 
-export type Check = { pass: boolean; reason?: string };
+export type Check = { pass: boolean; reason?: string; lineNumber?: number };
 
 // A lexer, not a compiler: comments/quoted text cannot masquerade as executable
 // widget structure. Preserve offsets so balanced-call inspection stays safe.
@@ -17,7 +17,7 @@ export function codeEvidence(code: string, python = false, keepStrings = false, 
       result += " ".repeat(next - i); i = next;
     } else if (code.startsWith("/*", i)) {
       const end = code.indexOf("*/", i + 2);
-      if (end < 0) throw new Error("unterminated_comment");
+      if (end < 0) throw Object.assign(new Error("unterminated_comment"), { lineNumber: code.slice(0, i).split("\n").length });
       const next = end < 0 ? code.length : end + 2;
       result += code.slice(i, next).replace(/[^\n]/g, " "); i = next;
     } else if (javascript && code[i] === "/" &&
@@ -44,7 +44,7 @@ export function codeEvidence(code: string, python = false, keepStrings = false, 
         if (code.startsWith(delimiter, i)) { i += delimiter.length; closed = true; break; }
         i++;
       }
-      if (!closed) throw new Error("unterminated_string");
+      if (!closed) throw Object.assign(new Error("unterminated_string"), { lineNumber: code.slice(0, start).split("\n").length });
       const text = code.slice(start, i);
       result += keepStrings ? text : text.replace(/[^\n]/g, " ");
     } else { result += code[i]; i++; }
@@ -53,15 +53,17 @@ export function codeEvidence(code: string, python = false, keepStrings = false, 
 }
 
 function balanced(code: string): Check {
-  const stack: string[] = [];
+  const stack: { char: string; line: number }[] = [];
+  let line = 1;
   const pairs: Record<string, string> = { ")": "(", "]": "[", "}": "{" };
   for (const character of code) {
-    if ("([{".includes(character)) stack.push(character);
-    else if (")]}".includes(character) && stack.pop() !== pairs[character]) {
-      return { pass: false, reason: "الأقواس مو متوازنة أو ترتيبها مو صحيح. راجع مكان فتحها وإغلاقها." };
+    if (character === "\n") line++;
+    if ("([{".includes(character)) stack.push({ char: character, line });
+    else if (")]}".includes(character) && stack.pop()?.char !== pairs[character]) {
+      return { pass: false, lineNumber: line, reason: "الأقواس مو متوازنة أو ترتيبها مو صحيح. راجع مكان فتحها وإغلاقها." };
     }
   }
-  return stack.length ? { pass: false, reason: "في قوس مفتوح لسه ما سكّرته. راجع الأقواس وجرب مرة ثانية." } : { pass: true };
+  return stack.length ? { pass: false, lineNumber: stack[stack.length - 1].line, reason: "في قوس مفتوح لسه ما سكّرته. راجع الأقواس وجرب مرة ثانية." } : { pass: true };
 }
 
 export async function syntaxCheck(code: string, techStack: string, targetFile: string): Promise<Check> {
@@ -70,7 +72,9 @@ export async function syntaxCheck(code: string, techStack: string, targetFile: s
   try {
     if (extension === ".yaml" || extension === ".yml") {
       const document = parseDocument(code, { uniqueKeys: true });
-      if (document.errors.length) return { pass: false, reason: "صياغة YAML مو جاهزة. راجع المسافات والنقطتين بعد أسماء الحقول." };
+      if (document.errors.length) return { pass: false,
+        lineNumber: code.slice(0, document.errors[0].pos[0]).split("\n").length,
+        reason: "صياغة YAML مو جاهزة. راجع المسافات والنقطتين بعد أسماء الحقول." };
       const data: unknown = document.toJS({ maxAliasCount: 20 });
       if (!data || typeof data !== "object" || Array.isArray(data)) {
         return { pass: false, reason: "ملف الإعدادات يحتاج حقول وقيم فعلية، مو قائمة كلمات." };
@@ -116,8 +120,15 @@ export async function syntaxCheck(code: string, techStack: string, targetFile: s
     }
     if (/=\s*;|,\s*,/.test(evidence)) return { pass: false, reason: "في تعليمة ناقصة. راجع القيم والفواصل بالمقطع اللي كتبته." };
     return { pass: true };
-  } catch {
-    return { pass: false, reason: techStack === "Django"
+  } catch (error) {
+    const details = error as { stderr?: string; message?: string; lineNumber?: number; errors?: { location?: { line?: number } }[] };
+    const pythonLine = /line (\d+)/.exec(details.stderr ?? "");
+    return { pass: false, lineNumber: details.lineNumber ?? details.errors?.[0]?.location?.line
+      ?? (pythonLine ? Number(pythonLine[1]) : undefined), reason: details.message === "unterminated_string"
+      ? "النص بهالسطر مفتوح. سكّر علامة الاقتباس اللي بدأت فيها."
+      : details.message === "unterminated_comment"
+      ? "التعليق بهالسطر مفتوح. سكّره بعلامة */."
+      : techStack === "Django"
       ? "الصياغة مو جاهزة. راجع المسافات البادئة والنقطتين : والأقواس."
       : "الصياغة مو جاهزة. راجع التعريفات والأقواس والقيم الناقصة وجرب من جديد." };
   }

@@ -16,3 +16,11 @@ The user confirmed: â€œThat system WORKS CORRECTLY and should NOT be modified.â€
 **Why:** The user explicitly confirmed the three-level implementation and required it to remain intact while adding learning support.
 
 **How to apply:** Keep hint unlocking, reference-answer access, and their XP adjustments separate from the existing checks and acceptance rules. Assistance does not bypass code validation.
+
+## Formatting tolerance and diagnostic feedback
+
+The user permits formatting tolerance, compact rejection diffs, and 500ms local syntax cues on top of the existing three levels. Do not rebuild the validator or change Gemini Level 3 prompts, learning-path behavior, hints/XP rules, or cumulative-project logic.
+
+**Why:** Harmless formatting rejections discourage students, but whitespace inside strings and Python/YAML nesting can change what their code means.
+
+**How to apply:** Native parsers retain meaningful source whitespace; canonical whitespace is only a comparison view. Preserve raw submitted/saved code and actual indentation errors. YAML indentation widths may vary while nesting remains equivalent; Python consistent tabs/spaces remain subject to its parser. Diff feedback is diagnostic, never an exact-reference acceptance gate, and must not reveal gated solution lines. Live cues stay local, debounced, and non-blocking.

@@ -5,6 +5,7 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+import type { CodeDiffResult } from './codeDiffResult';
 import type { CodeValidationResultSemanticStatus } from './codeValidationResultSemanticStatus';
 
 export interface CodeValidationResult {
@@ -26,4 +27,5 @@ export interface CodeValidationResult {
   suggestions: string[];
   can_retry: boolean;
   semantic_status: CodeValidationResultSemanticStatus;
+  diff?: CodeDiffResult;
 }

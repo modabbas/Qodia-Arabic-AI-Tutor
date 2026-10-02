@@ -3,6 +3,7 @@ import type { Request } from "express";
 import type { CodeValidationResult } from "@workspace/api-zod";
 import { syntaxCheck } from "./student-code-syntax.ts";
 import { structureCheck, type BuildTask } from "./student-code-structure.ts";
+import { codeDiff, normalizeForChecks } from "./student-code-comparison.ts";
 
 export type SemanticAssessment = {
   is_valid: boolean;
@@ -89,16 +90,24 @@ export async function validateStudentCode(
     }, "Student code validation finished");
     return result;
   };
-  const syntax = await syntaxCheck(input.code, input.techStack, input.task.target_file);
+  const checkCode = normalizeForChecks(input.code);
+  const checkTask = { ...input.task, starter_code: normalizeForChecks(input.task.starter_code),
+    reference_solution: input.task.reference_solution ? normalizeForChecks(input.task.reference_solution) : undefined };
+  const diff = (reason: string, line?: number) => codeDiff(input.code,
+    checkTask.reference_solution || checkTask.starter_code, input.task.target_file, reason, line,
+    input.task.expected_keywords);
+  const syntax = await syntaxCheck(checkCode, input.techStack, input.task.target_file);
   if (!syntax.pass) return report({
     valid: false, level: 1, score: null, feedback_ar: syntax.reason!,
     suggestions: [], can_retry: true, semantic_status: "not_run",
+    diff: diff(syntax.reason!, syntax.lineNumber),
   });
-  const structure = structureCheck(input.code, input.concept, input.task, input.techStack);
+  const structure = structureCheck(checkCode, input.concept, checkTask, input.techStack);
   if (!structure.pass) return report({
     valid: false, level: 2, score: null, feedback_ar: structure.reason!,
     hint_ar: "راجع كود البداية وشوف المعاملات والأجزاء المطلوبة.",
     suggestions: [], can_retry: true, semantic_status: "not_run",
+    diff: diff(structure.reason!),
   });
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;

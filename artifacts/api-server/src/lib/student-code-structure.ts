@@ -1,5 +1,6 @@
 import { codeEvidence, type Check } from "./student-code-syntax.ts";
 import { parseDocument } from "yaml";
+import { normalizeForComparison } from "./student-code-comparison.ts";
 
 export type BuildTask = {
   task_description: string;
@@ -7,6 +8,7 @@ export type BuildTask = {
   expected_keywords: string[];
   target_file: string;
   existing_content: string;
+  reference_solution?: string;
   validation?: {
     level2_rules: { pattern: string; error_if_missing: string }[];
     level3_question: string;
@@ -44,7 +46,23 @@ export function structureCheck(code: string, concept: string, task: BuildTask, t
   const stringsAllowed = (yaml ? JSON.stringify(parseDocument(code).toJS({ maxAliasCount: 20 }))
     : json ? JSON.stringify(JSON.parse(code))
     : codeEvidence(code, techStack === "Django", true, javascript)).toLowerCase();
-  const missing = task.expected_keywords.filter((keyword) => !stringsAllowed.includes(keyword.toLowerCase()));
+  const normalizedEvidence = normalizeForComparison(stringsAllowed);
+  const missing = task.expected_keywords.filter((keyword) => {
+    if (stringsAllowed.includes(keyword.toLowerCase())
+      || normalizedEvidence.includes(normalizeForComparison(keyword.toLowerCase()))) return false;
+    // A YAML key/value requirement must match parsed data, not a comment or an
+    // exact spelling of spaces around ":".
+    if (yaml && /^\s*[\w-]+\s*:/.test(keyword)) {
+      try {
+        const fragment = parseDocument(keyword).toJS({ maxAliasCount: 20 });
+        if (fragment && typeof fragment === "object" && !Array.isArray(fragment)) {
+          return !Object.entries(fragment).every(([key, value]) =>
+            stringsAllowed.includes(`${JSON.stringify(key).toLowerCase()}:${JSON.stringify(value).toLowerCase()}`));
+        }
+      } catch { /* normal mandatory keyword check below */ }
+    }
+    return true;
+  });
   if (missing.length) return { pass: false, reason: `قريب! تأكد من تطبيق العناصر المطلوبة: ${missing.join("، ")}. راجع كود البداية.` };
   for (const widget of ["StreamBuilder", "FutureBuilder"]) {
     if (!`${concept} ${task.expected_keywords.join(" ")}`.includes(widget)) continue;

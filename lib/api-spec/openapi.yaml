@@ -1237,6 +1237,26 @@ components:
         suggestions: { type: array, maxItems: 3, items: { type: string } }
         can_retry: { type: boolean }
         semantic_status: { type: string, enum: [not_run, checked, unavailable] }
+        diff:
+          $ref: "#/components/schemas/CodeDiffResult"
+    CodeDiffResult:
+      type: object
+      required: [lines, truncated]
+      properties:
+        truncated: { type: boolean }
+        lines:
+          type: array
+          maxItems: 80
+          items:
+            $ref: "#/components/schemas/CodeDiffLine"
+    CodeDiffLine:
+      type: object
+      required: [lineNumber, studentContent, status]
+      properties:
+        lineNumber: { type: integer, minimum: 1 }
+        studentContent: { type: string }
+        status: { type: string, enum: [match, mismatch, missing, extra] }
+        hint: { type: string }
     GeneratedTouch5:
       type: object
       additionalProperties: false

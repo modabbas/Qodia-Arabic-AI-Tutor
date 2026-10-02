@@ -18,6 +18,30 @@ export const CodeValidationResultSemanticStatus = {
   unavailable: 'unavailable',
 } as const;
 
+export type CodeDiffLineStatus = typeof CodeDiffLineStatus[keyof typeof CodeDiffLineStatus];
+
+
+export const CodeDiffLineStatus = {
+  match: 'match',
+  mismatch: 'mismatch',
+  missing: 'missing',
+  extra: 'extra',
+} as const;
+
+export interface CodeDiffLine {
+  /** @minimum 1 */
+  lineNumber: number;
+  studentContent: string;
+  status: CodeDiffLineStatus;
+  hint?: string;
+}
+
+export interface CodeDiffResult {
+  truncated: boolean;
+  /** @maxItems 80 */
+  lines: CodeDiffLine[];
+}
+
 export interface CodeValidationResult {
   valid: boolean;
   /**
@@ -37,6 +61,7 @@ export interface CodeValidationResult {
   suggestions: string[];
   can_retry: boolean;
   semantic_status: CodeValidationResultSemanticStatus;
+  diff?: CodeDiffResult;
 }
 
 export interface ErrorResponse {
