@@ -169,6 +169,8 @@
 .btn:hover:not(:disabled),.chip:hover:not(:disabled),.moodbtn:hover{transform:scale(1.03)}
 .ring.urgent1{animation:breathe 1s cubic-bezier(.4,0,.2,1) infinite}.ring.urgent2{animation:breathe .5s cubic-bezier(.4,0,.2,1) infinite}
 @keyframes breathe{50%{transform:scale(1.1)}}
+.checkingSpinner{display:inline-block;vertical-align:middle;margin-inline-end:6px;animation:checkSpin 1s linear infinite}
+@keyframes checkSpin{to{transform:rotate(360deg)}}
 .top{padding-inline-start:54px}
 .sound{position:absolute;inset-inline-start:18px;top:50%;transform:translateY(-50%)}
 @media(max-width:600px){.top{padding-inline-start:46px}.sound{inset-inline-start:14px}}

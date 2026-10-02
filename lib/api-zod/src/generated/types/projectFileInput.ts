@@ -21,4 +21,9 @@ export interface ProjectFileInput {
      */
   concept_name_en: string;
   lesson_id?: string;
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
+  attempt_number?: number;
 }

@@ -1,4 +1,6 @@
 import { Router, type IRouter } from "express";
+import { GetGeneratedSessionResponse } from "@workspace/api-zod";
+import { validateStudentCode } from "../lib/student-code-validation";
 import { and, desc, eq, sql } from "drizzle-orm";
 import {
   db,
@@ -226,7 +228,7 @@ router.post("/save-file", async (req, res): Promise<void> => {
   if (!user) return;
   const parsed = SaveProjectFileBody.safeParse(req.body);
   if (!parsed.success || !parsed.data.file_path.trim() || !parsed.data.concept_name_en.trim()
-    || !parsed.data.content.trim() || Buffer.byteLength(parsed.data.content, "utf8") > 30_720) {
+    || Buffer.byteLength(parsed.data.content, "utf8") > 30_720) {
     res.status(400).json({ error: "مسار الملف أو محتواه غير صالح." });
     return;
   }
@@ -239,6 +241,40 @@ router.post("/save-file", async (req, res): Promise<void> => {
   const planned = plan.files.find((file) => file.path === parsed.data.file_path);
   if (!planned) {
     res.status(400).json({ error: "هذا المسار غير موجود في خطة المشروع." });
+    return;
+  }
+  // Validate before opening the save transaction; never hold row locks while
+  // waiting on Gemini. Recheck ownership/lesson identity inside the transaction.
+  const validationCaches = await db.select().from(generatedSessionsTable)
+    .where(eq(generatedSessionsTable.userId, user.id))
+    .orderBy(desc(generatedSessionsTable.updatedAt));
+  const validationProgress = await db.select({
+    userId: sessionsTable.userId,
+    lessonId: sessionsTable.lessonId,
+    touchesCompleted: sessionsTable.touchesCompleted,
+  }).from(sessionsTable).where(eq(sessionsTable.userId, user.id));
+  const validationCache = parsed.data.lesson_id
+    ? findOwnedUnfinishedLessonById(validationCaches, validationProgress, user.id, parsed.data.lesson_id)
+    : selectOwnedUnfinishedLesson(validationCaches, validationProgress, user.id);
+  const ownedSession = GetGeneratedSessionResponse.safeParse(validationCache?.payload);
+  if (!ownedSession.success || !ownedSession.data.lesson_id
+    || ownedSession.data.concept_name_en !== parsed.data.concept_name_en
+    || ownedSession.data.touch4_build.target_file !== parsed.data.file_path) {
+    res.status(409).json({ error: "المهمة تغيرت أو اكتملت. أعد تحميل جلستك قبل ما تحفظ." });
+    return;
+  }
+  req.log.info({
+    step: "touch4_attempt", concept_id: ownedSession.data.concept_id,
+    attempt_number: parsed.data.attempt_number ?? null,
+  }, "Student submitted code for progressive validation");
+  const buildValidation = await validateStudentCode({
+    code: parsed.data.content,
+    techStack: user.techStack,
+    concept: ownedSession.data.concept_name_en,
+    task: ownedSession.data.touch4_build,
+  }, req);
+  if (!buildValidation.valid) {
+    res.status(422).json({ error: buildValidation.feedback_ar, validation: buildValidation });
     return;
   }
   let result: {
@@ -270,6 +306,8 @@ router.post("/save-file", async (req, res): Promise<void> => {
         || !lesson.lessonId
         || lesson.targetFile !== parsed.data.file_path
         || lesson.conceptNameEn !== parsed.data.concept_name_en
+        || lesson.lessonId !== ownedSession.data.lesson_id
+        || JSON.stringify(activeCache?.payload) !== JSON.stringify(validationCache?.payload)
       ) throw new Error("PROJECT_FILE_CONFLICT");
 
       const [map] = await tx.select().from(learningMapsTable)
@@ -440,6 +478,7 @@ router.post("/save-file", async (req, res): Promise<void> => {
     session_id: result.sessionId,
     content: result.content,
     is_review: result.isReview,
+    build_validation: buildValidation,
   }));
 });
 

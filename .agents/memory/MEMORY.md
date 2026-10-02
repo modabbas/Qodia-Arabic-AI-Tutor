@@ -5,3 +5,4 @@
 - [Kodia brand identifiers](kodia-brand-identifiers.md) — use كوديا/KODIA publicly; keep existing technical IDs stable to preserve accounts and routes.
 - [Session animation boundaries](session-animation-boundaries.md) — visual rewards must stay honest; animate decorative surfaces without continuously moving button targets.
 - [Learning-path integrity](learning-path-integrity.md) — preserve unfinished attempts across dates; use safe reinforcement and keep review mastery separate from source-file ownership.
+- [Touch 4 validation policy](touch4-validation-policy.md) — assessment outages may pass local checks, but must be labelled; negative assessments are not outage fallbacks.

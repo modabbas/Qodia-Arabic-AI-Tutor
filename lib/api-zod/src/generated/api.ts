@@ -518,6 +518,14 @@ export const getGeneratedSessionResponseTouch4BuildExistingContentMax = 30720;
 
 export const getGeneratedSessionResponseTouch4BuildIntegrationNoteMax = 700;
 
+export const getGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemPatternMax = 160;
+
+export const getGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemErrorIfMissingMax = 300;
+
+export const getGeneratedSessionResponseTouch4BuildValidationLevel2RulesMax = 8;
+
+export const getGeneratedSessionResponseTouch4BuildValidationLevel3QuestionMax = 500;
+
 export const getGeneratedSessionResponseTouch5DefendCommitteeQuestionMax = 700;
 
 export const getGeneratedSessionResponseTouch5DefendOptionsItemMax = 400;
@@ -594,7 +602,14 @@ export const GetGeneratedSessionResponse = zod.object({
   "target_file": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildTargetFileMax).regex(getGeneratedSessionResponseTouch4BuildTargetFileRegExp),
   "file_action": zod.enum(['create', 'modify']),
   "existing_content": zod.string().max(getGeneratedSessionResponseTouch4BuildExistingContentMax).describe('Existing file content for modify actions; empty for create actions.'),
-  "integration_note": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildIntegrationNoteMax)
+  "integration_note": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildIntegrationNoteMax),
+  "validation": zod.object({
+  "level2_rules": zod.array(zod.object({
+  "pattern": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemPatternMax),
+  "error_if_missing": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemErrorIfMissingMax)
+})).max(getGeneratedSessionResponseTouch4BuildValidationLevel2RulesMax),
+  "level3_question": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildValidationLevel3QuestionMax)
+}).optional()
 }),
   "touch5_defend": zod.object({
   "committee_question": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendCommitteeQuestionMax),
@@ -699,6 +714,14 @@ export const createGeneratedSessionResponseTouch4BuildExistingContentMax = 30720
 
 export const createGeneratedSessionResponseTouch4BuildIntegrationNoteMax = 700;
 
+export const createGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemPatternMax = 160;
+
+export const createGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemErrorIfMissingMax = 300;
+
+export const createGeneratedSessionResponseTouch4BuildValidationLevel2RulesMax = 8;
+
+export const createGeneratedSessionResponseTouch4BuildValidationLevel3QuestionMax = 500;
+
 export const createGeneratedSessionResponseTouch5DefendCommitteeQuestionMax = 700;
 
 export const createGeneratedSessionResponseTouch5DefendOptionsItemMax = 400;
@@ -775,7 +798,14 @@ export const CreateGeneratedSessionResponse = zod.object({
   "target_file": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildTargetFileMax).regex(createGeneratedSessionResponseTouch4BuildTargetFileRegExp),
   "file_action": zod.enum(['create', 'modify']),
   "existing_content": zod.string().max(createGeneratedSessionResponseTouch4BuildExistingContentMax).describe('Existing file content for modify actions; empty for create actions.'),
-  "integration_note": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildIntegrationNoteMax)
+  "integration_note": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildIntegrationNoteMax),
+  "validation": zod.object({
+  "level2_rules": zod.array(zod.object({
+  "pattern": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemPatternMax),
+  "error_if_missing": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildValidationLevel2RulesItemErrorIfMissingMax)
+})).max(createGeneratedSessionResponseTouch4BuildValidationLevel2RulesMax),
+  "level3_question": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildValidationLevel3QuestionMax)
+}).optional()
 }),
   "touch5_defend": zod.object({
   "committee_question": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendCommitteeQuestionMax),
@@ -807,6 +837,13 @@ export const getProjectStructureResponseFilesItemPathRegExp = new RegExp('^(?!.*
 
 export const getProjectStructureResponseFilesItemContentMax = 30720;
 
+export const getProjectStructureResponseFilesItemBuildValidationLevelMax = 3;
+
+export const getProjectStructureResponseFilesItemBuildValidationScoreMin = 0;
+export const getProjectStructureResponseFilesItemBuildValidationScoreMax = 100;
+
+export const getProjectStructureResponseFilesItemBuildValidationSuggestionsMax = 3;
+
 
 
 export const GetProjectStructureResponse = zod.object({
@@ -824,7 +861,17 @@ export const GetProjectStructureResponse = zod.object({
   "status": zod.enum(['complete', 'in_progress', 'planned']),
   "session_id": zod.string().nullable(),
   "content": zod.string().max(getProjectStructureResponseFilesItemContentMax).nullable().describe('File content is present only for files that have actually been saved.'),
-  "is_review": zod.boolean().optional()
+  "is_review": zod.boolean().optional(),
+  "build_validation": zod.object({
+  "valid": zod.boolean(),
+  "level": zod.number().int().min(1).max(getProjectStructureResponseFilesItemBuildValidationLevelMax),
+  "score": zod.number().int().min(getProjectStructureResponseFilesItemBuildValidationScoreMin).max(getProjectStructureResponseFilesItemBuildValidationScoreMax).nullable(),
+  "feedback_ar": zod.string(),
+  "hint_ar": zod.string().optional(),
+  "suggestions": zod.array(zod.string()).max(getProjectStructureResponseFilesItemBuildValidationSuggestionsMax),
+  "can_retry": zod.boolean(),
+  "semantic_status": zod.enum(['not_run', 'checked', 'unavailable'])
+}).optional()
 }))
 })
 
@@ -866,13 +913,16 @@ export const saveProjectFileBodyContentMax = 30720;
 
 export const saveProjectFileBodyConceptNameEnMax = 100;
 
+export const saveProjectFileBodyAttemptNumberMax = 10000;
+
 
 
 export const SaveProjectFileBody = zod.object({
   "file_path": zod.string().min(1).max(saveProjectFileBodyFilePathMax).regex(saveProjectFileBodyFilePathRegExp),
   "content": zod.string().max(saveProjectFileBodyContentMax),
   "concept_name_en": zod.string().min(1).max(saveProjectFileBodyConceptNameEnMax),
-  "lesson_id": zod.string().uuid().optional()
+  "lesson_id": zod.string().uuid().optional(),
+  "attempt_number": zod.number().int().min(1).max(saveProjectFileBodyAttemptNumberMax).optional()
 })
 
 export const saveProjectFileResponsePathMax = 240;
@@ -881,6 +931,13 @@ export const saveProjectFileResponsePathMax = 240;
 export const saveProjectFileResponsePathRegExp = new RegExp('^(?!.*(?:^|/)\\.\\.?(/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$');
 
 export const saveProjectFileResponseContentMax = 30720;
+
+export const saveProjectFileResponseBuildValidationLevelMax = 3;
+
+export const saveProjectFileResponseBuildValidationScoreMin = 0;
+export const saveProjectFileResponseBuildValidationScoreMax = 100;
+
+export const saveProjectFileResponseBuildValidationSuggestionsMax = 3;
 
 
 
@@ -892,7 +949,17 @@ export const SaveProjectFileResponse = zod.object({
   "status": zod.enum(['complete', 'in_progress', 'planned']),
   "session_id": zod.string().nullable(),
   "content": zod.string().max(saveProjectFileResponseContentMax).nullable().describe('File content is present only for files that have actually been saved.'),
-  "is_review": zod.boolean().optional()
+  "is_review": zod.boolean().optional(),
+  "build_validation": zod.object({
+  "valid": zod.boolean(),
+  "level": zod.number().int().min(1).max(saveProjectFileResponseBuildValidationLevelMax),
+  "score": zod.number().int().min(saveProjectFileResponseBuildValidationScoreMin).max(saveProjectFileResponseBuildValidationScoreMax).nullable(),
+  "feedback_ar": zod.string(),
+  "hint_ar": zod.string().optional(),
+  "suggestions": zod.array(zod.string()).max(saveProjectFileResponseBuildValidationSuggestionsMax),
+  "can_retry": zod.boolean(),
+  "semantic_status": zod.enum(['not_run', 'checked', 'unavailable'])
+}).optional()
 })
 
 

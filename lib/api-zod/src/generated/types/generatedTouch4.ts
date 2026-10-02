@@ -5,6 +5,7 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+import type { BuildValidation } from './buildValidation';
 import type { GeneratedTouch4FileAction } from './generatedTouch4FileAction';
 
 export interface GeneratedTouch4 {
@@ -57,4 +58,5 @@ export interface GeneratedTouch4 {
      * @maxLength 700
      */
   integration_note: string;
+  validation?: BuildValidation;
 }

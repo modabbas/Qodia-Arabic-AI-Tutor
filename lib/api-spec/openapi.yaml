@@ -431,6 +431,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProjectPlanFile"
+        "422":
+          description: Student code did not pass progressive validation; nothing saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: Not signed in
           content:
@@ -462,6 +468,8 @@ components:
       properties:
         error:
           type: string
+        validation:
+          $ref: "#/components/schemas/CodeValidationResult"
       required: [error]
     OkResponse:
       type: object
@@ -775,6 +783,8 @@ components:
           maxLength: 30720
           description: Existing file content for modify actions; empty for create actions.
         integration_note: { type: string, minLength: 1, maxLength: 700 }
+        validation:
+          $ref: "#/components/schemas/BuildValidation"
       required: [task_description, starter_code, expected_keywords, success_message, hint, code_placeholder, target_file, file_action, existing_content, integration_note]
     ProjectStructure:
       type: object
@@ -829,6 +839,8 @@ components:
           maxLength: 30720
           description: File content is present only for files that have actually been saved.
         is_review: { type: boolean }
+        build_validation:
+          $ref: "#/components/schemas/CodeValidationResult"
       required: [path, day, concept, description, status, session_id, content]
     ProjectFileInput:
       type: object
@@ -848,7 +860,39 @@ components:
         lesson_id:
           type: string
           format: uuid
+        attempt_number:
+          type: integer
+          minimum: 1
+          maximum: 10000
       required: [file_path, content, concept_name_en]
+    BuildValidation:
+      type: object
+      additionalProperties: false
+      required: [level2_rules, level3_question]
+      properties:
+        level2_rules:
+          type: array
+          maxItems: 8
+          items:
+            type: object
+            additionalProperties: false
+            required: [pattern, error_if_missing]
+            properties:
+              pattern: { type: string, minLength: 1, maxLength: 160 }
+              error_if_missing: { type: string, minLength: 1, maxLength: 300 }
+        level3_question: { type: string, minLength: 1, maxLength: 500 }
+    CodeValidationResult:
+      type: object
+      required: [valid, level, score, feedback_ar, suggestions, can_retry, semantic_status]
+      properties:
+        valid: { type: boolean }
+        level: { type: integer, minimum: 1, maximum: 3 }
+        score: { type: ["integer", "null"], minimum: 0, maximum: 100 }
+        feedback_ar: { type: string }
+        hint_ar: { type: string }
+        suggestions: { type: array, maxItems: 3, items: { type: string } }
+        can_retry: { type: boolean }
+        semantic_status: { type: string, enum: [not_run, checked, unavailable] }
     GeneratedTouch5:
       type: object
       additionalProperties: false

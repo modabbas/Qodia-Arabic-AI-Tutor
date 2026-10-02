@@ -9,8 +9,39 @@ export interface HealthStatus {
   status: string;
 }
 
+export type CodeValidationResultSemanticStatus = typeof CodeValidationResultSemanticStatus[keyof typeof CodeValidationResultSemanticStatus];
+
+
+export const CodeValidationResultSemanticStatus = {
+  not_run: 'not_run',
+  checked: 'checked',
+  unavailable: 'unavailable',
+} as const;
+
+export interface CodeValidationResult {
+  valid: boolean;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  level: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     * @nullable
+     */
+  score: number | null;
+  feedback_ar: string;
+  hint_ar?: string;
+  /** @maxItems 3 */
+  suggestions: string[];
+  can_retry: boolean;
+  semantic_status: CodeValidationResultSemanticStatus;
+}
+
 export interface ErrorResponse {
   error: string;
+  validation?: CodeValidationResult;
 }
 
 export interface OkResponse {
@@ -381,6 +412,29 @@ export const GeneratedTouch4FileAction = {
   modify: 'modify',
 } as const;
 
+export type BuildValidationLevel2RulesItem = {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  pattern: string;
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  error_if_missing: string;
+};
+
+export interface BuildValidation {
+  /** @maxItems 8 */
+  level2_rules: BuildValidationLevel2RulesItem[];
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  level3_question: string;
+}
+
 export interface GeneratedTouch4 {
   /**
      * @minLength 1
@@ -431,6 +485,7 @@ export interface GeneratedTouch4 {
      * @maxLength 700
      */
   integration_note: string;
+  validation?: BuildValidation;
 }
 
 export interface GeneratedTouch5 {
@@ -555,6 +610,7 @@ export interface ProjectPlanFile {
      */
   content: string | null;
   is_review?: boolean;
+  build_validation?: CodeValidationResult;
 }
 
 export interface ProjectStructure {
@@ -609,5 +665,10 @@ export interface ProjectFileInput {
      */
   concept_name_en: string;
   lesson_id?: string;
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
+  attempt_number?: number;
 }
 

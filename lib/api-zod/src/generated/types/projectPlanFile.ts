@@ -5,6 +5,7 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+import type { CodeValidationResult } from './codeValidationResult';
 import type { ProjectPlanFileStatus } from './projectPlanFileStatus';
 
 export interface ProjectPlanFile {
@@ -28,4 +29,5 @@ export interface ProjectPlanFile {
      */
   content: string | null;
   is_review?: boolean;
+  build_validation?: CodeValidationResult;
 }

@@ -105,7 +105,18 @@ const generatedSessionResponseSchema: Schema = objectSchema({
     file_action: { type: Type.STRING, format: "enum", enum: ["create", "modify"] },
     existing_content: { type: Type.STRING, maxLength: "30720" },
     integration_note: stringSchema(700),
-  }, ["task_description", "starter_code", "expected_keywords", "success_message", "hint", "code_placeholder", "target_file", "file_action", "existing_content", "integration_note"]),
+    validation: objectSchema({
+      level2_rules: {
+        type: Type.ARRAY,
+        maxItems: "8",
+        items: objectSchema({
+          pattern: stringSchema(160),
+          error_if_missing: stringSchema(300),
+        }, ["pattern", "error_if_missing"]),
+      },
+      level3_question: stringSchema(500),
+    }, ["level2_rules", "level3_question"]),
+  }, ["task_description", "starter_code", "expected_keywords", "success_message", "hint", "code_placeholder", "target_file", "file_action", "existing_content", "integration_note", "validation"]),
   touch5_defend: objectSchema({
     committee_question: stringSchema(700),
     options: stringArraySchema(3, 400),
@@ -407,6 +418,10 @@ async function requestFromGemini(
       file_action: buildContext.fileAction,
       existing_content: buildContext.existingContent,
       integration_note: "كيف يندمج هذا الملف في المشروع",
+      validation: {
+        level2_rules: [],
+        level3_question: "هل الكود يحقق المهمة ويستخدم المفهوم المختار بشكل صحيح؟",
+      },
     },
     touch5_defend: {
       committee_question: "سؤال لجنة مناقشة بالعربي",
@@ -431,6 +446,7 @@ async function requestFromGemini(
     "يجب أن تكون الأسئلة والتغذية الراجعة والشرح والمهمة والتلميح بالعربية الشامية/الخليجية البسيطة؛ الأسماء التقنية والكود تبقى بلغتها المعتادة.",
     "في touch4_build، اكتب مهمة قابلة للحل بكود متوافق مع التقنية وتنفذ المفهوم المختار نفسه داخل ملف next_file المحدد بالضبط. target_file وfile_action يجب أن يطابقا next_file وfile_action في بيانات المشروع حرفياً. existing_content يجب أن يطابق النص المرسل حرفياً؛ عند modify اشرح الحفاظ على الأجزاء الحالية والبناء عليها، وعند create اتركه فارغاً. integration_note يوضح كيف يتكامل الملف مع الخطة والملفات المكتملة. لا تختر ملفاً آخر ولا تختلق كوداً محفوظاً.",
     "يجب أن تذكر الشروح والأسئلة ومهمة البناء مصطلحاً تقنياً محدداً من اسم المفهوم المختار وأن تشرحه أو تطبقه فعلياً. ارفض استبدال الدرس بهدف الملف العام. اختر expected_keywords كمعرفات/كلمات تقنية لازمة للحل، واجعل كل كلمة منها مذكورة حرفياً في task_description أو starter_code أو hint. اجعل starter_code بداية قابلة للبناء وليست TODO-only، ولا تضع الحل الكامل فيه.",
+    "أضف touch4_build.validation: level2_rules لقواعد البنية اللازمة للحل وlevel3_question سؤال تقييم منطقي محدد للمهمة. pattern الآمن فقط اسم معرف ASCII (يمكن مع نقطة) أو اسم متبوع بـ \\s* ثم : أو = أو \\( أو [<(]. أمثلة: StreamBuilder\\s*[<(] وstream\\s*: وbuilder\\s*:. لا تستعمل بدائل أو تكرارات معقدة. error_if_missing توجيه عربي قصير. إن كانت المهمة إعدادات YAML/JSON فلا تفرض استدعاءات دوال.",
     "استعمل السكيما لتقييد أطوال النصوص: concept_name_en 100، concept_name_ar 140، intro 400؛ options نصوص حتى 300 في اللمسات 1-3 وحتى 400 في الدفاع؛ القيم 2-6؛ كلمات الحل 1-8 وكل واحدة حتى 80. أطوال بقية النصوص ملتزمة بقيود السكيما.",
     "يجب أن تكون source هي gemini. القيم الصحيحة متطابقة مع خياراتها وليست مجرد ضمن الحد الأقصى العام.",
     `الهيكل المطلوب (القيم أمثلة شكلية يجب استبدالها بمحتوى فعلي): ${JSON.stringify(outputSkeleton)}`,

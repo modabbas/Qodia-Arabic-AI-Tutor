@@ -5,7 +5,9 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+import type { CodeValidationResult } from './codeValidationResult';
 
 export interface ErrorResponse {
   error: string;
+  validation?: CodeValidationResult;
 }

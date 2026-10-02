@@ -7,6 +7,10 @@
  */
 
 export * from './authResponse';
+export * from './buildValidation';
+export * from './buildValidationLevel2RulesItem';
+export * from './codeValidationResult';
+export * from './codeValidationResultSemanticStatus';
 export * from './dashboard';
 export * from './errorResponse';
 export * from './generatedSession';
