@@ -7,6 +7,7 @@ import learningMapRouter from "./learning-map";
 import touch4SupportRouter from "./touch4-support";
 import defenseRouter from "./defense";
 import prideMomentRouter from "./pride-moment";
+import tryAnyFieldRouter from "./try-any-field";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(generatedSessionRouter);
 router.use(touch4SupportRouter);
 router.use(defenseRouter);
 router.use(prideMomentRouter);
+router.use(tryAnyFieldRouter);
 
 export default router;

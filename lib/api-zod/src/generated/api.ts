@@ -9,6 +9,157 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Generate a public ephemeral five-touch demonstration
+ */
+export const generateAnyFieldSessionBodyFieldMin = 2;
+export const generateAnyFieldSessionBodyFieldMax = 80;
+
+export const generateAnyFieldSessionBodyTopicMin = 2;
+export const generateAnyFieldSessionBodyTopicMax = 220;
+
+
+
+export const GenerateAnyFieldSessionBody = zod.object({
+  "field": zod.string().min(generateAnyFieldSessionBodyFieldMin).max(generateAnyFieldSessionBodyFieldMax),
+  "topic": zod.string().min(generateAnyFieldSessionBodyTopicMin).max(generateAnyFieldSessionBodyTopicMax)
+})
+
+export const generateAnyFieldSessionResponseTouch1ChallengeScenarioArMax = 1600;
+
+export const generateAnyFieldSessionResponseTouch1ChallengeQuestionArMax = 1000;
+
+export const generateAnyFieldSessionResponseTouch1ChallengeOptionsItemTextArMax = 600;
+
+export const generateAnyFieldSessionResponseTouch1ChallengeOptionsMin = 2;
+export const generateAnyFieldSessionResponseTouch1ChallengeOptionsMax = 4;
+
+export const generateAnyFieldSessionResponseTouch1ChallengeFeedbackArMax = 1200;
+
+export const generateAnyFieldSessionResponseTouch2RevealExplanationArMax = 2400;
+
+export const generateAnyFieldSessionResponseTouch2RevealQuestionArMax = 1000;
+
+export const generateAnyFieldSessionResponseTouch2RevealOptionsItemTextArMax = 600;
+
+export const generateAnyFieldSessionResponseTouch2RevealOptionsMin = 2;
+export const generateAnyFieldSessionResponseTouch2RevealOptionsMax = 4;
+
+export const generateAnyFieldSessionResponseTouch2RevealFeedbackArMax = 1200;
+
+export const generateAnyFieldSessionResponseTouch3ExploreScenarioArMax = 1600;
+
+export const generateAnyFieldSessionResponseTouch3ExploreQuestionArMax = 1000;
+
+export const generateAnyFieldSessionResponseTouch3ExploreOptionsItemTextArMax = 600;
+
+export const generateAnyFieldSessionResponseTouch3ExploreOptionsMin = 2;
+export const generateAnyFieldSessionResponseTouch3ExploreOptionsMax = 4;
+
+export const generateAnyFieldSessionResponseTouch3ExploreFeedbackArMax = 1200;
+
+export const generateAnyFieldSessionResponseTouch4AnalyzeInstructionArMax = 1200;
+
+export const generateAnyFieldSessionResponseTouch4AnalyzeItemsItemIdMax = 40;
+
+export const generateAnyFieldSessionResponseTouch4AnalyzeItemsItemTextArMax = 600;
+
+export const generateAnyFieldSessionResponseTouch4AnalyzeItemsItemOrderIndexMin = 0;
+export const generateAnyFieldSessionResponseTouch4AnalyzeItemsItemOrderIndexMax = 7;
+
+export const generateAnyFieldSessionResponseTouch4AnalyzeItemsMin = 2;
+export const generateAnyFieldSessionResponseTouch4AnalyzeItemsMax = 6;
+
+export const generateAnyFieldSessionResponseTouch4AnalyzeFeedbackArMax = 1200;
+
+export const generateAnyFieldSessionResponseTouch5DefendQuestionArMax = 1200;
+
+
+
+export const GenerateAnyFieldSessionResponse = zod.object({
+  "field": zod.string(),
+  "topic": zod.string(),
+  "source": zod.enum(['gemini']),
+  "touch1_challenge": zod.object({
+  "scenario_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch1ChallengeScenarioArMax),
+  "question_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch1ChallengeQuestionArMax),
+  "options": zod.array(zod.object({
+  "text_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch1ChallengeOptionsItemTextArMax),
+  "correct": zod.boolean()
+})).min(generateAnyFieldSessionResponseTouch1ChallengeOptionsMin).max(generateAnyFieldSessionResponseTouch1ChallengeOptionsMax),
+  "feedback_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch1ChallengeFeedbackArMax)
+}),
+  "touch2_reveal": zod.object({
+  "explanation_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch2RevealExplanationArMax),
+  "question_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch2RevealQuestionArMax),
+  "options": zod.array(zod.object({
+  "text_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch2RevealOptionsItemTextArMax),
+  "correct": zod.boolean()
+})).min(generateAnyFieldSessionResponseTouch2RevealOptionsMin).max(generateAnyFieldSessionResponseTouch2RevealOptionsMax),
+  "feedback_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch2RevealFeedbackArMax)
+}),
+  "touch3_explore": zod.object({
+  "scenario_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch3ExploreScenarioArMax),
+  "question_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch3ExploreQuestionArMax),
+  "options": zod.array(zod.object({
+  "text_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch3ExploreOptionsItemTextArMax),
+  "correct": zod.boolean()
+})).min(generateAnyFieldSessionResponseTouch3ExploreOptionsMin).max(generateAnyFieldSessionResponseTouch3ExploreOptionsMax),
+  "feedback_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch3ExploreFeedbackArMax)
+}),
+  "touch4_analyze": zod.object({
+  "task_type": zod.enum(['multiple_choice', 'order_steps']),
+  "instruction_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch4AnalyzeInstructionArMax),
+  "items": zod.array(zod.object({
+  "id": zod.string().min(1).max(generateAnyFieldSessionResponseTouch4AnalyzeItemsItemIdMax),
+  "text_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch4AnalyzeItemsItemTextArMax),
+  "correct": zod.boolean(),
+  "order_index": zod.number().int().min(generateAnyFieldSessionResponseTouch4AnalyzeItemsItemOrderIndexMin).max(generateAnyFieldSessionResponseTouch4AnalyzeItemsItemOrderIndexMax)
+})).min(generateAnyFieldSessionResponseTouch4AnalyzeItemsMin).max(generateAnyFieldSessionResponseTouch4AnalyzeItemsMax),
+  "feedback_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch4AnalyzeFeedbackArMax)
+}),
+  "touch5_defend": zod.object({
+  "question_ar": zod.string().min(1).max(generateAnyFieldSessionResponseTouch5DefendQuestionArMax)
+})
+})
+
+
+/**
+ * @summary Give a short ungraded reaction without saving an answer
+ */
+export const reactToAnyFieldAnswerBodyFieldMin = 2;
+export const reactToAnyFieldAnswerBodyFieldMax = 80;
+
+export const reactToAnyFieldAnswerBodyTopicMin = 2;
+export const reactToAnyFieldAnswerBodyTopicMax = 220;
+
+export const reactToAnyFieldAnswerBodyQuestionArMax = 1200;
+
+export const reactToAnyFieldAnswerBodyExplanationArMax = 2400;
+
+export const reactToAnyFieldAnswerBodyAnswerArMin = 2;
+export const reactToAnyFieldAnswerBodyAnswerArMax = 3000;
+
+
+
+export const ReactToAnyFieldAnswerBody = zod.object({
+  "field": zod.string().min(reactToAnyFieldAnswerBodyFieldMin).max(reactToAnyFieldAnswerBodyFieldMax),
+  "topic": zod.string().min(reactToAnyFieldAnswerBodyTopicMin).max(reactToAnyFieldAnswerBodyTopicMax),
+  "question_ar": zod.string().min(1).max(reactToAnyFieldAnswerBodyQuestionArMax),
+  "explanation_ar": zod.string().min(1).max(reactToAnyFieldAnswerBodyExplanationArMax),
+  "answer_ar": zod.string().min(reactToAnyFieldAnswerBodyAnswerArMin).max(reactToAnyFieldAnswerBodyAnswerArMax)
+})
+
+export const reactToAnyFieldAnswerResponseReactionArMax = 1200;
+
+
+
+export const ReactToAnyFieldAnswerResponse = zod.object({
+  "reaction_ar": zod.string().min(1).max(reactToAnyFieldAnswerResponseReactionArMax),
+  "source": zod.enum(['gemini'])
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

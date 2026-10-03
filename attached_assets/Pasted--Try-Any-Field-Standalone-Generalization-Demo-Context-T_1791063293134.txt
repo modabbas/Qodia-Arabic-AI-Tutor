@@ -1,0 +1,102 @@
+# "Try Any Field" — Standalone Generalization Demo
+
+## Context
+This is a NEW, STANDALONE page that proves the Five Touches methodology works beyond programming. It does NOT connect to Learning Path, Cumulative Project, Validation levels, Hints, or any student account system. It's a lightweight, self-contained interactive demo meant primarily for the landing page / live presentations to judges and investors — showing the underlying teaching methodology generalizes to any technical field.
+
+Reuses the existing Gemini API call pattern (same approach as /api/generate-session) but with a different, field-agnostic prompt. Visually matches Qodia's existing design system (same colors, fonts, card styles) so it feels native, not bolted-on.
+
+## Page: `/try-any-field`
+
+### Step 1: Field Selection
+
+```
+جرّب منهجية قودِيا بأي مجال
+
+[كروت اختيار، واحد لكل تخصص]
+🩺 طب بشري | 🏛️ هندسة معمارية | 🏗️ هندسة مدنية | 
+⚡ هندسة كهربائية | 🦷 طب أسنان | ✍️ مجال آخر (نص حر)
+```
+
+### Step 2: Topic Input
+
+After picking a field, show a text input with 2-3 clickable example topics per field (so judges can click instead of typing, for speed) plus a free-text option:
+
+```
+اكتب مفهوم من {field}، أو اختار:
+[مثال 1] [مثال 2] [مثال 3]
+
+[__________________________] [ابدأ]
+```
+
+Example topics per field (hardcode these as quick-click suggestions, Gemini still generates the full session regardless of whether student clicked an example or typed their own):
+- طب بشري: التهاب الزائدة الدودية / قراءة تخطيط القلب / الصدمة التأقية
+- هندسة معمارية: توزيع الأحمال بالمبنى / التهوية الطبيعية / معايير إمكانية الوصول
+- هندسة مدنية: مقاومة الخرسانة / تصميم الأساسات / الصرف الصحي
+- هندسة كهربائية: الدارات المتوازية والمتسلسلة / الحماية من التماس الكهربائي / محولات الجهد
+- طب أسنان: تسوس الأسنان العميق / علاج العصب / زراعة الأسنان
+
+### Step 3: Gemini generates a 5-touch mini-session
+
+Call Gemini (same API pattern/key as existing session generation) with this prompt:
+
+```
+أنت مشرف تعليمي خبير بمجال {field}. ولّد جلسة تعليمية قصيرة بطريقة 
+"الخمس لمسات" حول موضوع: {topic}
+
+اللمسات:
+1. استفزاز: سيناريو واقعي قصير يطرح مشكلة تتعلق بالموضوع، يخلق فضول
+2. كشف: شرح المفهوم الأساسي بوضوح وإيجاز (3-4 جمل)
+3. استكشاف: سيناريو ثانٍ مشابه، يطبق فيه الطالب الفهم (سؤال اختيار من متعدد)
+4. تحليل: مهمة قصيرة تناسب طبيعة المجال — في الطب: ترتيب خطوات تشخيص 
+   أو اختيار تصرف صحيح؛ بالهندسة: ترتيب خطوات حل أو اختيار القيمة الصحيحة 
+   من معادلة؛ لا تطلب كتابة كود أبداً — المهمة تكون اختيار من متعدد أو 
+   ترتيب عناصر (drag-order style)، ليست كتابة حرة
+5. دفاع: سؤال "ليش اخترت هيك ومش غيره؟" يحاكي سؤال لجنة امتحان
+
+أرجع JSON:
+{
+  "touch1_challenge": { "scenario_ar": "...", "question_ar": "..." },
+  "touch2_reveal": { "explanation_ar": "..." },
+  "touch3_explore": { 
+    "scenario_ar": "...", 
+    "options": [{"text_ar": "...", "correct": true/false}, ...] 
+  },
+  "touch4_analyze": {
+    "task_type": "multiple_choice | order_steps",
+    "instruction_ar": "...",
+    "items": [...] 
+  },
+  "touch5_defend": { "question_ar": "..." }
+}
+
+اللغة: عربية بسيطة وواضحة، مناسبة لطالب جامعي بهالتخصص.
+```
+
+### Step 4: Interactive Walkthrough UI
+
+Present the 5 touches using Qodia's EXISTING visual components/styling (same card design, progress bar, color scheme as the real session page) but as a simplified, lighter-weight flow:
+- Touch 1-3: same interactive card style as the real session (read scenario, answer multiple choice, instant feedback)
+- Touch 4: either multiple-choice selection OR a simple drag-to-order interaction (reuse the drag-order component already built for Touch 4 in the main product if feasible, applied here with the field-specific items)
+- Touch 5: text input for a free-form answer, with a brief Gemini-generated reaction afterward (reuse the same lightweight evaluation pattern, no formal scoring needed — just a short encouraging/insightful reply)
+
+At the end, show a simple completion message and a prominent CTA: "جرّب Qodia الحقيقية لمشروع تخرجك →" linking to the actual signup/onboarding flow.
+
+## What NOT to Do
+- Do NOT connect this to Learning Path, Cumulative Project, user accounts, XP, or Hints systems — fully standalone
+- Do NOT persist any data from this demo (no database writes needed — purely ephemeral, in-memory for the session duration)
+- Do NOT touch any existing page, component, or API route used by the real student flow — build this as new, isolated files
+- Do NOT require login/signup to use this page — must be fully open/public for quick demoing
+
+## Testing
+- [ ] All 5 fields selectable, each shows relevant example topics
+- [ ] Free-text topic entry works for any field including "مجال آخر"
+- [ ] Gemini generates a coherent, field-appropriate 5-touch session for each field tested
+- [ ] Touch 4 correctly adapts interaction type (multiple-choice or drag-order) per Gemini's task_type response
+- [ ] Visual style matches the main Qodia product (not a mismatched/generic look)
+- [ ] No impact on any existing page or system — fully isolated
+- [ ] Works without login
+
+## Cost & Time
+- Extended Thinking: recommended (new page + field-agnostic prompt engineering + reusing existing UI components in a new context)
+- Time: 30-40 minutes
+- Cost: $10-14

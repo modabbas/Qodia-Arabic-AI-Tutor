@@ -6,6 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './anyFieldAnalysis';
+export * from './anyFieldAnalysisTaskType';
+export * from './anyFieldAnswerInput';
+export * from './anyFieldChallenge';
+export * from './anyFieldDefense';
+export * from './anyFieldInput';
+export * from './anyFieldOption';
+export * from './anyFieldReaction';
+export * from './anyFieldReactionSource';
+export * from './anyFieldReveal';
+export * from './anyFieldSession';
+export * from './anyFieldSessionSource';
+export * from './anyFieldTaskItem';
 export * from './authResponse';
 export * from './buildValidation';
 export * from './buildValidationLevel2RulesItem';

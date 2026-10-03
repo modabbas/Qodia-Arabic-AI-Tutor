@@ -17,6 +17,54 @@ tags:
   - name: defense
     description: Final-defense simulations and readiness summaries
 paths:
+  /try-any-field/session:
+    post:
+      operationId: generateAnyFieldSession
+      tags: [demo]
+      summary: Generate a public ephemeral five-touch demonstration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnyFieldInput"
+      responses:
+        "200":
+          description: Generated demonstration, never saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnyFieldSession"
+        "400":
+          description: Invalid field or topic
+        "429":
+          description: Public demo request limit reached
+        "503":
+          description: Generation unavailable; retry without losing input
+  /try-any-field/reaction:
+    post:
+      operationId: reactToAnyFieldAnswer
+      tags: [demo]
+      summary: Give a short ungraded reaction without saving an answer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnyFieldAnswerInput"
+      responses:
+        "200":
+          description: A real Gemini reaction without a score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnyFieldReaction"
+        "400":
+          description: Invalid answer
+        "429":
+          description: Public demo request limit reached
+        "503":
+          description: Feedback temporarily unavailable
   /healthz:
     get:
       operationId: healthCheck
@@ -801,6 +849,94 @@ paths:
               schema: { $ref: "#/components/schemas/ErrorResponse" }
 components:
   schemas:
+    AnyFieldInput:
+      type: object
+      required: [field, topic]
+      properties:
+        field: { type: string, minLength: 2, maxLength: 80 }
+        topic: { type: string, minLength: 2, maxLength: 220 }
+    AnyFieldOption:
+      type: object
+      required: [text_ar, correct]
+      properties:
+        text_ar: { type: string, minLength: 1, maxLength: 600 }
+        correct: { type: boolean }
+    AnyFieldTaskItem:
+      type: object
+      required: [id, text_ar, correct, order_index]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 40 }
+        text_ar: { type: string, minLength: 1, maxLength: 600 }
+        correct: { type: boolean }
+        order_index: { type: integer, minimum: 0, maximum: 7 }
+    AnyFieldChallenge:
+      type: object
+      required: [scenario_ar, question_ar, options, feedback_ar]
+      properties:
+        scenario_ar: { type: string, minLength: 1, maxLength: 1600 }
+        question_ar: { type: string, minLength: 1, maxLength: 1000 }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 4
+          items: { $ref: "#/components/schemas/AnyFieldOption" }
+        feedback_ar: { type: string, minLength: 1, maxLength: 1200 }
+    AnyFieldReveal:
+      type: object
+      required: [explanation_ar, question_ar, options, feedback_ar]
+      properties:
+        explanation_ar: { type: string, minLength: 1, maxLength: 2400 }
+        question_ar: { type: string, minLength: 1, maxLength: 1000 }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 4
+          items: { $ref: "#/components/schemas/AnyFieldOption" }
+        feedback_ar: { type: string, minLength: 1, maxLength: 1200 }
+    AnyFieldAnalysis:
+      type: object
+      required: [task_type, instruction_ar, items, feedback_ar]
+      properties:
+        task_type: { type: string, enum: [multiple_choice, order_steps] }
+        instruction_ar: { type: string, minLength: 1, maxLength: 1200 }
+        items:
+          type: array
+          minItems: 2
+          maxItems: 6
+          items: { $ref: "#/components/schemas/AnyFieldTaskItem" }
+        feedback_ar: { type: string, minLength: 1, maxLength: 1200 }
+    AnyFieldDefense:
+      type: object
+      required: [question_ar]
+      properties:
+        question_ar: { type: string, minLength: 1, maxLength: 1200 }
+    AnyFieldSession:
+      type: object
+      required: [field, topic, source, touch1_challenge, touch2_reveal, touch3_explore, touch4_analyze, touch5_defend]
+      properties:
+        field: { type: string }
+        topic: { type: string }
+        source: { type: string, enum: [gemini] }
+        touch1_challenge: { $ref: "#/components/schemas/AnyFieldChallenge" }
+        touch2_reveal: { $ref: "#/components/schemas/AnyFieldReveal" }
+        touch3_explore: { $ref: "#/components/schemas/AnyFieldChallenge" }
+        touch4_analyze: { $ref: "#/components/schemas/AnyFieldAnalysis" }
+        touch5_defend: { $ref: "#/components/schemas/AnyFieldDefense" }
+    AnyFieldAnswerInput:
+      type: object
+      required: [field, topic, question_ar, explanation_ar, answer_ar]
+      properties:
+        field: { type: string, minLength: 2, maxLength: 80 }
+        topic: { type: string, minLength: 2, maxLength: 220 }
+        question_ar: { type: string, minLength: 1, maxLength: 1200 }
+        explanation_ar: { type: string, minLength: 1, maxLength: 2400 }
+        answer_ar: { type: string, minLength: 2, maxLength: 3000 }
+    AnyFieldReaction:
+      type: object
+      required: [reaction_ar, source]
+      properties:
+        reaction_ar: { type: string, minLength: 1, maxLength: 1200 }
+        source: { type: string, enum: [gemini] }
     PrideCodeSnippet:
       type: object
       required: [path, preview, line_count, day, modified_since_creation]

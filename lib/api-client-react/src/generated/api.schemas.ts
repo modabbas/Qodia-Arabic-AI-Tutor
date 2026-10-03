@@ -5,6 +5,190 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+export interface AnyFieldInput {
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  field: string;
+  /**
+     * @minLength 2
+     * @maxLength 220
+     */
+  topic: string;
+}
+
+export interface AnyFieldOption {
+  /**
+     * @minLength 1
+     * @maxLength 600
+     */
+  text_ar: string;
+  correct: boolean;
+}
+
+export interface AnyFieldTaskItem {
+  /**
+     * @minLength 1
+     * @maxLength 40
+     */
+  id: string;
+  /**
+     * @minLength 1
+     * @maxLength 600
+     */
+  text_ar: string;
+  correct: boolean;
+  /**
+     * @minimum 0
+     * @maximum 7
+     */
+  order_index: number;
+}
+
+export interface AnyFieldChallenge {
+  /**
+     * @minLength 1
+     * @maxLength 1600
+     */
+  scenario_ar: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  question_ar: string;
+  /**
+     * @minItems 2
+     * @maxItems 4
+     */
+  options: AnyFieldOption[];
+  /**
+     * @minLength 1
+     * @maxLength 1200
+     */
+  feedback_ar: string;
+}
+
+export interface AnyFieldReveal {
+  /**
+     * @minLength 1
+     * @maxLength 2400
+     */
+  explanation_ar: string;
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  question_ar: string;
+  /**
+     * @minItems 2
+     * @maxItems 4
+     */
+  options: AnyFieldOption[];
+  /**
+     * @minLength 1
+     * @maxLength 1200
+     */
+  feedback_ar: string;
+}
+
+export type AnyFieldAnalysisTaskType = typeof AnyFieldAnalysisTaskType[keyof typeof AnyFieldAnalysisTaskType];
+
+
+export const AnyFieldAnalysisTaskType = {
+  multiple_choice: 'multiple_choice',
+  order_steps: 'order_steps',
+} as const;
+
+export interface AnyFieldAnalysis {
+  task_type: AnyFieldAnalysisTaskType;
+  /**
+     * @minLength 1
+     * @maxLength 1200
+     */
+  instruction_ar: string;
+  /**
+     * @minItems 2
+     * @maxItems 6
+     */
+  items: AnyFieldTaskItem[];
+  /**
+     * @minLength 1
+     * @maxLength 1200
+     */
+  feedback_ar: string;
+}
+
+export interface AnyFieldDefense {
+  /**
+     * @minLength 1
+     * @maxLength 1200
+     */
+  question_ar: string;
+}
+
+export type AnyFieldSessionSource = typeof AnyFieldSessionSource[keyof typeof AnyFieldSessionSource];
+
+
+export const AnyFieldSessionSource = {
+  gemini: 'gemini',
+} as const;
+
+export interface AnyFieldSession {
+  field: string;
+  topic: string;
+  source: AnyFieldSessionSource;
+  touch1_challenge: AnyFieldChallenge;
+  touch2_reveal: AnyFieldReveal;
+  touch3_explore: AnyFieldChallenge;
+  touch4_analyze: AnyFieldAnalysis;
+  touch5_defend: AnyFieldDefense;
+}
+
+export interface AnyFieldAnswerInput {
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  field: string;
+  /**
+     * @minLength 2
+     * @maxLength 220
+     */
+  topic: string;
+  /**
+     * @minLength 1
+     * @maxLength 1200
+     */
+  question_ar: string;
+  /**
+     * @minLength 1
+     * @maxLength 2400
+     */
+  explanation_ar: string;
+  /**
+     * @minLength 2
+     * @maxLength 3000
+     */
+  answer_ar: string;
+}
+
+export type AnyFieldReactionSource = typeof AnyFieldReactionSource[keyof typeof AnyFieldReactionSource];
+
+
+export const AnyFieldReactionSource = {
+  gemini: 'gemini',
+} as const;
+
+export interface AnyFieldReaction {
+  /**
+     * @minLength 1
+     * @maxLength 1200
+     */
+  reaction_ar: string;
+  source: AnyFieldReactionSource;
+}
+
 export interface PrideCodeSnippet {
   path: string;
   preview: string;

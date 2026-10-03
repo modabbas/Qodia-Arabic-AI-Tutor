@@ -20,6 +20,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AnyFieldAnswerInput,
+  AnyFieldInput,
+  AnyFieldReaction,
+  AnyFieldSession,
   AuthResponse,
   Dashboard,
   DefenseAnswerInput,
@@ -77,6 +81,182 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGenerateAnyFieldSessionUrl = () => {
+
+
+
+
+  return `/api/try-any-field/session`
+}
+
+/**
+ * @summary Generate a public ephemeral five-touch demonstration
+ */
+export const generateAnyFieldSession = async (anyFieldInput: AnyFieldInput, options?: Parameters<typeof customFetch>[1]): Promise<AnyFieldSession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AnyFieldSession>(getGenerateAnyFieldSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(anyFieldInput)
+  }
+);}
+
+
+
+
+
+export const getGenerateAnyFieldSessionMutationKey = () => ['generateAnyFieldSession'] as const;
+
+export const getGenerateAnyFieldSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAnyFieldSession>>, TError,GenerateAnyFieldSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateAnyFieldSession>>, TError,GenerateAnyFieldSessionMutationVariables, TContext> => {
+
+const mutationKey = getGenerateAnyFieldSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateAnyFieldSession>>, GenerateAnyFieldSessionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateAnyFieldSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateAnyFieldSessionMutationResult = NonNullable<Awaited<ReturnType<typeof generateAnyFieldSession>>>
+    export type GenerateAnyFieldSessionMutationBody = BodyType<AnyFieldInput>
+    export type GenerateAnyFieldSessionMutationError = ErrorType<void>
+    export type GenerateAnyFieldSessionMutationVariables = {data: BodyType<AnyFieldInput>}
+
+    /**
+ * @summary Generate a public ephemeral five-touch demonstration
+ */
+export const useGenerateAnyFieldSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateAnyFieldSession>>, TError,GenerateAnyFieldSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateAnyFieldSession>>,
+        TError,
+        GenerateAnyFieldSessionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGenerateAnyFieldSessionMutationOptions(options));
+    }
+
+export const getReactToAnyFieldAnswerUrl = () => {
+
+
+
+
+  return `/api/try-any-field/reaction`
+}
+
+/**
+ * @summary Give a short ungraded reaction without saving an answer
+ */
+export const reactToAnyFieldAnswer = async (anyFieldAnswerInput: AnyFieldAnswerInput, options?: Parameters<typeof customFetch>[1]): Promise<AnyFieldReaction> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AnyFieldReaction>(getReactToAnyFieldAnswerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(anyFieldAnswerInput)
+  }
+);}
+
+
+
+
+
+export const getReactToAnyFieldAnswerMutationKey = () => ['reactToAnyFieldAnswer'] as const;
+
+export const getReactToAnyFieldAnswerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToAnyFieldAnswer>>, TError,ReactToAnyFieldAnswerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reactToAnyFieldAnswer>>, TError,ReactToAnyFieldAnswerMutationVariables, TContext> => {
+
+const mutationKey = getReactToAnyFieldAnswerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reactToAnyFieldAnswer>>, ReactToAnyFieldAnswerMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  reactToAnyFieldAnswer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReactToAnyFieldAnswerMutationResult = NonNullable<Awaited<ReturnType<typeof reactToAnyFieldAnswer>>>
+    export type ReactToAnyFieldAnswerMutationBody = BodyType<AnyFieldAnswerInput>
+    export type ReactToAnyFieldAnswerMutationError = ErrorType<void>
+    export type ReactToAnyFieldAnswerMutationVariables = {data: BodyType<AnyFieldAnswerInput>}
+
+    /**
+ * @summary Give a short ungraded reaction without saving an answer
+ */
+export const useReactToAnyFieldAnswer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToAnyFieldAnswer>>, TError,ReactToAnyFieldAnswerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reactToAnyFieldAnswer>>,
+        TError,
+        ReactToAnyFieldAnswerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReactToAnyFieldAnswerMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 
