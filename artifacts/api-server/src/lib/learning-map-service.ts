@@ -179,6 +179,7 @@ async function generateCurriculumWithGemini(
 
 function historicalFromRows(rows: {
   concept: string;
+  conceptId: string | null;
   id: string;
   timestamp: Date;
   touchesCompleted: number;
@@ -186,6 +187,7 @@ function historicalFromRows(rows: {
 }[]): HistoricalConcept[] {
   return rows.map((row) => ({
     concept: row.concept,
+    conceptId: row.conceptId,
     sessionId: row.id,
     timestamp: row.timestamp,
     touchesCompleted: row.touchesCompleted,
@@ -208,6 +210,7 @@ export async function ensureLearningMap(
     const historyRows = await tx.select({
       id: sessionsTable.id,
       concept: sessionsTable.concept,
+      conceptId: sessionsTable.conceptId,
       timestamp: sessionsTable.timestamp,
       touchesCompleted: sessionsTable.touchesCompleted,
       masteryEarned: sessionsTable.masteryEarned,
@@ -306,7 +309,7 @@ export function learningMapResponse(row: {
   const visible = concepts.map((concept) => {
     const unmet = concept.prerequisites.flatMap((id) => {
       const prerequisite = concepts.find((item) => item.id === id);
-      return prerequisite && (prerequisite.status !== "completed" || (prerequisite.mastery_score ?? 0) < 70)
+      return prerequisite && prerequisite.status !== "completed"
         ? [prerequisite.name_en]
         : [];
     });

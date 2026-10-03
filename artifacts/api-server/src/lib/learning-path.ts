@@ -25,6 +25,7 @@ export type CurriculumConceptInput = Omit<
 
 export type HistoricalConcept = {
   concept: string;
+  conceptId?: string | null;
   sessionId: string;
   timestamp: Date;
   touchesCompleted: number;
@@ -43,6 +44,12 @@ export type SelectedConcept = {
   isReview: boolean;
   reviewReason?: string;
 };
+
+export function matchesHistoricalConcept(session: Pick<HistoricalConcept, "concept" | "conceptId">, concept: Pick<LearningConcept, "id" | "name_en">): boolean {
+  return (!session.conceptId || session.conceptId === concept.id)
+    && normalizeConceptName(session.concept.split(" — ", 1)[0]?.trim() ?? session.concept)
+      === normalizeConceptName(concept.name_en);
+}
 
 export function normalizeConceptName(value: string): string {
   return value.normalize("NFKC").toLocaleLowerCase("en").replace(/[^a-z0-9]+/g, "");
@@ -199,12 +206,6 @@ export function seedHistoricalConcepts(
 ): LearningConcept[] {
   const completedHistory = history.filter((session) => session.touchesCompleted === 5)
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime() || a.sessionId.localeCompare(b.sessionId));
-  const historyByName = new Map<string, HistoricalConcept>();
-  for (const session of completedHistory) {
-    const englishName = session.concept.split(" — ", 1)[0]?.trim() ?? session.concept.trim();
-    const normalized = normalizeConceptName(englishName);
-    if (normalized && !historyByName.has(normalized)) historyByName.set(normalized, session);
-  }
   const historyById = new Map(completedHistory.map((session) => [session.sessionId, session]));
   const completedFilesByPath = new Map(completedFiles.map((file) => [file.path, file]));
   return concepts.map((concept) => {
@@ -216,20 +217,19 @@ export function seedHistoricalConcepts(
       ? historyById.get(savedFile.completedSessionId)
       : undefined;
     const historical = linkedSession
-      && normalizeConceptName(linkedSession.concept.split(" — ", 1)[0]?.trim() ?? linkedSession.concept.trim())
-        === normalizeConceptName(concept.name_en)
+      && matchesHistoricalConcept(linkedSession, concept)
       ? linkedSession
-      : historyByName.get(normalizeConceptName(concept.name_en));
+      : completedHistory.find(session => matchesHistoricalConcept(session, concept));
     const isCompleted = Boolean(savedFile || historical);
     const masteryScore = isCompleted ? historical?.masteryEarned ?? 75 : null;
     return {
       ...concept,
-      status: masteryScore === null ? "planned" : masteryScore >= 70 ? "completed" : "needs_review",
+      status: isCompleted ? "completed" : "planned",
       mastery_score: masteryScore,
       last_reviewed: historical?.timestamp.toISOString() ?? (savedFile?.updatedAt.toISOString() ?? null),
       session_id: historical?.sessionId ?? null,
       encounter_count: Math.max(isCompleted ? 1 : 0, new Set(completedHistory
-        .filter(session => normalizeConceptName(session.concept.split(" — ", 1)[0] ?? session.concept) === normalizeConceptName(concept.name_en))
+        .filter(session => matchesHistoricalConcept(session, concept))
         .map(session => session.sessionId)).size),
     };
   });
@@ -258,31 +258,26 @@ export function reconcileHistoricalConcepts(
   );
   const completedHistory = history.filter((session) => session.touchesCompleted === 5);
   const historyById = new Map(completedHistory.map((session) => [session.sessionId, session]));
-  const completedNames = new Map<string, HistoricalConcept>();
-  for (const session of [...completedHistory].sort((a, b) => (
+  const latestHistory = [...completedHistory].sort((a, b) => (
     b.timestamp.getTime() - a.timestamp.getTime() || a.sessionId.localeCompare(b.sessionId)
-  ))) {
-    const name = normalizeConceptName(session.concept.split(" — ", 1)[0]?.trim() ?? session.concept.trim());
-    if (name && !completedNames.has(name)) completedNames.set(name, session);
-  }
+  ));
   return historical.map((concept, index) => {
     const previous = concepts[index]!;
     const completeFile = validated.find((file) => file.path === concept.target_file);
-    const completedSession = completedNames.get(normalizeConceptName(concept.name_en));
+    const completedSession = latestHistory.find(session => matchesHistoricalConcept(session, concept));
     if (completeFile || completedSession) {
       const linked = completeFile?.completedSessionId
         ? historyById.get(completeFile.completedSessionId)
         : undefined;
       const linkedFileSession = linked
-        && normalizeConceptName(linked.concept.split(" — ", 1)[0]?.trim() ?? linked.concept.trim())
-          === normalizeConceptName(concept.name_en)
+        && matchesHistoricalConcept(linked, concept)
         ? linked
         : undefined;
       const authoritative = completedSession ?? linkedFileSession;
       const score = authoritative?.masteryEarned ?? 75;
       return {
         ...concept,
-        status: score >= 70 ? "completed" : "needs_review",
+        status: "completed",
         mastery_score: score,
         last_reviewed: authoritative?.timestamp.toISOString()
           ?? completeFile?.updatedAt.toISOString()
@@ -329,7 +324,7 @@ function prerequisiteReadiness(concept: LearningConcept, concepts: LearningConce
   const lowMasteryBlocked: LearningConcept[] = [];
   for (const id of concept.prerequisites) {
     const prerequisite = concepts.find((item) => item.id === id);
-    if (!prerequisite || prerequisite.status !== "completed" || (prerequisite.mastery_score ?? 0) < 70) {
+    if (!prerequisite || prerequisite.status !== "completed") {
       if (
         prerequisite
         && (prerequisite.status === "needs_review" || prerequisite.status === "completed")

@@ -770,7 +770,8 @@ router.post("/sessions", async (req, res): Promise<void> => {
         const concepts = map.concepts.map((item) => item.id === lesson.conceptId
           ? {
             ...item,
-            status: masteryEarned >= 70 ? "completed" as const : "needs_review" as const,
+            // Completion advances the curriculum; mastery independently schedules reviews.
+            status: "completed" as const,
             mastery_score: masteryEarned,
             last_reviewed: saved.timestamp.toISOString(),
             session_id: saved.id,
@@ -779,6 +780,13 @@ router.post("/sessions", async (req, res): Promise<void> => {
           : item);
         await tx.update(learningMapsTable).set({ concepts, updatedAt: new Date() })
           .where(eq(learningMapsTable.userId, user.id));
+        req.log.info({
+          step: "concept_completion", concept_id: lesson.conceptId,
+          lesson_id: lesson.lessonId, touches_completed: saved.touchesCompleted,
+          status: "completed", mastery_score: masteryEarned,
+          encounter_count: concepts.find(item => item.id === lesson.conceptId)?.encounter_count,
+          is_review: lesson.isReview,
+        }, "Saved all five touches and advanced concept completion");
       }
       await tx.update(progressTable).set({
         totalXp,

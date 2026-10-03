@@ -3,11 +3,11 @@ name: Learning-path integrity
 description: Why lesson identity, prerequisite reinforcement, and saved project work are separate concerns.
 ---
 
-The no-repeat rule applies to newly taught concepts, not explicitly labelled reviews. If every remaining new concept is blocked by low mastery before its normal review date, offer clearly labelled early reinforcement rather than teach a locked concept.
+The no-repeat rule applies to newly taught concepts, not explicitly labelled reviews. All five saved touches complete a concept regardless of its mastery score and unlock its dependent planned concepts. Keep mastery separate for explicitly labelled spaced reviews; do not force an immediate repeat solely because completion scored below 70%.
 
-**Why:** A strict no-repeat interpretation combined with mastery-gated prerequisites can leave a struggling student unable to continue. The brief's suggested “any planned concept” fallback defeats prerequisite safety.
+**Why:** The user explicitly requires a fully completed session to advance to the next concept in the 30-concept plan. Mastery-gated completion had sent fully finished low-scoring students straight back to the same concept.
 
-**How to apply:** Preserve prerequisite gates and distinguish ordinary due reviews from early reinforcement in both selection and user-visible explanations.
+**How to apply:** Gate prerequisites on completed learning, not a mastery threshold. Preserve actual scores and spaced-review timing. Repair historical completion from saved evidence without granting extra encounters or XP. Skip an obsolete unstarted early-review cache when new learning is available, but preserve started review work.
 
 An unfinished lesson remains the same attempt across midnight, cache expiry, reloads, and refocus. Completion, not the calendar date, allows advancement.
 

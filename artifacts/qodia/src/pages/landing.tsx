@@ -184,6 +184,7 @@ function Landing() {
               <Link className="qp-button" href="/session" data-testid="link-start-hero">ابدأ جلستك الأولى <ArrowLeft size={18} /></Link>
               <a className="qp-button qp-button-quiet" href="#method" data-testid="link-method-hero"><span className="qp-play" aria-hidden="true">▶</span> شوف كيف نشتغل</a>
             </div>
+            <Link href="/try-any-field" data-testid="link-try-any-field-hero" style={{ display: 'inline-block', marginTop: 16, color: '#a2a5a0', fontSize: 14, textDecoration: 'underline', textUnderlineOffset: 4 }}>جرّب منهجية كوديا بأي مجال</Link>
             <ul className="qp-trust-list" aria-label="مزايا تجربة كوديا">
               <li><Check size={15} /> تجربة توضيحية دون تسجيل</li>
               <li><Check size={15} /> عربي بلهجات محلية</li>

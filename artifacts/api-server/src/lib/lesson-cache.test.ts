@@ -5,9 +5,50 @@ import {
   findOwnedGeneratedLesson,
   findOwnedUnfinishedLessonById,
   selectOwnedUnfinishedLesson,
+  isSupersededEarlyReview,
 } from "./lesson-cache.ts";
+import { seedHistoricalConcepts } from "./learning-path.ts";
+
+const concepts = seedHistoricalConcepts([1, 2].map(day => ({
+  id: `concept_${day}`, name_en: `Concept ${day}`, name_ar: `مفهوم ${day}`,
+  category: "basics", difficulty: 1, prerequisites: day === 1 ? [] : ["concept_1"],
+  planned_day: day, target_file: `file-${day}.ts`, why_important: "Plan order",
+})), [{
+  concept: "Concept 1", conceptId: "concept_1", sessionId: "completed",
+  timestamp: new Date("2026-10-04T10:00:00Z"), touchesCompleted: 5, masteryEarned: 45,
+}]);
 
 describe("cross-date lesson cache identity", () => {
+  it("skips an old teaching cache after the concept completed under a different lesson", () => {
+    const old = {
+      userId: "owner", sessionDate: "2026-10-03",
+      payload: { lesson_id: "orphan", concept_id: "concept_1", concept_name_en: "Concept 1", is_review: false },
+      updatedAt: new Date("2026-10-03"),
+    };
+    const next = {
+      ...old, sessionDate: "2026-10-04",
+      payload: { lesson_id: "next", concept_id: "concept_2", concept_name_en: "Concept 2", is_review: false },
+    };
+    const sessions = [{ userId: "owner", lessonId: "completed", conceptId: "concept_1",
+      concept: "Concept 1", touchesCompleted: 5 }];
+    assert.equal(selectOwnedUnfinishedLesson([old], [], "owner", concepts), null);
+    assert.equal(selectOwnedUnfinishedLesson([old], sessions, "owner"), null);
+    assert.equal(selectOwnedUnfinishedLesson([old, next], sessions, "owner", concepts), next);
+    assert.equal(selectOwnedUnfinishedLesson([old], [{ ...sessions[0]!, userId: "other" }], "owner"), old);
+    assert.equal(selectOwnedUnfinishedLesson([old], [{ ...sessions[0]!, touchesCompleted: 4 }], "owner"), old);
+    const review = { ...old, payload: { ...old.payload, is_review: true } };
+    assert.equal(selectOwnedUnfinishedLesson([review], sessions, "owner", concepts), review);
+  });
+
+  it("supersedes only unstarted early reinforcement when the next new concept is available", () => {
+    const earlyReview = { is_review: true, concept_id: "concept_1", review_reason: "مراجعة تعزيز مبكرة لأن إتقان هذا المتطلب يمنع فتح مفاهيم الخطة التالية." };
+    const now = new Date("2026-10-04T10:30:00Z");
+    assert.equal(isSupersededEarlyReview(earlyReview, concepts, now, false), true);
+    assert.equal(isSupersededEarlyReview(earlyReview, concepts, now, true), false);
+    assert.equal(isSupersededEarlyReview({ ...earlyReview, review_reason: "مراجعة متباعدة" }, concepts, now, false), false);
+    assert.equal(isSupersededEarlyReview(earlyReview, concepts, new Date("2026-10-07T10:30:00Z"), false), false);
+  });
+
   it("resumes the same owned unfinished lesson across dates and ignores another owner's cache", () => {
     const earlier = {
       userId: "owner",

@@ -14,7 +14,7 @@ import {
 import { GetGeneratedSessionResponse } from "@workspace/api-zod";
 import { requireUser } from "../lib/qodia-auth";
 import { ensureLearningMap } from "../lib/learning-map-service";
-import { selectOwnedUnfinishedLesson } from "../lib/lesson-cache";
+import { isSupersededEarlyReview, selectOwnedUnfinishedLesson } from "../lib/lesson-cache";
 import { conceptAnchoringReport } from "../lib/session-concept-validation";
 import {
   buildProjectBuildContext as createProjectBuildContext,
@@ -725,7 +725,29 @@ async function generateOrLoadLesson(
       lessonId: sessionsTable.lessonId,
       touchesCompleted: sessionsTable.touchesCompleted,
     }).from(sessionsTable).where(eq(sessionsTable.userId, userId));
-    const unfinishedCache = selectOwnedUnfinishedLesson(cacheRows, progressRows, userId);
+    // Old cache rows must not resume an already completed teaching concept.
+    let eligibleCacheRows = cacheRows;
+    let unfinishedCache = selectOwnedUnfinishedLesson(eligibleCacheRows, progressRows, userId, mapRow.concepts);
+    while (unfinishedCache && isSupersededEarlyReview(unfinishedCache.payload, mapRow.concepts, new Date(), false)) {
+      const metadata = readGeneratedMetadata(unfinishedCache.payload);
+      if (!metadata) break;
+      const [practice] = await tx.select().from(reviewExercisesTable).where(and(
+        eq(reviewExercisesTable.userId, userId), eq(reviewExercisesTable.lessonId, metadata.lessonId),
+      )).limit(1);
+      const [support] = await tx.select().from(touch4SupportTable).where(and(
+        eq(touch4SupportTable.userId, userId), eq(touch4SupportTable.lessonId, metadata.lessonId),
+      )).limit(1);
+      const hasStudentWork = progressRows.some(row => row.lessonId === metadata.lessonId && row.touchesCompleted > 0)
+        || !!practice?.content.trim()
+        || !!support && (support.attempts > 0 || support.hintsUsed > 0 || support.buildSaved || support.solutionViewed);
+      if (hasStudentWork) break;
+      req.log.info({
+        step: "active_lesson_cache", concept_id: metadata.conceptId,
+        reason: "unstarted_early_review_superseded_by_next_planned_concept",
+      }, "Skipping obsolete early review without deleting student work");
+      eligibleCacheRows = eligibleCacheRows.filter(row => row !== unfinishedCache);
+      unfinishedCache = selectOwnedUnfinishedLesson(eligibleCacheRows, progressRows, userId, mapRow.concepts);
+    }
     if (unfinishedCache) {
       const cachedMetadata = readGeneratedMetadata(unfinishedCache.payload);
       if (!cachedMetadata) throw new Error("ACTIVE_LESSON_CACHE_INVALID");
@@ -795,6 +817,8 @@ async function generateOrLoadLesson(
       step, concept_id: selected?.concept.id ?? null,
       concept_name: selected?.concept.name_en ?? null,
       is_review: selected?.isReview ?? false,
+      selection_reason: selected?.isReview ? selected.reviewReason
+        : selected?.concept.status === "in_progress" ? "resume_in_progress" : "next_planned_concept",
       prerequisites: selected?.concept.prerequisites ?? [],
       prerequisite_mastery: selected?.concept.prerequisites.map((id) => {
         const prerequisite = mapRow.concepts.find((concept) => concept.id === id);

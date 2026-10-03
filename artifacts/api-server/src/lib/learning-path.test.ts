@@ -40,6 +40,45 @@ function learningFixture(overrides: Partial<LearningConcept> = {}): LearningConc
 }
 
 describe("learning-path validation and selection", () => {
+  it("advances after all five saved touches even at zero mastery, without losing review scores or encounters", () => {
+    const now = new Date("2026-10-04T10:00:00Z");
+    for (const score of [0, 25, 45, 65, 100]) {
+      const concepts = curriculumFixture().slice(0, 2);
+      concepts[1]!.prerequisites = [concepts[0]!.id];
+      const history = [{
+        concept: "Concept 1 — اسم قديم", conceptId: concepts[0]!.id,
+        sessionId: "fully-saved", timestamp: now, touchesCompleted: 5, masteryEarned: score,
+      }];
+      const previous = seedHistoricalConcepts(concepts, []);
+      previous[0] = { ...previous[0]!, status: "needs_review", mastery_score: score };
+      const reconciled = reconcileHistoricalConcepts(previous, history, []);
+      assert.equal(reconciled[0]!.status, "completed");
+      assert.equal(reconciled[0]!.mastery_score, score);
+      assert.equal(reconciled[0]!.encounter_count, 1);
+      assert.equal(reconciled[0]!.session_id, "fully-saved");
+      assert.deepEqual(reconcileHistoricalConcepts(reconciled, history, []), reconciled);
+      const next = selectNextConcept(reconciled, now);
+      assert.equal(next?.concept.id, concepts[1]!.id);
+      assert.equal(next?.isReview, false);
+      if (score < 70) {
+        const due = selectNextConcept(reconciled, new Date(now.getTime() + 3 * 86400000));
+        assert.equal(due?.concept.id, concepts[0]!.id);
+        assert.equal(due?.isReview, true);
+        assert.ok(due?.reviewReason?.includes("متباعدة"));
+      }
+    }
+  });
+
+  it("does not confuse an explicit different concept ID with a matching historical display name", () => {
+    const seeded = seedHistoricalConcepts(curriculumFixture(), [{
+      concept: "Concept 1", conceptId: "concept_2", sessionId: "saved",
+      timestamp: new Date("2026-10-04"), touchesCompleted: 5, masteryEarned: 65,
+    }]);
+    assert.equal(seeded[0]!.status, "planned");
+    assert.equal(seeded[1]!.status, "planned");
+    assert.equal(seeded[1]!.encounter_count, 0);
+  });
+
   it("backfills encounters from unique completed sessions independently of mastery and unfinished checkpoints", () => {
     const concepts = curriculumFixture();
     const first = { concept: "Concept 1 — تجربة", sessionId: "first", timestamp: new Date("2026-10-01"),
@@ -47,7 +86,7 @@ describe("learning-path validation and selection", () => {
     assert.equal(seedHistoricalConcepts(concepts, [])[0].encounter_count, 0);
     const once = seedHistoricalConcepts(concepts, [first, first, { ...first, sessionId: "unfinished", touchesCompleted: 3 }]);
     assert.equal(once[0].encounter_count, 1);
-    assert.equal(once[0].status, "needs_review");
+    assert.equal(once[0].status, "completed");
     const twice = seedHistoricalConcepts(concepts, [first, { ...first, sessionId: "second", masteryEarned: 100 }]);
     assert.equal(twice[0].encounter_count, 2);
   });
@@ -192,7 +231,7 @@ describe("learning-path validation and selection", () => {
       masteryEarned: 85,
     };
     const initial = seedHistoricalConcepts(curriculumFixture().slice(0, 2), [originalLesson], completedFiles);
-    assert.equal(initial[0]?.status, "needs_review");
+    assert.equal(initial[0]?.status, "completed");
     assert.equal(initial[0]?.mastery_score, 40);
 
     const once = reconcileHistoricalConcepts(initial, [originalLesson, successfulReview], completedFiles);
