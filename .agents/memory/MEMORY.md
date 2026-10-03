@@ -15,3 +15,4 @@
 - [Touch 4 scaffolding boundary](touch4-scaffolding-boundary.md) — free first-move guidance lives inside Touch 4; preserve saved lessons, grading, hints, and student drafts.
 - [Browser test recovery](browser-test-recovery.md) — browser worker resets lose login state; keep disposable QA sessions recoverable without saving credentials in project memory.
 - [Runtime callback schemas](runtime-callback-schemas.md) — callback validation can supersede stale skill examples; follow-up test categories currently use test_gaps.
+- [Touch 4 confidence boundary](touch4-confidence-boundary.md) — ungraded, local predictions supplement results; skips and transport errors are not fabricated confidence or wrong answers.

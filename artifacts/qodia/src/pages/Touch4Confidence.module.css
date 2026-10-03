@@ -1,0 +1,46 @@
+.dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  margin: auto;
+  padding: 26px;
+  border: 1px solid #806124;
+  border-radius: 20px;
+  background: #171613;
+  color: #f5efe4;
+  font-family: inherit;
+  box-shadow: 0 24px 80px #0009;
+}
+.dialog::backdrop { background: #080808f5; }
+.eyebrow { font-size: 13px; color: #d4ae66; }
+.dialog h2 { margin: 10px 0 22px; font-size: 21px; line-height: 1.6; }
+.choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.choices button {
+  min-height: 66px;
+  padding: 12px 8px;
+  border: 1px solid #625133;
+  border-radius: 12px;
+  background: #242019;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.choices button:hover { background: #332a1c; border-color: #e8bb60; }
+.choices button:focus-visible, .skip:focus-visible { outline: 2px solid #f2bc55; outline-offset: 3px; }
+.choices strong, .choices small { display: block; }
+.choices strong { font-size: 15px; }
+.choices small { margin-top: 4px; color: #d0b985; font-size: 12px; }
+.dialog p { margin: 18px 0 12px; color: #aaa69e; font-size: 12px; line-height: 1.8; }
+.skip { padding: 10px 0; border: 0; background: transparent; color: #ddd0b4; font: inherit; font-size: 13px; cursor: pointer; }
+.reaction {
+  margin: 16px 0;
+  padding: 13px 16px;
+  border-inline-start: 3px solid #e7b553;
+  border-radius: 8px;
+  background: #e7b5530c;
+  color: #f2ce85;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.8;
+}
+@media (max-width: 480px) { .dialog { padding: 20px; } .dialog h2 { font-size: 19px; } }
