@@ -1,0 +1,59 @@
+# Final Comprehensive Audit + General Polish
+
+## Context
+All major features are built and tested individually: Learning Path, Cumulative Project, 3-level Code Validation, Progressive Hints, Touch 4 overhaul (drag-order/fill-blank/free-write modes), Confidence Check, Pride Moment, Dashboard fixes. This is a final full-site audit before presenting to judges/investors — find and report issues, then fix only what's safe and quick.
+
+## Part 1: Audit (report first, before fixing anything risky)
+
+Go through every page and flow, and report findings:
+
+1. **Console errors**: Open browser dev tools, navigate through every page (landing, signup, onboarding, dashboard, session - all 5 touches, /my-project, university-dashboard, company-dashboard, final-defense if built). Report any red console errors or warnings.
+
+2. **Broken links/404s**: Check every button and link across all pages actually goes where expected, nothing points to a dead route.
+
+3. **Hardcoded content check**: Search specifically for any remaining hardcoded tech-stack-specific text (like the earlier Django/CASCADE bug) that might not have been caught — check dashboard cards, onboarding previews, any "example" or "preview" text blocks across the codebase.
+
+4. **Mobile responsiveness**: Check landing, session (all touches including the new drag-order mode), dashboard, and my-project on a mobile viewport width (375px). Report any overflow, cut-off text, or broken layouts — especially RTL Arabic text overflow issues.
+
+5. **Loading states**: Check every async action (session generation, code validation, hint loading, dashboard refresh) shows a proper loading indicator and never leaves a blank/frozen screen.
+
+6. **Account isolation**: Create two test accounts with different tech stacks, confirm no data leaks between them (project files, learning map, sessions) — re-verify this still holds after all the recent Touch 4 changes.
+
+7. **Full session run-through**: Complete one entire session from Touch 1 through Touch 5 end-to-end without interruption, in each of the three Touch 4 modes if possible (drag-order for a new concept, fill-blank for a review, free-write for a mastered concept) — confirm each completes and saves correctly.
+
+8. **Run existing automated test suite**: Execute all existing backend tests and type checks, report pass/fail count.
+
+9. **Build check**: Run a production build and confirm it completes without errors.
+
+Report all findings as a clear list BEFORE making changes, categorized as:
+- 🔴 Critical (breaks core flow, must fix)
+- 🟡 Minor (visual/UX issue, fix if quick)
+- 🟢 Cosmetic (nice-to-have, skip if time-constrained)
+
+## Part 2: Fix Critical and Minor Issues Only
+
+After reporting, fix all 🔴 Critical issues and any 🟡 Minor issues that are quick (under 10 minutes each) to resolve. Skip 🟢 Cosmetic issues unless trivial.
+
+For each fix, briefly note what was changed.
+
+## Part 3: General Polish (only if Part 1 found no critical issues)
+
+If the audit comes back clean, apply these light touches:
+- Ensure consistent spacing/padding across card components site-wide
+- Ensure all interactive elements (buttons, links) have a visible hover/active state
+- Ensure Arabic text never breaks mid-word awkwardly (check `word-break` / `overflow-wrap` CSS on narrow containers)
+- Ensure page titles (`<title>` tag) are set correctly per page for a polished browser tab experience
+
+## What NOT to Do
+- Do NOT refactor or rewrite any working feature's internal logic — this is an audit and light-polish pass, not a rebuild
+- Do NOT change Learning Path, Validation levels, Hints unlock logic, Confidence Check, Touch 4 mode-selection logic, or Pride Moment triggers — only fix clear bugs found during audit, don't "improve" working logic
+- Do NOT spend time on 🟢 Cosmetic items if 🔴 or 🟡 items exist and time/budget is limited — prioritize ruthlessly
+- Do NOT introduce new dependencies or new Gemini API calls
+
+## Output Format
+Start with the full audit report (Part 1 findings, categorized). Then list what was fixed. End with a final summary: "Ready for presentation" or "Remaining known issues: [list]".
+
+## Cost & Time
+- Extended Thinking: recommended for the audit phase (broad codebase review), can be lighter for the fix phase
+- Time: 30-50 minutes depending on findings
+- Cost: $8-15

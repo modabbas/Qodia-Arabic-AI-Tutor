@@ -532,7 +532,8 @@ export default function Session() {
         setFeedback({ ok: true, text: session.is_review
           ? `تم تسجيل تدريب المراجعة، ملفك المحفوظ ما تغيّر. ${saved.build_validation?.feedback_ar ?? session.touch4_build.success_message}`
           : `تم حفظ الكود في ${session.touch4_build.target_file}. ${saved.build_validation?.feedback_ar ?? session.touch4_build.success_message}` });
-        record(3, !(refreshedSupport.data?.hints_used ?? support?.hints_used) && codeTries === 0);
+        // A resumed run must retain first-try credit already awarded by the server.
+        record(3, reward === 50);
         award(20 + reward, animationPoint, true);
         void queryClient.invalidateQueries({ queryKey: getGetProjectStructureQueryKey() });
       } catch (error) {

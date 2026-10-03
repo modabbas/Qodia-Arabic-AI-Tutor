@@ -20,3 +20,9 @@ For activity timing checks, wait for the asynchronous action's response and rend
 **Why:** Awaiting a click did not await hint reveal completion, so an early keypress correctly produced no hint activity request. Inter-call overhead also turned a planned 20-second input interval into more than 35 seconds, unlocking the next hint before the second edit. Both checks passed after these test-ordering issues were corrected.
 
 **How to apply:** Capture response and trusted input timestamps. Assert the intended starting state before typing; do not infer application failure from a DOM value change alone or from planned sleep durations.
+
+Treat a tester's failure verdict as a lead, not proof of an application defect. Capture the exact request and response before changing protected rules, and check whether the disposable fixture describes a coherent lesson.
+
+**Why:** An audit reported a blocked completion after seeding completed history while retaining a new-lesson cache. The server correctly rejected the contradictory review state; the tester later withdrew the application-bug verdict.
+
+**How to apply:** Build review fixtures from owned saved code and consistent historical progress, not just an arbitrary encounter counter. Report missing wire evidence and coverage gaps explicitly. Do not weaken ownership or lesson-integrity checks to accommodate a fixture.

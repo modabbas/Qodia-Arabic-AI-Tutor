@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
@@ -33,14 +33,16 @@ export default defineConfig({
     mockupPreviewPlugin(),
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
+    // Shared tooling resolves a separate Vite type identity through pnpm peers.
+    // These assertions adapt only that boundary; plugin execution is unchanged.
+    runtimeErrorOverlay() as unknown as PluginOption,
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>
             m.cartographer({
               root: path.resolve(import.meta.dirname, ".."),
-            }),
+            }) as unknown as PluginOption,
           ),
         ]
       : []),

@@ -1,5 +1,9 @@
 import app from "./app";
+import { pool } from "@workspace/db";
 import { logger } from "./lib/logger";
+import { registerIdlePoolErrorHandler } from "./lib/pool-errors";
+
+registerIdlePoolErrorHandler(pool, logger);
 
 const rawPort = process.env["PORT"];
 

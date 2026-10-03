@@ -25,7 +25,7 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
   '/onboarding': { title: 'عرّفنا على مشروعك | كوديا', description: 'أخبر كوديا عن مشروعك والتقنية التي تستخدمها لتبدأ التدريب.' },
   '/dashboard': { title: 'لوحة تقدّمك | كوديا', description: 'تابع نقاط الخبرة وسلسلة التدريب وجلساتك السابقة في كوديا.' },
   '/my-project': { title: 'مشروعي | كوديا', description: 'راجع ملفات مشروع تخرجك الحقيقية، الكود المحفوظ، وتقدم البناء في كوديا.' },
-  '/session': { title: 'تدريب المناقشة | كوديا', description: 'تدرّب على Django ForeignKey و on_delete عبر خمس لمسات تفاعلية.' },
+  '/session': { title: 'تدريب المناقشة | كوديا', description: 'طبّق مفاهيم التقنية التي اخترتها ودافع عن قراراتك عبر خمس لمسات تفاعلية.' },
   '/final-defense': { title: 'المناقشة النهائية | كوديا', description: 'محاكاة مناقشة افتراضية من خمسة أسئلة عن ملفات مشروعك ومفاهيمك المتعلَّمة.' },
   '/university-dashboard': { title: 'لوحة الجامعة | كوديا', description: 'نظرة تجريبية على تقدم الطلاب وجاهزيتهم للتوظيف في كوديا.' },
   '/company-dashboard': { title: 'لوحة الشركات | كوديا', description: 'استكشف مرشحين تجريبيين ومؤشرات Talent Bridge في كوديا.' },
