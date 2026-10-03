@@ -21,6 +21,8 @@
 .card p { margin: 8px 0; font-size: 13px; line-height: 1.9; }
 .card pre { white-space: pre; overflow: auto; max-width: 100%; text-align: left; border-radius: 8px; background: #151515; padding: 12px; font: 12px/1.8 ui-monospace, monospace; }
 .card small { display: block; margin-top: 12px; color: #f5b84a; font-size: 12px; }
+.solutionCard { background: linear-gradient(145deg, #28212f, #1d1923); border: 1px solid #b9a1d64d; border-right: 3px solid #b9a1d6; color: #e3daed; box-shadow: 0 8px 24px rgba(0,0,0,.4), 0 0 16px #b9a1d612; transform-origin: center top; animation: solutionIn 300ms cubic-bezier(.2,.7,.3,1) both; }
+.solutionCard h3, .solutionCard small { color: #cbb5e4; }
 .hero { background: #22c55e14; border: 1px solid #22c55e55; color: #22c55e; padding: 14px 16px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; animation: hintIn 300ms ease both; }
 .requestError { color: #f87171; font-size: 12px; line-height: 1.8; flex-basis: 100%; }
 .retry { background: none; border: 0; color: #f5b84a; font: inherit; font-size: 12px; cursor: pointer; }
@@ -28,6 +30,7 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes hintGlow { 50% { box-shadow: 0 0 10px #22c55e33; } }
 @keyframes hintIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes solutionIn { from { opacity: 0; transform: scale(.95); } to { opacity: 1; transform: scale(1); } }
 @media (max-width: 600px) { .summary { display: grid; } .button { padding: 10px; font-size: 12px; max-width: 100%; } .card { padding: 14px; } }
 @media (prefers-reduced-motion: reduce) { .available, .card, .hero, .spinner { animation: none; } .fill { transition: none; } }.panel { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 14px; border: 1px solid #333; border-radius: 14px; background: #121212; }
 .panelHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

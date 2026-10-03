@@ -119,7 +119,7 @@ export function Touch4HintCards({ support, completed, selectedLevel }: { support
       {currentHint.level !== 3 && currentHint.code_example && <pre dir="ltr"><code>{currentHint.code_example}</code></pre>}
       <small>خصم هالتلميح: −١٠ XP، ومراجعته مجانية.</small>
     </section>}
-    {showSolution && <section className={s.card} key="solution" data-testid="card-reference-solution">
+    {showSolution && <section className={`${s.card} ${s.solutionCard}`} key="solution" data-testid="card-reference-solution">
       <h3>الحل النموذجي — اقرأه وجرّب تكتبه بطريقتك</h3>
       <pre dir="ltr"><code>{support.reference_solution}</code></pre>
       <small>المجموع: −٥٠ XP. مراجعة الحل مجانية، ومشاهدته ما بتتجاوز فحص الكود؛ لسه لازم تحاول وتنجح.</small>
