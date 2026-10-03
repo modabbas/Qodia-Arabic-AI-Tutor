@@ -748,9 +748,27 @@ export interface Touch4Support {
   first_try_bonus: Touch4SupportFirstTryBonus;
   build_saved: boolean;
   can_reveal_next: boolean;
+  /**
+     * @minimum 0
+     * @maximum 35000
+     */
+  next_hint_wait_ms: number | null;
   solution_viewed: boolean;
   revealed_hints: Touch4Hint[];
   reference_solution?: string;
+}
+
+export type Touch4ActivityInputKind = typeof Touch4ActivityInputKind[keyof typeof Touch4ActivityInputKind];
+
+
+export const Touch4ActivityInputKind = {
+  typing: 'typing',
+  idle: 'idle',
+} as const;
+
+export interface Touch4ActivityInput {
+  lesson_id: string;
+  kind: Touch4ActivityInputKind;
 }
 
 export type Touch4SupportRevealInputKind = typeof Touch4SupportRevealInputKind[keyof typeof Touch4SupportRevealInputKind];

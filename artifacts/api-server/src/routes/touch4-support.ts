@@ -4,9 +4,11 @@ import {
   GetTouch4SupportResponse,
   RevealTouch4HintBody,
   RevealTouch4HintResponse,
+  UpdateTouch4ActivityBody,
+  UpdateTouch4ActivityResponse,
 } from "@workspace/api-zod";
 import { requireUser } from "../lib/qodia-auth";
-import { getTouch4Support, revealTouch4Support } from "../lib/touch4-support";
+import { getTouch4Support, revealTouch4Support, updateTouch4Activity } from "../lib/touch4-support";
 
 const router: IRouter = Router();
 
@@ -22,6 +24,27 @@ router.get("/touch4-support", async (req, res): Promise<void> => {
     const result = await getTouch4Support(user.id, parsed.data.lesson_id);
     res.setHeader("Cache-Control", "private, no-store");
     res.json(GetTouch4SupportResponse.parse(result));
+  } catch (error) {
+    if (error instanceof Error && error.message === "TOUCH4_LESSON_UNAVAILABLE") {
+      res.status(404).json({ error: "درس البناء غير متاح أو اكتمل." });
+      return;
+    }
+    throw error;
+  }
+});
+
+router.post("/touch4-support/activity", async (req, res): Promise<void> => {
+  const user = await requireUser(req, res);
+  if (!user) return;
+  const parsed = UpdateTouch4ActivityBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "طلب متابعة التلميحات غير صالح." });
+    return;
+  }
+  try {
+    const result = await updateTouch4Activity(user.id, parsed.data.lesson_id, parsed.data.kind);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.json(UpdateTouch4ActivityResponse.parse(result));
   } catch (error) {
     if (error instanceof Error && error.message === "TOUCH4_LESSON_UNAVAILABLE") {
       res.status(404).json({ error: "درس البناء غير متاح أو اكتمل." });
@@ -58,7 +81,7 @@ router.post("/touch4-support/reveal", async (req, res): Promise<void> => {
       return;
     }
     if (reason === "TOUCH4_HINT_LOCKED" || reason === "TOUCH4_SOLUTION_LOCKED") {
-      res.status(409).json({ error: "هذا التلميح لسه مقفول؛ جرّب الكود وأعد المحاولة بعد فشل التحقق." });
+      res.status(409).json({ error: "هذا التلميح لسه مقفول؛ افتح التلميح السابق، وبعده بيصير متاح بعد ٣٥ ثانية بدون كتابة أو محاولة حفظ ما بتجتاز الفحص." });
       return;
     }
     if (reason === "TOUCH4_BUILD_ALREADY_SAVED") {

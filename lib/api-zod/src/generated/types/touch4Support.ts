@@ -27,6 +27,11 @@ export interface Touch4Support {
   first_try_bonus: Touch4SupportFirstTryBonus;
   build_saved: boolean;
   can_reveal_next: boolean;
+  /**
+     * @minimum 0
+     * @maximum 35000
+     */
+  next_hint_wait_ms: number | null;
   solution_viewed: boolean;
   revealed_hints: Touch4Hint[];
   reference_solution?: string;

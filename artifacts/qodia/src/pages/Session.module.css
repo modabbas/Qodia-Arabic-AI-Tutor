@@ -175,3 +175,12 @@
 .sound{position:absolute;inset-inline-start:18px;top:50%;transform:translateY(-50%)}
 @media(max-width:600px){.top{padding-inline-start:46px}.sound{inset-inline-start:14px}}
 @media(prefers-reduced-motion:reduce){.session *,.session *::before,.session *::after{animation:none!important;transition:none!important;animation-delay:0s!important;transition-delay:0s!important}.now::after{display:none}}
+/* Touch4 split layout: editor physically left, help physically right (>=768px) */
+.t4Split{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;align-items:start;max-width:100%}
+.t4Main,.t4Split>aside{min-width:0;direction:rtl}
+@media(min-width:768px){
+  .t4Split{direction:ltr;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr)}
+  .t4Split>aside{position:sticky;top:76px;max-height:calc(100dvh - 96px);overflow-y:auto;overscroll-behavior:contain}
+  .session[data-touch4="1"] .mentor{right:auto;left:16px;bottom:16px;max-width:min(320px,calc(50vw - 32px))}
+}
+@media(max-width:767px){.session[data-touch4="1"] .mentor{top:68px;bottom:auto;right:12px;left:12px;max-width:none}}

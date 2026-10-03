@@ -389,6 +389,28 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ErrorResponse" }
+  /touch4-support/activity:
+    post:
+      operationId: updateTouch4Activity
+      tags: [learning]
+      summary: Record typing or check idle hint availability using server time
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Touch4ActivityInput" }
+      responses:
+        "200":
+          description: Current hint availability without revealing help or charging XP
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Touch4Support" }
+        "400":
+          description: Invalid activity request
+        "401":
+          description: Authentication required
+        "404":
+          description: Lesson unavailable
   /touch4-support/reveal:
     post:
       operationId: revealTouch4Hint
@@ -1206,12 +1228,20 @@ components:
         first_try_bonus: { type: integer, enum: [0, 50] }
         build_saved: { type: boolean }
         can_reveal_next: { type: boolean }
+        next_hint_wait_ms: { type: integer, minimum: 0, maximum: 35000, nullable: true }
         solution_viewed: { type: boolean }
         revealed_hints:
           type: array
           items: { $ref: "#/components/schemas/Touch4Hint" }
         reference_solution: { type: string }
-      required: [lesson_id, attempts, failed_attempts, hints_used, xp_penalty, first_try_bonus, build_saved, can_reveal_next, solution_viewed, revealed_hints]
+      required: [lesson_id, attempts, failed_attempts, hints_used, xp_penalty, first_try_bonus, build_saved, can_reveal_next, next_hint_wait_ms, solution_viewed, revealed_hints]
+    Touch4ActivityInput:
+      type: object
+      additionalProperties: false
+      properties:
+        lesson_id: { type: string, format: uuid }
+        kind: { type: string, enum: [typing, idle] }
+      required: [lesson_id, kind]
     Touch4SupportRevealInput:
       type: object
       additionalProperties: false

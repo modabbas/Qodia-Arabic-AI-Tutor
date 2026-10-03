@@ -13,6 +13,9 @@ import {
   canRevealHint,
   canRevealNextHint,
   firstTryBonusEligible,
+  hintIdleReady,
+  hintActivityClock,
+  touch4HintIdleMs,
   hint3TeachingFailureReason,
   hint3TeachingInstruction,
   parseTouch4HintBundle,
@@ -37,6 +40,10 @@ export function supportResponse(lessonId: string, row?: typeof touch4SupportTabl
   const hintsUsed = row?.hintsUsed ?? 0;
   const failedAttempts = row?.failedAttempts ?? 0;
   const solutionViewed = row?.solutionViewed ?? false;
+  const now = Date.now();
+  const canReveal = canRevealNextHint(hintsUsed, failedAttempts, row?.failuresAtLastHint ?? 0,
+    row?.buildSaved ?? false, solutionViewed,
+    hintIdleReady(row?.hintIdleDeadline, row?.nextHintUnlocked ?? false, now));
   const result = {
     lesson_id: lessonId,
     attempts: row?.attempts ?? 0,
@@ -45,13 +52,9 @@ export function supportResponse(lessonId: string, row?: typeof touch4SupportTabl
     xp_penalty: touch4XpPenalty(hintsUsed, solutionViewed),
     first_try_bonus: (row?.firstTryBonus === 50 ? 50 : 0) as 0 | 50,
     build_saved: row?.buildSaved ?? false,
-    can_reveal_next: canRevealNextHint(
-      hintsUsed,
-      failedAttempts,
-      row?.failuresAtLastHint ?? 0,
-      row?.buildSaved ?? false,
-      solutionViewed,
-    ),
+    can_reveal_next: canReveal,
+    next_hint_wait_ms: !canReveal && !row?.buildSaved && !solutionViewed && hintsUsed > 0 && hintsUsed < 3
+      && row?.hintIdleDeadline ? Math.min(touch4HintIdleMs, Math.max(0, row.hintIdleDeadline.getTime() - now)) : null,
     solution_viewed: solutionViewed,
     revealed_hints: row ? [1, 2, 3].filter(level => level <= hintsUsed)
       .flatMap(level => { const hint = safeRevealedHint(row, level); return hint ? [hint] : []; }) : [],
@@ -60,11 +63,11 @@ export function supportResponse(lessonId: string, row?: typeof touch4SupportTabl
   return result;
 }
 
-async function ownedUnfinishedPayload(userId: string, lessonId: string) {
+async function ownedUnfinishedPayload(userId: string, lessonId: string, store: typeof db | DatabaseTransaction = db) {
   const [caches, progress] = await Promise.all([
-    db.select().from(generatedSessionsTable).where(eq(generatedSessionsTable.userId, userId))
+    store.select().from(generatedSessionsTable).where(eq(generatedSessionsTable.userId, userId))
       .orderBy(desc(generatedSessionsTable.updatedAt)),
-    db.select({
+    store.select({
       userId: sessionsTable.userId,
       lessonId: sessionsTable.lessonId,
       touchesCompleted: sessionsTable.touchesCompleted,
@@ -323,6 +326,9 @@ export async function revealTouch4Support(
       existing?.failedAttempts ?? 0,
       existing?.failuresAtLastHint ?? 0,
       level,
+      existing?.buildSaved ?? false,
+      existing?.solutionViewed ?? false,
+      hintIdleReady(existing?.hintIdleDeadline, existing?.nextHintUnlocked ?? false),
     )) throw new Error("TOUCH4_HINT_LOCKED");
   } else {
     if (level !== undefined) throw new Error("TOUCH4_HINT_LEVEL_INVALID");
@@ -385,7 +391,8 @@ export async function revealTouch4Support(
 
     if (kind === "hint") {
       if (!level || level < 1 || level > 3) throw new Error("TOUCH4_HINT_LEVEL_INVALID");
-      if (!canRevealHint(row.hintsUsed, row.failedAttempts, row.failuresAtLastHint, level)) {
+      if (!canRevealHint(row.hintsUsed, row.failedAttempts, row.failuresAtLastHint, level,
+        row.buildSaved, row.solutionViewed, hintIdleReady(row.hintIdleDeadline, row.nextHintUnlocked))) {
         throw new Error("TOUCH4_HINT_LOCKED");
       }
       const hint = bundle.hints[level - 1];
@@ -393,6 +400,8 @@ export async function revealTouch4Support(
       [row] = await tx.update(touch4SupportTable).set({
         hintsUsed: level,
         failuresAtLastHint: row.failedAttempts,
+        hintIdleDeadline: level < 3 ? new Date(Date.now() + touch4HintIdleMs) : null,
+        nextHintUnlocked: false,
         revealedHints,
         updatedAt: new Date(),
       }).where(eq(touch4SupportTable.id, row.id)).returning();
@@ -427,6 +436,36 @@ export async function getTouch4Support(userId: string, lessonId: string) {
       eq(touch4SupportTable.userId, userId),
       eq(touch4SupportTable.lessonId, lessonId),
     )).limit(1);
-    return supportResponse(lessonId, row);
+    return supportResponse(lessonId, row ? await refreshActivityState(tx, row, "idle") : undefined);
+  });
+}
+
+async function refreshActivityState(
+  tx: DatabaseTransaction, row: typeof touch4SupportTable.$inferSelect, kind: "typing" | "idle",
+) {
+  if (row.buildSaved || row.solutionViewed || row.hintsUsed === 0 || row.hintsUsed >= 3) return row;
+  const ready = canRevealNextHint(row.hintsUsed, row.failedAttempts, row.failuresAtLastHint,
+    false, false, hintIdleReady(row.hintIdleDeadline, row.nextHintUnlocked));
+  const [updated] = await tx.update(touch4SupportTable).set({
+    ...hintActivityClock(row.hintIdleDeadline, ready, kind), updatedAt: new Date(),
+  }).where(eq(touch4SupportTable.id, row.id)).returning();
+  if (!updated) throw new Error("TOUCH4_LESSON_UNAVAILABLE");
+  return updated;
+}
+
+/** Activity changes availability only: no help delivery, attempt or XP mutation. */
+export async function updateTouch4Activity(userId: string, lessonId: string, kind: "typing" | "idle") {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${userId})::bigint)`);
+    if (!await ownedUnfinishedPayload(userId, lessonId, tx)) throw new Error("TOUCH4_LESSON_UNAVAILABLE");
+    const [row] = await tx.select().from(touch4SupportTable).where(and(
+      eq(touch4SupportTable.userId, userId), eq(touch4SupportTable.lessonId, lessonId),
+    )).limit(1).for("update");
+    if (!row || row.buildSaved || row.solutionViewed || row.hintsUsed === 0 || row.hintsUsed >= 3) {
+      return supportResponse(lessonId, row);
+    }
+    // Once earned (idle OR failure), availability cannot be taken away by typing.
+    const updated = await refreshActivityState(tx, row, kind);
+    return supportResponse(lessonId, updated);
   });
 }

@@ -11,11 +11,11 @@ For Touch 4 code assessment, the user explicitly requested: “if Gemini Level 3
 
 ## Assistance must not change validation
 
-The user confirmed: “That system WORKS CORRECTLY and should NOT be modified.” Progressive hints must be added “ON TOP of the existing validation” and appear after validation fails.
+The user confirmed: “That system WORKS CORRECTLY and should NOT be modified.” Progressive hints must be added “ON TOP of the existing validation.” The user subsequently replaced submit-gated availability with proactive hints; do not restore a forced failed save as a prerequisite.
 
-**Why:** The user explicitly confirmed the three-level implementation and required it to remain intact while adding learning support.
+**Why:** The user explicitly confirmed the three-level implementation and required it to remain intact while adding learning support. Requiring a failed save before help was confusing for students.
 
-**How to apply:** Keep hint unlocking, reference-answer access, and their XP adjustments separate from the existing checks and acceptance rules. Assistance does not bypass code validation.
+**How to apply:** Keep hint unlocking, reference-answer access, and their XP adjustments separate from the existing checks and acceptance rules. Hint 1 is proactive; later hints retain sequential ordering but can become available through inactivity or a new failed attempt. Preserve costs, scaffold behavior, and the separate idle encouragement message. Assistance does not bypass code validation.
 
 ## Formatting tolerance and diagnostic feedback
 

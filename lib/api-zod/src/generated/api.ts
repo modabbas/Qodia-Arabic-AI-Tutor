@@ -987,6 +987,9 @@ export const getTouch4SupportResponseHintsUsedMax = 3;
 export const getTouch4SupportResponseXpPenaltyMin = 0;
 export const getTouch4SupportResponseXpPenaltyMax = 50;
 
+export const getTouch4SupportResponseNextHintWaitMsMin = 0;
+export const getTouch4SupportResponseNextHintWaitMsMax = 35000;
+
 export const getTouch4SupportResponseRevealedHintsItemLevelMax = 3;
 
 export const getTouch4SupportResponseRevealedHintsItemTextArMax = 700;
@@ -1006,6 +1009,7 @@ export const GetTouch4SupportResponse = zod.object({
   "first_try_bonus": zod.union([zod.literal(0),zod.literal(50)]),
   "build_saved": zod.boolean(),
   "can_reveal_next": zod.boolean(),
+  "next_hint_wait_ms": zod.number().int().min(getTouch4SupportResponseNextHintWaitMsMin).max(getTouch4SupportResponseNextHintWaitMsMax).nullable(),
   "solution_viewed": zod.boolean(),
   "revealed_hints": zod.array(zod.object({
   "level": zod.number().int().min(1).max(getTouch4SupportResponseRevealedHintsItemLevelMax),
@@ -1013,6 +1017,59 @@ export const GetTouch4SupportResponse = zod.object({
   "text_ar": zod.string().min(1).max(getTouch4SupportResponseRevealedHintsItemTextArMax),
   "example": zod.string().max(getTouch4SupportResponseRevealedHintsItemExampleMax).optional(),
   "code_example": zod.string().max(getTouch4SupportResponseRevealedHintsItemCodeExampleMax).optional()
+})),
+  "reference_solution": zod.string().optional()
+})
+
+
+/**
+ * @summary Record typing or check idle hint availability using server time
+ */
+export const UpdateTouch4ActivityBody = zod.object({
+  "lesson_id": zod.string().uuid(),
+  "kind": zod.enum(['typing', 'idle'])
+})
+
+export const updateTouch4ActivityResponseAttemptsMin = 0;
+
+export const updateTouch4ActivityResponseFailedAttemptsMin = 0;
+
+export const updateTouch4ActivityResponseHintsUsedMin = 0;
+export const updateTouch4ActivityResponseHintsUsedMax = 3;
+
+export const updateTouch4ActivityResponseXpPenaltyMin = 0;
+export const updateTouch4ActivityResponseXpPenaltyMax = 50;
+
+export const updateTouch4ActivityResponseNextHintWaitMsMin = 0;
+export const updateTouch4ActivityResponseNextHintWaitMsMax = 35000;
+
+export const updateTouch4ActivityResponseRevealedHintsItemLevelMax = 3;
+
+export const updateTouch4ActivityResponseRevealedHintsItemTextArMax = 700;
+
+export const updateTouch4ActivityResponseRevealedHintsItemExampleMax = 700;
+
+export const updateTouch4ActivityResponseRevealedHintsItemCodeExampleMax = 2000;
+
+
+
+export const UpdateTouch4ActivityResponse = zod.object({
+  "lesson_id": zod.string().uuid(),
+  "attempts": zod.number().int().min(updateTouch4ActivityResponseAttemptsMin),
+  "failed_attempts": zod.number().int().min(updateTouch4ActivityResponseFailedAttemptsMin),
+  "hints_used": zod.number().int().min(updateTouch4ActivityResponseHintsUsedMin).max(updateTouch4ActivityResponseHintsUsedMax),
+  "xp_penalty": zod.number().int().min(updateTouch4ActivityResponseXpPenaltyMin).max(updateTouch4ActivityResponseXpPenaltyMax),
+  "first_try_bonus": zod.union([zod.literal(0),zod.literal(50)]),
+  "build_saved": zod.boolean(),
+  "can_reveal_next": zod.boolean(),
+  "next_hint_wait_ms": zod.number().int().min(updateTouch4ActivityResponseNextHintWaitMsMin).max(updateTouch4ActivityResponseNextHintWaitMsMax).nullable(),
+  "solution_viewed": zod.boolean(),
+  "revealed_hints": zod.array(zod.object({
+  "level": zod.number().int().min(1).max(updateTouch4ActivityResponseRevealedHintsItemLevelMax),
+  "type": zod.enum(['guidance', 'similar_example', 'partial_solution']),
+  "text_ar": zod.string().min(1).max(updateTouch4ActivityResponseRevealedHintsItemTextArMax),
+  "example": zod.string().max(updateTouch4ActivityResponseRevealedHintsItemExampleMax).optional(),
+  "code_example": zod.string().max(updateTouch4ActivityResponseRevealedHintsItemCodeExampleMax).optional()
 })),
   "reference_solution": zod.string().optional()
 })
@@ -1041,6 +1098,9 @@ export const revealTouch4HintResponseHintsUsedMax = 3;
 export const revealTouch4HintResponseXpPenaltyMin = 0;
 export const revealTouch4HintResponseXpPenaltyMax = 50;
 
+export const revealTouch4HintResponseNextHintWaitMsMin = 0;
+export const revealTouch4HintResponseNextHintWaitMsMax = 35000;
+
 export const revealTouch4HintResponseRevealedHintsItemLevelMax = 3;
 
 export const revealTouch4HintResponseRevealedHintsItemTextArMax = 700;
@@ -1060,6 +1120,7 @@ export const RevealTouch4HintResponse = zod.object({
   "first_try_bonus": zod.union([zod.literal(0),zod.literal(50)]),
   "build_saved": zod.boolean(),
   "can_reveal_next": zod.boolean(),
+  "next_hint_wait_ms": zod.number().int().min(revealTouch4HintResponseNextHintWaitMsMin).max(revealTouch4HintResponseNextHintWaitMsMax).nullable(),
   "solution_viewed": zod.boolean(),
   "revealed_hints": zod.array(zod.object({
   "level": zod.number().int().min(1).max(revealTouch4HintResponseRevealedHintsItemLevelMax),

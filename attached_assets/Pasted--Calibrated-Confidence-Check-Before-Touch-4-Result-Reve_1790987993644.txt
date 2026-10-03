@@ -1,0 +1,84 @@
+# Calibrated Confidence Check Before Touch 4 Result Reveal
+
+## Context
+Touch 4 already has: Code Validation (Levels 1/2/3), Progressive Hints, Scaffold flow (multiple-choice first-move), and Side Panel layout. This task adds ONE new micro-interaction: a confidence prediction step between "student submits code" and "result is revealed" — based on the psychological principle of Reward Prediction Error (confidence calibration), used in medical/pilot training to deepen learning and increase engagement.
+
+Do not touch validation logic, hints, scaffold, or side panel layout — only insert this new step in the result-reveal sequence.
+
+## The Flow Change
+
+Current: Student clicks "احفظ في مشروعي" → Level 1/2/3 validation runs → result shown immediately
+
+New: Student clicks "احفظ في مشروعي" → validation runs in background (same as now) → BEFORE showing the result, show a brief confidence-prediction screen → student answers → THEN reveal the actual result, now paired with a reaction based on the confidence vs. actual outcome combination
+
+## Confidence Prediction Screen
+
+Appears immediately after submit, BEFORE the validation result is shown (validation can run in parallel/background during this brief screen so there's no added wait):
+
+```
+┌─────────────────────────────────────┐
+│  قبل ما نوريك النتيجة...             │
+│  كم واثق إنك كتبت الكود صح؟          │
+│                                       │
+│  [مو واثق]  ○──●──────○  [متأكد ١٠٠٪] │
+│                                       │
+│          [شوف النتيجة →]              │
+└─────────────────────────────────────┘
+```
+
+- Simple slider or 4-5 discrete buttons (e.g., "مو متأكد", "يمكن", "واثق", "متأكد تماماً") — use discrete buttons rather than a continuous slider for simpler implementation and clearer data buckets
+- Map buttons to confidence levels: low (0-33%), medium (34-66%), high (67-100%)
+- This screen should appear for no more than 2-3 seconds of decision time — keep it snappy, not a blocker
+- No XP cost or validation impact — this is purely a psychological/engagement layer, not graded
+
+## Result Reveal With Calibration Reaction
+
+After student picks a confidence level, reveal the actual validation result (same Level 1/2/3 outcome as already built) paired with ONE of four reaction messages based on the confidence × outcome matrix:
+
+```typescript
+function getCalibrationReaction(confidence: 'low' | 'medium' | 'high', wasCorrect: boolean): string {
+  if (confidence === 'high' && wasCorrect) {
+    return "كنت متأكد ومحقق! 🎯";
+  }
+  if (confidence === 'low' && wasCorrect) {
+    return "أنت أفضل مما تتوقع! 🎉";
+  }
+  if (confidence === 'high' && !wasCorrect) {
+    return "لحظة تعلم قوية 💡"; // never shame/mock — frame as valuable insight
+  }
+  if (confidence === 'low' && !wasCorrect) {
+    return "توقعك كان دقيق، خلينا نفهمها سوا";
+  }
+  // medium confidence cases — milder versions
+  if (confidence === 'medium' && wasCorrect) {
+    return "تمام، كان توقعك بمكانه ✓";
+  }
+  return "قريب، خلينا نشوف وين الفرق";
+}
+```
+
+Display this reaction line prominently above/alongside the existing validation result (score, feedback from Level 3 Gemini, etc.) — it introduces the result, doesn't replace any existing result content.
+
+## Data Storage (for future use, low priority)
+
+Optionally store each confidence prediction alongside the session/attempt record if a convenient existing table is already being written to for that submission (e.g., alongside Level 3 score in session data). This is NOT required for this task to function — only add if trivial given existing schema. Do not create a new table solely for this if it adds complexity; a simple field addition to the existing submission/attempt record is sufficient, and if that's non-trivial, skip persistence entirely and treat this as a purely client-side/ephemeral interaction for now.
+
+## What NOT to Do
+- Do NOT change Level 1/2/3 validation logic, Hints, Scaffold, or Side Panel layout — this task only inserts the confidence step and reaction message into the existing result-reveal sequence
+- Do NOT make the confidence screen feel like a blocker or add more than 2-3 seconds of friction
+- Do NOT use mocking/shaming language for the "high confidence + wrong" case — always frame it positively as a learning moment
+- Do NOT add XP penalty or bonus tied to confidence accuracy — this stays purely psychological, not scored
+- Do NOT trigger an additional Gemini API call for this feature — the reaction message is purely local logic based on the confidence button + existing validation outcome
+
+## Testing
+- [ ] Confidence screen appears after submit, before result reveal
+- [ ] Validation still runs correctly in the background (same Level 1/2/3 behavior as before)
+- [ ] All 4 confidence × outcome combinations show the correct calibration reaction
+- [ ] Screen doesn't add noticeable delay (validation should already be running/done by the time student picks confidence)
+- [ ] No XP or scoring impact from the confidence selection itself
+- [ ] Works on mobile (buttons, not a complex slider, for reliable touch interaction)
+
+## Cost & Time
+- Extended Thinking: not required — this is a UI insertion + simple local logic, no changes to existing validation/scoring systems
+- Time: 15-20 minutes
+- Cost: $4-6

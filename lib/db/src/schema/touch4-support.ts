@@ -26,6 +26,8 @@ export const touch4SupportTable = pgTable(
     failedAttempts: integer("failed_attempts").notNull().default(0),
     hintsUsed: integer("hints_used").notNull().default(0),
     failuresAtLastHint: integer("failures_at_last_hint").notNull().default(0),
+    hintIdleDeadline: timestamp("hint_idle_deadline", { withTimezone: true }),
+    nextHintUnlocked: boolean("next_hint_unlocked").notNull().default(false),
     solutionViewed: boolean("solution_viewed").notNull().default(false),
     firstTryBonus: integer("first_try_bonus").notNull().default(0),
     buildSaved: boolean("build_saved").notNull().default(false),

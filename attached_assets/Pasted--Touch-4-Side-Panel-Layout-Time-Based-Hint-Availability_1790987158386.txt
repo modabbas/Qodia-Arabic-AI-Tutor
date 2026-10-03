@@ -1,0 +1,90 @@
+# Touch 4: Side Panel Layout + Time-Based Hint Availability
+
+## Context
+Touch 4 (Build) already has: Code Validation (3 levels), Progressive Hints (3 tiers with XP penalty), and the new Scaffold flow (multiple-choice first-move + prefix). This task fixes TWO specific UX issues in how hints are positioned and unlocked. Do not rebuild validation, scaffold, or hints logic itself — only change layout and the unlock trigger.
+
+## Issue 1: Hints/solution appear BELOW the code area, forcing vertical eye travel
+
+Currently hints and the reference solution render in a stacked block below the code editor, forcing the student to scroll/look down then back up repeatedly while editing.
+
+### Fix: Split-screen layout (side panel, not below)
+
+Restructure Touch 4 into two side-by-side columns (desktop/tablet):
+
+```
+┌─────────────────────┬─────────────────────┐
+│                      │                     │
+│   Code editor        │   Side panel        │
+│   (student writes    │   (hints / solution │
+│    here)              │    appear here)     │
+│                      │                     │
+└─────────────────────┴─────────────────────┘
+```
+
+- Left/main column: the code editor (with the scaffold prefix + student's typing area, as already built)
+- Right column (side panel): a single, consistent container that displays whichever help content is currently active — empty/idle state by default, then Hint 1, then Hint 2, then Hint 3, then the reference solution — each REPLACING the previous content in the same panel (not stacking/accumulating multiple hint cards)
+- On mobile (narrow viewport): stack vertically as a fallback (side panel below code), since split-screen isn't practical on small screens — this is the only case where below-stacking is acceptable
+
+## Issue 2: Hints are only reachable after clicking "احفظ في مشروعي" (submit)
+
+Currently the hint button only becomes available after a failed save/submit attempt. This is confusing — hints should be accessible proactively, not gated behind a forced failed submission.
+
+### Fix: Time/state-based hint availability instead of submit-gated
+
+Change the unlock logic:
+
+- **Hint 1**: available immediately when Touch 4 loads — shown as a subtle button in the side panel from the start, no waiting required
+- **Hint 2**: becomes available when EITHER (a) the student has been inactive/not typing for 30-45 seconds after Hint 1 was opened, OR (b) a failed submit attempt occurs — whichever comes first
+- **Hint 3**: becomes available the same way, following Hint 2 being opened (inactivity timer OR failed attempt)
+- Reference solution (after Hint 3): still requires Hint 3 to have been opened first, same as before
+
+Keep the existing XP penalty exactly as already built (-10 per hint, cumulative) — only the UNLOCK TRIGGER changes, not the cost or the sequential one-way gating (still can't skip to hint 3 without 1 and 2).
+
+Remove any dependency on a submit/save action to reveal the hint buttons. The side panel's hint buttons should be visible (locked or unlocked state) from the moment Touch 4 loads.
+
+## Visual States in Side Panel
+
+```
+Idle (no hint opened yet):
+┌─────────────────────┐
+│  💡 تلميح ١           │
+│  (available now)     │
+└─────────────────────┘
+
+After opening Hint 1:
+┌─────────────────────┐
+│  💡 تلميح ١            │
+│  [hint 1 content]     │
+│                       │
+│  🔒 تلميح ٢ (قريباً)   │
+└─────────────────────┘
+
+After Hint 2 unlocks (time passed or failed attempt):
+┌─────────────────────┐
+│  💡 تلميح ٢            │
+│  [hint 2 content]     │
+└─────────────────────┘
+```
+
+Each new hint REPLACES the panel content (not appended below the previous one) — keep the panel clean and focused on one thing at a time. A small breadcrumb/progress indicator at the top of the panel (e.g., "١/٣") shows which tier is currently shown.
+
+## What NOT to Do
+- Do NOT change Level 1/2/3 validation logic
+- Do NOT change the XP penalty amounts or the one-way sequential gating (still can't jump to hint 3 directly)
+- Do NOT change the multiple-choice scaffold (first_move_choice) flow — this task is only about hints/solution positioning and unlock timing, independent of the scaffold feature
+- Do NOT remove the existing inactivity-based encouragement message (mentor avatar after 15s idle, from Micro-wins) — this is separate from hints and should still work; if both exist, make sure they don't visually collide (hint panel vs mentor avatar popup)
+
+## Testing
+- [ ] Desktop/tablet: code editor and side panel appear side-by-side
+- [ ] Mobile: side panel stacks below code (acceptable fallback)
+- [ ] Hint 1 is clickable immediately on Touch 4 load, no submit required
+- [ ] Hint 2 unlocks after ~30-45s inactivity OR after a failed submit, whichever first
+- [ ] Hint 3 follows same pattern after Hint 2
+- [ ] Each hint replaces the previous one in the same panel location (not stacked)
+- [ ] XP penalty still applies correctly per hint used
+- [ ] Reference solution still requires hint 3 opened first
+
+## Cost & Time
+- Extended Thinking: recommended (layout restructuring + unlock logic change together)
+- Time: 25-35 minutes
+- Cost: $7-10

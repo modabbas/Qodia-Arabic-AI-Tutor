@@ -9,7 +9,8 @@ import { sessionPerformance } from './session-performance';
 import { getGetLearningMapQueryKey } from '@workspace/api-client-react';
 import type { CodeValidationResult } from '@workspace/api-client-react';
 import { getGetTouch4SupportQueryKey, useGetTouch4Support, type Touch4Support } from '@workspace/api-client-react';
-import { Touch4HintButton, Touch4HintCards, Touch4HintProgress } from './touch4-hints';
+import { Touch4HelpPanel } from './touch4-hints';
+import { useTouch4Activity } from './touch4-activity';
 import { Touch4CodeMirror, Touch4DiffFeedback } from './touch4-code-feedback';
 import { CountUp, FxLayer, IdleMentor, caretPoint, readSound, useFx, useReducedMotion, writeSound } from './session-fx';
 import { getGetPrideMomentQueryKey, useGetPrideMoment } from '@workspace/api-client-react';
@@ -221,6 +222,15 @@ export default function Session() {
   function updateHintState(updated: Touch4Support) {
     queryClient.setQueryData(getGetTouch4SupportQueryKey(supportParams), updated);
   }
+  const activity = useTouch4Activity({
+    lessonId: session?.lesson_id ?? '',
+    active: touch === 4 && !correct && !fileSaved && !complete,
+    support,
+    getCurrent: () => queryClient.getQueryData<Touch4Support>(getGetTouch4SupportQueryKey({ lesson_id: session?.lesson_id ?? '' })),
+    onSnapshot: updateHintState,
+  });
+  const recordTypingRef = useRef(activity.recordTyping);
+  recordTypingRef.current = activity.recordTyping;
 
   useEffect(() => {
     if (touch !== 4 || !session) return;
@@ -421,6 +431,7 @@ export default function Session() {
     }
     const delta = el.value.length - code.length;
     setCode(el.value);
+    recordTypingRef.current();
     setBuildValidation(null);
     setFeedback(null);
     creditTyping(el, typingRef.current.input({ inputType: native.inputType ?? '', data: native.data ?? null, isComposing: native.isComposing }, delta));
@@ -537,7 +548,7 @@ export default function Session() {
   const perfect = complete && [0, 1, 2, 3, 4].every(i => results[i]?.passed) && mistakes === 0;
   const defense = session?.touch5_defend;
 
-  return <div className={s.session}>
+  return <div className={s.session} data-touch4={touch === 4 ? '1' : undefined}>
     {dashboard.isLoading || sessionLoading ? <main className={s.stage} role="status" data-testid="status-loading" style={{ minHeight: '70vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
       <div aria-hidden="true" style={{ width: 38, height: 38, border: '3px solid #252525', borderTopColor: '#22c55e', borderRadius: '50%', animation: 'session-spin .8s linear infinite', marginBottom: 20 }} />
       <div style={{ fontSize: 18 }}>مشرفك يحضّر جلستك المخصصة... 🎯</div>
@@ -575,6 +586,7 @@ export default function Session() {
             {!complete && touch === 2 && <section className={s.card}><p className={s.introtext}>{session.touch2_reveal.explanation}</p><p className={s.valueslabel}>خيارات ومفاهيم مرتبطة:</p><div className={s.values}>{session.touch2_reveal.values_table.map((row, index) => <div className={s.valuerow} key={`${row.code}-${index}`}><div className={s.valuename}>{row.code}</div><div className={s.valuedesc}>{row.meaning}</div></div>)}</div><div className={s.check}><div className={s.checkq}>قبل ما نكمّل — سؤال سريع:</div><div className={s.checkmain}>{session.touch2_reveal.verification_question}</div>{choices(session.touch2_reveal.verification_options, session.touch2_reveal.correct_index, session.touch2_reveal.feedback_correct, session.touch2_reveal.feedback_wrong, true)}</div>{feedbackNode}{nextNode}</section>}
             {!complete && touch === 3 && <section className={s.card}><div className={s.q}>{session.touch3_explore.question}</div>{choices(session.touch3_explore.options, session.touch3_explore.correct_index, session.touch3_explore.feedback_correct, session.touch3_explore.feedback_wrong)}{feedbackNode}{nextNode}</section>}
             {!complete && touch === 4 && build && <section className={s.card} data-testid="touch4-conversation" data-scaffold-tier={scaffold?.tier ?? 'none'}><Touch4Mentor task={build.task_description} concept={session.concept_name_ar} />
+<div className={s.t4Split}><div className={s.t4Main}>
               <p className={s.fileTarget}>{session.is_review ? 'تدريب مراجعة مرتبط بالملف:' : 'اليوم رح تضيف كود لـ:'} <span dir="ltr">{build.target_file}</span></p>
               <p className={s.fileNote}>{session.is_review ? 'الكود هون تدريب للمراجعة فقط، والملف الأصلي ما بيتغيّر.' : 'هذا الكود سيُحفظ في مشروعك الحقيقي.'} {build.integration_note}</p>
               {build.existing_content && <div className={s.priorFile}><strong>الملف الحالي (للقراءة فقط):</strong><pre dir="ltr"><code>{highlightCode(build.existing_content)}</code></pre></div>}
@@ -592,15 +604,19 @@ export default function Session() {
              </div>
               <div className={s.codeEntry} onPointerMove={event => { if (event.pointerType === 'touch') return; const now = Date.now(); if (now - trailRef.current < 70) return; trailRef.current = now; fx.dot(event.clientX, event.clientY); }}><pre className={s.syntaxMirror} aria-hidden="true"><Touch4CodeMirror code={code || lockedPrefix} lockedPrefix={lockedPrefix} file={build.target_file} completed={correct} highlight={highlightCode} /></pre><textarea ref={inputRef} className={s.codeTextarea} value={code || lockedPrefix} disabled={correct || saveFile.isPending} onChange={onCodeChange} onSelect={event => { const el = event.currentTarget; const [start, end] = editableSelection(el.selectionStart, el.selectionEnd, lockedPrefix.length); if (start !== el.selectionStart || end !== el.selectionEnd) el.setSelectionRange(start, end); }} onCompositionStart={() => typingRef.current.compositionStart()} onCompositionEnd={event => creditTyping(event.currentTarget, typingRef.current.compositionEnd(event.data))} onScroll={event => { const mirror = event.currentTarget.previousElementSibling; if (mirror) { mirror.scrollTop = event.currentTarget.scrollTop; mirror.scrollLeft = event.currentTarget.scrollLeft; } }} onPaste={event => { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); }} onDrop={event => event.preventDefault()} onKeyDown={event => { if (event.key === 'Backspace' && event.currentTarget.selectionStart <= lockedPrefix.length && event.currentTarget.selectionEnd <= lockedPrefix.length) event.preventDefault(); if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') { event.preventDefault(); setFeedback({ ok: false, text: 'اللصق مقفول. اكتبها بإيدك — هيك بتتذكرها يوم المناقشة.' }); } if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') { event.preventDefault(); void checkCode(); } }} placeholder={build.code_placeholder} autoComplete="off" spellCheck={false} data-testid="input-code-answer" aria-describedby={lockedPrefix ? 'scaffold-prefix-note' : undefined} aria-label={`اكتب كود الملف ${build.target_file}`} /></div>
               <p className={s.small}>الإشارات تحت الأسطر فحص محلي خفيف بعد التوقف عن الكتابة؛ ما بتمنع الحفظ. الفحص الكامل عند الإرسال.</p>
-              <Touch4HintProgress support={support} attempts={codeTries} />
-              <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><Touch4HintButton support={support} lessonId={session.lesson_id ?? ''} busy={saveFile.isPending || hintBusy} completed={correct} loadError={touch4Support.isError} onBusy={setHintBusy} onState={updateHintState} onSelect={level => setHintSelection({ lesson: session.lesson_id ?? '', level })} onRefresh={() => touch4Support.refetch()} /><button ref={checkBtnRef} className={`${s.btn} ${fileSaved ? s.savedPulse : ''}`} disabled={correct || saveFile.isPending || hintBusy} aria-busy={saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? <><LoaderCircle className={s.checkingSpinner} size={16} aria-hidden="true" /> عم أتفحص كودك...</> : session.is_review ? 'سجّل تدريب المراجعة' : 'احفظ في مشروعي'}</button></div>
+              <div className={s.editoractions}><span className={s.small}>اكتب على أكثر من سطر. Ctrl+Enter للحفظ.</span><button ref={checkBtnRef} className={`${s.btn} ${fileSaved ? s.savedPulse : ''}`} disabled={correct || saveFile.isPending || hintBusy} aria-busy={saveFile.isPending} onClick={event => { void checkCode(event); }} data-testid="button-check-code">{saveFile.isPending ? <><LoaderCircle className={s.checkingSpinner} size={16} aria-hidden="true" /> عم أتفحص كودك...</> : session.is_review ? 'سجّل تدريب المراجعة' : 'احفظ في مشروعي'}</button></div>
               <p className={s.small} data-testid="text-code-attempts">محاولات هاللمسة: {arabic(codeTries)}</p>
               {buildValidation && <div className={s.hinttext} role="status" aria-live="polite" data-testid="status-build-validation"><strong>{buildValidation.valid ? buildValidation.semantic_status === 'checked' ? 'ممتاز! حلّك حقق المطلوب.' : 'اجتزت الفحوص الأولية.' : buildValidation.level === 1 ? 'الكود مش جاهز بعد.' : buildValidation.level === 2 ? 'قريب! بس في شي ناقص.' : 'في جزء من منطق الحل يحتاج مراجعة.'}</strong><p>مستوى الفحص: {arabic(buildValidation.level)}{buildValidation.score !== null && <> · الدرجة: <span data-testid="text-code-score">{arabic(buildValidation.score)}/١٠٠</span></>}</p>{buildValidation.semantic_status === 'unavailable' && <p>التقييم المنطقي غير متاح؛ القبول مبني على الصياغة والبنية فقط.</p>}{buildValidation.hint_ar && <p>{buildValidation.hint_ar}</p>}{buildValidation.suggestions.length > 0 && <ul>{buildValidation.suggestions.map((suggestion, i) => <li key={i}>{suggestion}</li>)}</ul>}{buildValidation.can_retry && <p>عدّل كودك وجرب مرة ثانية بنفس الزر.</p>}</div>}
               {buildValidation?.diff && !buildValidation.valid && buildValidation.level < 3 && <>{buildValidation.level !== 1 && <p className={s.error} role="alert">{buildValidation.feedback_ar}</p>}<Touch4DiffFeedback diff={buildValidation.diff} syntaxError={buildValidation.level === 1} /></>}
-              <Touch4HintCards support={support} completed={correct} selectedLevel={hintSelection && hintSelection.lesson === session.lesson_id ? hintSelection.level : undefined} />
               <div className={s.lock}>🔒 اللصق مقفول · اكتب الكود بيدك</div><div className={s.practice} data-testid="text-typing-practice">نقاط تدريب: <b>+{arabic(practice)}</b> · كل ٥ أحرف تكتبها بإيدك = +١ للتشجيع فقط، وما بتغيّر نقاطك المحفوظة.</div>{buildValidation?.diff && !buildValidation.valid && buildValidation.level < 3 ? null : feedbackNode}
               {fileSaveError && <p className={s.error} role="alert">{session.is_review ? 'تدريب المراجعة لم يُسجّل بعد.' : 'الكود لم يُحفظ بعد.'} أعد المحاولة بنفس الزر.</p>}
               {fileSaved && <Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link>}{nextNode}</>}
+              </div>
+              <Touch4HelpPanel support={support} lessonId={session.lesson_id ?? ''} busy={saveFile.isPending || hintBusy} completed={correct} loadError={touch4Support.isError}
+                activityError={activity.error} onRetryActivity={activity.retry} onBusy={setHintBusy} onState={updateHintState} onRefresh={() => touch4Support.refetch()}
+                selectedLevel={hintSelection && hintSelection.lesson === session.lesson_id ? hintSelection.level : undefined}
+                onSelect={level => setHintSelection({ lesson: session.lesson_id ?? '', level })} />
+              </div>
             </section>}
             {!complete && touch === 5 && defense && <section className={`${s.card} ${s.boss}`}><div className={s.bosshead}><div className={`${s.ring} ${!correct && seconds > 0 && seconds <= 10 ? seconds <= 5 ? s.urgent2 : s.urgent1 : ''}`}><svg width="52" height="52" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" className={s.ringbg} /><circle cx="24" cy="24" r="20" className={s.ringfg} strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * (1 - seconds / 30)} /></svg><span data-testid="text-countdown">{arabic(seconds)}</span></div><div className={s.hp}><div className={s.hpl}><span>ثقتك قدام اللجنة</span><span data-testid="text-confidence">{arabic(confidence)}٪</span></div><div className={s.hpb}><i style={{ width: `${confidence}%` }} /></div></div></div><div className={s.judge}>{phase === 'first' ? 'عضو لجنة المناقشة:' : 'الدكتور ما اكتفى:'}</div>
               <div className={s.q}>{phase === 'first' ? defense.committee_question : defense.followup_question}</div>

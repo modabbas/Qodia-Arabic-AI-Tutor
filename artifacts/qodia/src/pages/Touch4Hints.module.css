@@ -29,4 +29,15 @@
 @keyframes hintGlow { 50% { box-shadow: 0 0 10px #22c55e33; } }
 @keyframes hintIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 600px) { .summary { display: grid; } .button { padding: 10px; font-size: 12px; max-width: 100%; } .card { padding: 14px; } }
-@media (prefers-reduced-motion: reduce) { .available, .card, .hero, .spinner { animation: none; } .fill { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .available, .card, .hero, .spinner { animation: none; } .fill { transition: none; } }.panel { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 14px; border: 1px solid #333; border-radius: 14px; background: #121212; }
+.panelHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.panelTitle { color: #f5b84a; font-weight: 600; font-size: 14px; }
+.crumb { font-size: 12px; color: #1a1200; background: #f5b84a; border-radius: 999px; padding: 1px 10px; font-variant-numeric: tabular-nums; }
+.panel .buttons { flex-direction: column; }
+.panel .button { width: 100%; justify-content: flex-start; min-height: 44px; }
+.panel .progressBlock { margin: 10px 0; }
+.panel .help { margin: 8px 0 0; }
+.idle { margin-top: 12px; padding: 16px; border: 1px dashed #3a3a3a; border-radius: 12px; color: #a8a8a8; font-size: 13px; line-height: 1.9; }
+.idle strong { color: #ecd4a9; }
+.idle p { margin: 6px 0 0; }
+@media (prefers-reduced-motion: reduce) { .panel * { animation: none !important; transition: none !important; } }

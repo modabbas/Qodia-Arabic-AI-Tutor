@@ -62,6 +62,8 @@ export * from './projectVerificationStatus';
 export * from './sessionInput';
 export * from './signUpInput';
 export * from './techStack';
+export * from './touch4ActivityInput';
+export * from './touch4ActivityInputKind';
 export * from './touch4FirstMove';
 export * from './touch4FirstMoveOption';
 export * from './touch4Hint';

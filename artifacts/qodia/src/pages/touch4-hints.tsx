@@ -11,9 +11,9 @@ export function Touch4HintProgress({ support, attempts }: { support?: Touch4Supp
   const penalty = support?.xp_penalty ?? 0;
   return <div className={s.progressBlock}>
     <div className={s.summary} data-testid="text-hint-progress">
-      <span>التلميحات المستخدمة: {ar(used)}/٣ · محاولة {ar(attempts)}</span>
+      <span>التلميحات: {ar(used)}/٣ · محاولات {ar(attempts)}</span>
       <span className={penalty ? s.penalty : s.muted} data-testid="text-hint-penalty">
-        {penalty ? `الخصم الحالي: −${ar(penalty)} XP` : 'الخصم الحالي: ٠ XP'}
+        {penalty ? `الخصم: −${ar(penalty)} XP` : 'الخصم: ٠ XP'}
       </span>
     </div>
     <div className={s.track} role="progressbar" aria-label="التلميحات المستخدمة" aria-valuemin={0} aria-valuemax={3} aria-valuenow={used}>
@@ -41,6 +41,7 @@ export function Touch4HintButton({ support, lessonId, busy, completed, loadError
   const [pendingLevel, setPendingLevel] = useState<number | null>(null);
   const used = support?.hints_used ?? 0;
   const exhausted = used === 3;
+  const solutionSeen = !!support?.solution_viewed && !!support.reference_solution;
   const canShowSolution = !!support && !completed && !support.build_saved && !support.solution_viewed && exhausted;
 
   async function showHint(level?: number) {
@@ -49,7 +50,8 @@ export function Touch4HintButton({ support, lessonId, busy, completed, loadError
       if (hintButtonState(support, level, completed) === 'locked') return;
       const existing = support?.revealed_hints.find(hint => hint.level === level && hintCanDisplay(hint));
       if (existing) { setError(''); onSelect(level); return; }
-    } else if (!canShowSolution) return;
+    } else if (solutionSeen) { setError(''); onSelect(0); return; }
+    else if (!canShowSolution) return;
     lock.current = true;
     setPendingLevel(level ?? 0);
     onBusy(true);
@@ -60,7 +62,7 @@ export function Touch4HintButton({ support, lessonId, busy, completed, loadError
         ...(level !== undefined ? { level } : {}),
       } });
       onState(updated);
-      if (level !== undefined) onSelect(level);
+      onSelect(level ?? 0);
     } catch (failure) {
       const body = (failure as { data?: { error?: string } }).data;
       setError(body?.error ?? 'ما قدرنا نحمّل التلميح هالمرة. ما انخصمت أي نقاط إضافية؛ فيك تحاول مرة تانية.');
@@ -81,17 +83,17 @@ export function Touch4HintButton({ support, lessonId, busy, completed, loadError
           disabled={busy || reveal.isPending || state === 'locked'}
           onClick={state === 'locked' ? undefined : () => { void showHint(level); }}
           aria-busy={pendingLevel === level} data-testid={`button-hint-${level}`} data-hint-state={state}
-          title={state === 'locked' ? `يحتاج التلميح ${ar(level)} ${ar(level)} محاولات فاشلة وفتح التلميحات السابقة، ومحاولة جديدة بعد آخر تلميح.` : state === 'unlocked' ? 'عرض مجدداً بدون خصم إضافي.' : undefined}>
+          title={state === 'locked' ? `بيتفتح بعد ٣٥ ثانية بدون كتابة أو بعد محاولة فاشلة جديدة، وبعد فتح اللي قبله.` : state === 'unlocked' ? 'عرض مجدداً بدون خصم إضافي.' : undefined}>
           {pendingLevel === level ? <LoaderCircle className={s.spinner} size={14} aria-hidden="true" />
             : state === 'locked' ? <LockKeyhole size={13} aria-hidden="true" /> : null}
-          تلميح {ar(level)}{state === 'unlocked' ? ' — راجع' : state === 'available' ? ' (−١٠ XP)' : ''}
+          تلميح {ar(level)}{state === 'unlocked' ? ' — راجع' : state === 'available' ? ' (−١٠ XP)' : support && level === used + 1 ? ' (قريباً)' : ''}
         </button>;
       })}
-      {canShowSolution && <button type="button" className={`${s.button} ${s.exhausted}`}
-        disabled={busy || reveal.isPending} onClick={() => { void showHint(); }}
-        aria-busy={pendingLevel === 0} data-testid="button-reference-solution">
-        {pendingLevel === 0 ? <LoaderCircle className={s.spinner} size={14} aria-hidden="true" /> : null}
-        عرض الحل النموذجي (−٢٠ XP إضافية)
+      {(canShowSolution || solutionSeen || !completed) && <button type="button" className={`${s.button} ${canShowSolution || solutionSeen ? s.exhausted : ''}`}
+        disabled={busy || reveal.isPending || !(canShowSolution || solutionSeen)} onClick={() => { void showHint(); }}
+        aria-busy={pendingLevel === 0} data-testid="button-reference-solution" data-hint-state={solutionSeen ? 'unlocked' : canShowSolution ? 'available' : 'locked'}>
+        {pendingLevel === 0 ? <LoaderCircle className={s.spinner} size={14} aria-hidden="true" /> : !(canShowSolution || solutionSeen) ? <LockKeyhole size={13} aria-hidden="true" /> : null}
+        {solutionSeen ? 'الحل النموذجي — راجع' : 'الحل (−٢٠ XP)'}
       </button>}
     </div>
     {loadError && <button className={s.retry} type="button" disabled={busy} onClick={() => { void onRefresh(); }}>إعادة تحميل التلميحات</button>}
@@ -103,28 +105,53 @@ export function Touch4HintCards({ support, completed, selectedLevel }: { support
   if (!support) return null;
   const revealed = support.revealed_hints.filter(hint => hint.level <= support.hints_used && hintCanDisplay(hint))
     .sort((a, b) => a.level - b.level);
-  const currentHint = revealed.find(hint => hint.level === selectedLevel) ?? revealed.at(-1);
+  const solutionReady = support.solution_viewed && !!support.reference_solution;
+  const showSolution = solutionReady && (selectedLevel === 0 || selectedLevel === undefined);
+  const currentHint = showSolution ? undefined : revealed.find(hint => hint.level === selectedLevel) ?? revealed.at(-1);
+  const idle = !showSolution && !currentHint;
   return <div aria-live="polite" className={s.cards}>
-    {!completed && !support.build_saved && !support.solution_viewed && !support.can_reveal_next && support.hints_used < 3 &&
-      <p className={s.help} data-testid="text-hint-lock">
-        {support.hints_used === 0
-          ? 'جرّب كتابة الكود أولاً؛ التلميح بيصير متاح بعد محاولة ما بتجتاز الفحص.'
-          : 'جرّب تعدّل الكود حسب التلميح. إذا الفحص ما مرّ، التلميح التالي بيصير متاح.'}
-      </p>}
+    {idle && <div className={s.idle} data-testid="text-help-idle"><strong>المساعدة جاهزة لما تحتاجها</strong>
+      <p>جرّب تكتب أول خطوة بنفسك. إذا علقت، افتح التلميح ١ — بيخصم ١٠ XP فقط.</p></div>}
     {currentHint && <section className={s.card} key={currentHint.level} data-testid={`card-hint-${currentHint.level}`}>
       <h3>تلميح {ar(currentHint.level)}/٣{currentHint.level === 3 ? ' — الأخير' : ''}</h3>
       <p>{currentHint.text_ar}</p>
       {currentHint.level !== 3 && currentHint.example && <p>مثال: {currentHint.example}</p>}
       {currentHint.level !== 3 && currentHint.code_example && <pre dir="ltr"><code>{currentHint.code_example}</code></pre>}
-      <small>خصم هالتلميح: −١٠ XP، محسوب ضمن المجموع.</small>
+      <small>خصم هالتلميح: −١٠ XP، ومراجعته مجانية.</small>
     </section>}
-    {support.solution_viewed && support.reference_solution && <section className={s.card} data-testid="card-reference-solution">
+    {showSolution && <section className={s.card} key="solution" data-testid="card-reference-solution">
       <h3>الحل النموذجي — اقرأه وجرّب تكتبه بطريقتك</h3>
       <pre dir="ltr"><code>{support.reference_solution}</code></pre>
-      <small>المجموع: −٥٠ XP. مشاهدة الحل ما بتتجاوز فحص الكود؛ لسه لازم تحاول وتنجح.</small>
+      <small>المجموع: −٥٠ XP. مراجعة الحل مجانية، ومشاهدته ما بتتجاوز فحص الكود؛ لسه لازم تحاول وتنجح.</small>
     </section>}
     {completed && support.first_try_bonus === 50 && <section className={s.hero} data-testid="status-first-try-hero">
       <strong>نجحت من أول محاولة!</strong><span>مكافأة إضافية: +٥٠ XP</span>
     </section>}
   </div>;
+}
+
+type PanelProps = Omit<ButtonProps, 'support'> & {
+  support?: Touch4Support; selectedLevel?: number; activityError: boolean; onRetryActivity: () => void;
+};
+
+export function Touch4HelpPanel({ support, selectedLevel, activityError, onRetryActivity, ...rest }: PanelProps) {
+  const used = support?.hints_used ?? 0;
+  const closed = rest.completed || !!support?.build_saved || !!support?.solution_viewed;
+  const shown = selectedLevel === 0 ? '٤' : ar(Math.min(3, selectedLevel ?? used));
+  let note = 'التلميح ١ جاهز من البداية، ما تحتاج تحاول أول.';
+  if (!support) note = rest.loadError ? 'ما قدرنا نحمّل حالة التلميحات.' : 'عم نحمّل التلميحات...';
+  else if (closed || used === 3) note = used === 3 ? 'استخدمت التلميحات الثلاثة. الحل متاح إذا احتجته.' : 'المراجعة مجانية.';
+  else if (used > 0 && !support.can_reveal_next) note = 'التلميح التالي بيتفتح بعد ٣٥ ثانية بدون كتابة، أو بعد محاولة فاشلة جديدة.';
+  else if (used > 0) note = 'التلميح التالي صار متاح.';
+  return <aside className={s.panel} aria-label="لوحة المساعدة" data-testid="panel-touch4-help">
+    <div className={s.panelHead}>
+      <span className={s.crumb} data-testid="text-hint-breadcrumb">{selectedLevel === 0 ? 'الحل النموذجي' : used === 0 ? 'جاهز' : `${shown}/٣`}</span>
+      <span className={s.panelTitle}>مساعدة</span>
+    </div>
+    <Touch4HintProgress support={support} attempts={support?.attempts ?? 0} />
+    <Touch4HintButton {...rest} support={support} />
+    <p className={s.help} data-testid="text-hint-timing">{note}</p>
+    {activityError && <p className={s.requestError} role="alert" data-testid="status-activity-error">ما قدرنا نحدّث توقيت التلميح. التلميح التالي يبقى مقفول لحد ما نتأكد. <button type="button" className={s.retry} onClick={onRetryActivity} data-testid="button-retry-activity">حاول مرة ثانية</button></p>}
+    <Touch4HintCards support={support} completed={rest.completed} selectedLevel={selectedLevel} />
+  </aside>;
 }

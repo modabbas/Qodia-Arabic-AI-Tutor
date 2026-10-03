@@ -4,6 +4,9 @@ import {
   canRevealHint,
   canRevealNextHint,
   firstTryBonusEligible,
+  hintActivityClock,
+  hintIdleReady,
+  touch4HintIdleMs,
   hint3TeachingFailureReason,
   parseTouch4HintBundle,
   touch4HintBundleFailureReason,
@@ -21,8 +24,8 @@ const bundle = {
   reference_solution: "dependency: full-solution",
 };
 
-test("Touch 4 hints unlock sequentially only after new validation failures", () => {
-  assert.equal(canRevealNextHint(0, 0, 0), false);
+test("hint 1 is immediate; later hints unlock from idle or a new failure", () => {
+  assert.equal(canRevealNextHint(0, 0, 0), true);
   assert.equal(canRevealHint(0, 1, 0, 1), true);
   assert.equal(canRevealHint(0, 1, 0, 2), false);
   // If the first hint is used after multiple failures, another failure is still required.
@@ -33,6 +36,13 @@ test("Touch 4 hints unlock sequentially only after new validation failures", () 
   assert.equal(canRevealNextHint(3, 100, 4), false);
   assert.equal(canRevealNextHint(0, 1, 0, true), false);
   assert.equal(canRevealNextHint(3, 100, 4, false, true), false);
+  assert.equal(canRevealHint(1, 0, 0, 2), false);
+  assert.equal(canRevealHint(1, 0, 0, 2, false, false, true), true);
+  assert.equal(canRevealHint(1, 1, 0, 2), true);
+  assert.equal(canRevealHint(2, 1, 0, 3), true);
+  assert.equal(canRevealHint(2, 0, 0, 3, false, false, true), true);
+  assert.equal(canRevealHint(2, 0, 0, 3, true, false, true), false);
+  assert.equal(canRevealHint(1, 0, 0, 2, false, true, true), false);
 });
 
 test("hint schema distinguishes exactly three ordered levels and their content", () => {
@@ -108,16 +118,32 @@ test("old cached templates remain readable only in explicit legacy mode, not del
   assert.equal(hint3TeachingFailureReason(legacy.hints[2]), "level3_code_example_forbidden");
 });
 
-test("all levels require contiguous unlocks and their own failed-attempt checkpoints", () => {
+test("all levels require contiguous reveals; only hint 1 is unconditional", () => {
   for (let used = 0; used < 3; used++) {
     for (let level = 1; level <= 3; level++) {
       assert.equal(canRevealHint(used, used + 1, used, level), level === used + 1);
-      assert.equal(canRevealHint(used, used, used, level), false);
+      assert.equal(canRevealHint(used, used, used, level), used === 0 && level === 1);
+      assert.equal(canRevealHint(used, used, used, level, false, false, true), level === used + 1);
     }
   }
   assert.equal(canRevealNextHint(-1, 4, 0), false);
   assert.equal(canRevealNextHint(1.5, 4, 0), false);
   assert.equal(canRevealHint(0, 1, 0, 1.5), false);
+});
+
+test("idle deadline starts at 35 seconds, typing resets it, and checks do not reset it", () => {
+  const start = hintActivityClock(null, false, "idle", 1_000);
+  assert.equal(start.hintIdleDeadline!.getTime(), 1_000 + touch4HintIdleMs);
+  assert.equal(hintIdleReady(start.hintIdleDeadline, false, 35_999), false);
+  assert.equal(hintIdleReady(start.hintIdleDeadline, false, 36_000), true);
+  const typed = hintActivityClock(start.hintIdleDeadline, false, "typing", 20_000);
+  assert.equal(typed.hintIdleDeadline!.getTime(), 55_000);
+  const checked = hintActivityClock(typed.hintIdleDeadline, false, "idle", 40_000);
+  assert.equal(checked.hintIdleDeadline!.getTime(), 55_000);
+  assert.equal(checked.nextHintUnlocked, false);
+  const unlocked = hintActivityClock(checked.hintIdleDeadline, false, "idle", 55_000);
+  assert.equal(unlocked.nextHintUnlocked, true);
+  assert.deepEqual(hintActivityClock(unlocked.hintIdleDeadline, true, "typing", 60_000), unlocked);
 });
 
 test("hint and solution penalties are cumulative, idempotent-state bounded, and max at 50", () => {

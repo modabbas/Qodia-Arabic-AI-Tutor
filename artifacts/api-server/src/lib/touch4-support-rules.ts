@@ -124,19 +124,36 @@ export function parseTouch4HintBundle(value: unknown, allowLegacyLevel3 = false)
   };
 }
 
+export const touch4HintIdleMs = 35_000;
+
+export function hintIdleReady(deadline: Date | null | undefined, unlocked: boolean, now = Date.now()): boolean {
+  return unlocked || !!deadline && deadline.getTime() <= now;
+}
+
+export function hintActivityClock(
+  deadline: Date | null, unlocked: boolean, kind: "typing" | "idle", now = Date.now(),
+) {
+  const ready = hintIdleReady(deadline, unlocked, now);
+  return {
+    nextHintUnlocked: ready,
+    hintIdleDeadline: ready ? deadline : kind === "typing" || !deadline ? new Date(now + touch4HintIdleMs) : deadline,
+  };
+}
+
 export function canRevealNextHint(
   hintsUsed: number,
   failedAttempts: number,
   failuresAtLastHint: number,
   buildSaved = false,
   solutionViewed = false,
+  idleReady = false,
 ): boolean {
   return !buildSaved && !solutionViewed && hintsUsed < 3
     && Number.isInteger(hintsUsed) && hintsUsed >= 0
     && Number.isInteger(failedAttempts) && Number.isInteger(failuresAtLastHint)
     && failuresAtLastHint >= 0
-    && failedAttempts > failuresAtLastHint
-    && failedAttempts >= hintsUsed + 1;
+    && failedAttempts >= failuresAtLastHint
+    && (hintsUsed === 0 || failedAttempts > failuresAtLastHint || idleReady);
 }
 
 export function canRevealHint(
@@ -146,9 +163,10 @@ export function canRevealHint(
   level: number,
   buildSaved = false,
   solutionViewed = false,
+  idleReady = false,
 ): boolean {
   return level === hintsUsed + 1
-    && canRevealNextHint(hintsUsed, failedAttempts, failuresAtLastHint, buildSaved, solutionViewed);
+    && canRevealNextHint(hintsUsed, failedAttempts, failuresAtLastHint, buildSaved, solutionViewed, idleReady);
 }
 
 export function touch4XpPenalty(hintsUsed: number, solutionViewed: boolean): number {
