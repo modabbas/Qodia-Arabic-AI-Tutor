@@ -10,8 +10,23 @@ type Build = {
   drag_order_separator?: "" | "\n";
 };
 
-export function getTouch4Mode(encounters: number): Touch4Mode {
-  return encounters <= 0 ? "drag-order" : encounters === 1 ? "fill-blank" : "free-write";
+export function getTouch4Mode(encounters = 0): Touch4Mode {
+  const count = Number.isSafeInteger(encounters) && encounters > 0 ? encounters : 0;
+  return count === 0 ? "drag-order" : count === 1 ? "fill-blank" : "free-write";
+}
+
+/** Repair only untouched first encounters with an existing canonical solution. */
+export function needsFirstEncounterModeRepair(build: Build, encounters: number, hasStudentWork: boolean): boolean {
+  if (hasStudentWork || getTouch4Mode(encounters) !== "drag-order"
+    || !build.reference_solution?.trim() || !build.interaction_mode
+    || build.interaction_mode === "drag-order") return false;
+  try {
+    // An unsent browser continuation may still exist. Never change its prefix
+    // while repairing the mode, or reinterpret it against different source.
+    return prepareTouch4Interaction(build, 0, true).fixed_code === build.fixed_code;
+  } catch {
+    return false;
+  }
 }
 
 /** Keep an unfinished lesson's input contract stable, including after reload. */

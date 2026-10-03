@@ -9,6 +9,7 @@ import {
   projectFilesTable,
   reviewExercisesTable,
   sessionsTable,
+  touch4SupportTable,
 } from "@workspace/db";
 import { GetGeneratedSessionResponse } from "@workspace/api-zod";
 import { requireUser } from "../lib/qodia-auth";
@@ -29,7 +30,7 @@ import {
 } from "../lib/learning-path";
 import { hint3TeachingInstruction, parseTouch4HintBundle } from "../lib/touch4-support-rules";
 import { completedConceptEncounters, scaffoldingFor, withFirstMoveFallback } from "../lib/touch4-scaffolding";
-import { getTouch4Mode, prepareTouch4Interaction } from "../lib/touch4-interactions";
+import { getTouch4Mode, needsFirstEncounterModeRepair, prepareTouch4Interaction } from "../lib/touch4-interactions";
 import { connectThreadInstruction, secondaryStackContext, withConnectThreadFallback } from "../lib/connect-thread";
 
 const router: IRouter = Router();
@@ -742,7 +743,23 @@ async function generateOrLoadLesson(
             const result = await attachReviewDraft(tx, userId, valid);
             const encounters = Math.max(concept.encounter_count ?? 0,
               completedConceptEncounters(progressRows, concept.id, concept.name_en, result.lesson_id));
-            result.touch4_build = prepareTouch4Interaction(result.touch4_build, encounters);
+            let repairMode = false;
+            if (needsFirstEncounterModeRepair(result.touch4_build, encounters, false)) {
+              const [support] = await tx.select().from(touch4SupportTable).where(and(
+                eq(touch4SupportTable.userId, userId),
+                eq(touch4SupportTable.lessonId, result.lesson_id!),
+              )).limit(1);
+              const hasStudentWork = !!result.review_draft?.trim()
+                || files.some(file => file.path === result.touch4_build.target_file && file.status === "in_progress" && !!file.content.trim())
+                || progressRows.some(row => row.lessonId === result.lesson_id && row.touchesCompleted >= 4)
+                || !!support && (support.attempts > 0 || support.hintsUsed > 0 || support.buildSaved || support.solutionViewed);
+              repairMode = needsFirstEncounterModeRepair(result.touch4_build, encounters, hasStudentWork);
+            }
+            result.touch4_build = prepareTouch4Interaction(result.touch4_build, encounters, repairMode);
+            if (repairMode) req.log.info({
+              step: "touch4_mode_selection", concept_id: concept.id, encounter_count: encounters,
+              interaction_mode: result.touch4_build.interaction_mode,
+            }, "Repaired untouched first-encounter input mode from saved lesson");
             result.touch4_build.scaffolding = {
               ...scaffoldingFor(result.touch4_build.first_move_choice, concept.mastery_score, encounters, !!result.is_review),
               tier: result.touch4_build.interaction_mode === "fill-blank" && result.touch4_build.first_move_choice ? "guided" : "none",

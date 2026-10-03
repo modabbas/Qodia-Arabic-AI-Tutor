@@ -20,3 +20,9 @@ Exercise formatting mismatches should be repaired locally from the canonical ref
 **Why:** Live generation reached parsed lesson data but failed the ordering-format contract. Retrying generation did not resolve that blocker; whitespace and chunk boundaries are not themselves evidence that the programming task is invalid.
 
 **How to apply:** Preserve source semantics when grouping chunks, including single-line expressions. Never insert line breaks merely to satisfy the visual puzzle format, and never reinterpret an unfinished lesson's already-pinned contract.
+
+Correct an untouched cached first encounter's wrong mode only when the canonical source is available and its fixed prefix can remain identical. Preserve a started attempt's input contract.
+
+**Why:** A lesson can retain an incorrect cached mode despite a zero encounter count. However, absence of a server draft does not prove absence of work: an unsent browser continuation may still depend on the original prefix.
+
+**How to apply:** Distinguish safe mode repair from changing existing source or discarding input. Preserve browser-only continuations as full source when switching their editor compatibility mode; never regenerate a lesson to repair this metadata.

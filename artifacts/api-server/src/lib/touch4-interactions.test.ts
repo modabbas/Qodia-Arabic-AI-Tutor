@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { composeTouch4Submission, getTouch4Mode, prepareTouch4Interaction } from "./touch4-interactions.ts";
+import { composeTouch4Submission, getTouch4Mode, needsFirstEncounterModeRepair, prepareTouch4Interaction } from "./touch4-interactions.ts";
 
 const build = { starter_code: "// reference example", existing_content: "",
   reference_solution: 'import x from "x";\nconst root = x();\nroot.render("test");',
@@ -10,6 +10,26 @@ test("familiarity alone selects all three modes, not mastery", () => {
   assert.equal(getTouch4Mode(1), "fill-blank");
   assert.equal(getTouch4Mode(2), "free-write");
   assert.equal(getTouch4Mode(10), "free-write");
+});
+test("missing or invalid encounter counts never default to independent writing", () => {
+  assert.equal(getTouch4Mode(), "drag-order");
+  for (const value of [NaN, Infinity, -1, 0.5]) assert.equal(getTouch4Mode(value), "drag-order");
+});
+test("an untouched cached first encounter repairs an incorrectly pinned writing mode", () => {
+  const cached = prepareTouch4Interaction(build, 2);
+  assert.equal(cached.interaction_mode, "free-write");
+  assert.equal(needsFirstEncounterModeRepair(cached, 0, false), true);
+  const repaired = prepareTouch4Interaction(cached, 0, needsFirstEncounterModeRepair(cached, 0, false));
+  assert.equal(repaired.interaction_mode, "drag-order");
+  assert.equal(composeTouch4Submission(repaired, {
+    content: "", input_kind: "chunk-order", chunk_order: repaired.drag_order_lines!.map((_, index) => index),
+  }), build.reference_solution);
+  assert.equal(needsFirstEncounterModeRepair(cached, 0, true), false);
+  assert.equal(needsFirstEncounterModeRepair(cached, 2, false), false);
+  assert.equal(needsFirstEncounterModeRepair({ ...cached, reference_solution: undefined }, 0, false), false);
+  assert.equal(needsFirstEncounterModeRepair(repaired, 0, false), false);
+  const shortTail = { ...cached, fixed_code: 'const answer = ', reference_solution: 'const answer = 1' };
+  assert.equal(needsFirstEncounterModeRepair(shortTail, 0, false), false);
 });
 test("historical multiline source can supply real chunks without generating a new lesson", () => {
   const prepared = prepareTouch4Interaction(build, 0);

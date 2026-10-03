@@ -80,3 +80,11 @@ test("repeat tracking includes legacy names, excludes partial and current lesson
     { ...row, conceptId: "c2" },
   ], "c1", "React useState", "current"), 2);
 });
+test("a reused ordinal concept id cannot make an unseen named concept familiar", () => {
+  const old = { conceptId: "concept_1", concept: "Previously learned concept — قديم", lessonId: "old", touchesCompleted: 5 };
+  assert.equal(completedConceptEncounters([old, { ...old, lessonId: "older" }], "concept_1", "Brand new concept", undefined), 0);
+  assert.equal(completedConceptEncounters([
+    { ...old, concept: "  BRAND   NEW CONCEPT — جديد" },
+    { ...old, conceptId: null, concept: "Brand new concept" },
+  ], "concept_1", "Brand new concept", undefined), 2);
+});

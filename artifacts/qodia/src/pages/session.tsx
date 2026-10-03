@@ -255,6 +255,10 @@ export default function Session() {
         setCode(stored.code);
         const olderTypedAttempt = build?.interaction_mode === 'drag-order' && stored.code.trim()
           && !validChunkOrder(stored.order, chunks.length);
+        if (olderTypedAttempt && stored.fullFile === false) {
+          // A repaired cached mode must preserve the old continuation's prefix.
+          setCode((build?.fixed_code ?? '') + stored.code);
+        }
         setLegacyFullDraft(!!stored.code.trim() && (stored.fullFile === true || !!olderTypedAttempt));
         if (validChunkOrder(stored.order, chunks.length)) order = stored.order;
         if (stored.code.trim() || stored.unlocked) setScaffoldUnlocked(session.lesson_id);

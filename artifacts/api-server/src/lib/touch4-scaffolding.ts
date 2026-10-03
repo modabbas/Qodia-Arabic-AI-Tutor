@@ -61,7 +61,8 @@ export function completedConceptEncounters(
 ) {
   const normalize = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
   return rows.filter(row => row.touchesCompleted === 5 && row.lessonId !== currentLesson
-    && (row.conceptId === id || (!row.conceptId && normalize(row.concept.split(" — ", 1)[0]) === normalize(name)))).length;
+    && (!row.conceptId || row.conceptId === id)
+    && normalize(row.concept.split(" — ", 1)[0]) === normalize(name)).length;
 }
 
 export function scaffoldingFor(
