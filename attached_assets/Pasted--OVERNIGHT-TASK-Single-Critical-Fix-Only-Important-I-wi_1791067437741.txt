@@ -1,0 +1,107 @@
+# OVERNIGHT TASK — Single Critical Fix Only
+
+## Important: I will not be available to answer questions while this runs.
+If you encounter an ambiguous decision point, choose the SAFEST option 
+(preserve existing data, don't delete anything, don't restructure working 
+systems) and clearly document what you chose and why in your final summary, 
+rather than guessing aggressively or making large structural changes.
+
+## The ONLY task tonight: Fix concept progression bug
+
+### Confirmed bug (verified by user testing)
+After a student FULLY completes a session (all 5 touches) for a concept, 
+the next session should advance to a NEW concept from their 30-concept 
+learning_map. Instead, it keeps returning to the SAME or an OLD concept 
+already completed (e.g., "React: Entry Point" shown again hours after 
+it was first completed).
+
+This breaks two things:
+1. Dashboard's "تحدي اليوم" card repeats old concepts instead of progressing
+2. Touch 4 shows the wrong interaction mode (drag-order/fill-blank/free-write) 
+   because it depends on accurate encounterCount, which depends on accurate 
+   concept-progression tracking
+
+### Required investigation (in this order)
+
+1. **Check concept completion is being saved correctly**: When a session's 
+   5th touch completes, confirm the corresponding concept in `learning_map` 
+   is actually updated to `status: completed` with a `mastery_score` and 
+   an incremented `encounterCount`. Add a log statement here if one doesn't 
+   exist, to make this traceable.
+
+2. **Check the next-concept selection logic**: Find the function that picks 
+   which concept to teach next (likely `selectNextConcept()` or similar, 
+   built during the Learning Path Engine task). Trace exactly what it does:
+   - Does it correctly query for concepts with `status != completed`?
+   - Does it have a bug where it falls back to returning the FIRST concept 
+     in the array (or some default) when something fails silently — e.g., 
+     an unhandled error, an empty filter result treated as "pick default", 
+     or an off-by-one in array indexing?
+   - Does it correctly distinguish "new concept" selection from "review/
+     spaced-repetition" selection (reviews are expected to reuse old 
+     concepts, NEW sessions should not)?
+
+3. **Check the Dashboard's data source**: Confirm the Dashboard's challenge 
+   card is calling the SAME fresh selection logic as session generation, 
+   not a separate/stale code path (this was partially addressed in an 
+   earlier fix — verify it's still correct after Touch 4 and Connect-the-
+   Thread changes made today).
+
+### Fix the root cause
+
+Once you find the actual broken logic, fix it so:
+- A session that completes all 5 touches correctly marks its concept as 
+  completed in learning_map
+- The next NEW session (not an intentional spaced-repetition review) always 
+  selects a concept the student has NOT yet completed, following the 
+  existing prerequisite/mastery-gate rules already built
+- Spaced-repetition reviews (if triggered) must be clearly distinguishable 
+  from new-concept sessions in the data/response (so Touch 4 mode selection 
+  and any UI labeling can tell them apart) — reuse whatever review-marking 
+  mechanism already exists from the Learning Path Engine, don't invent a 
+  new one
+
+### Required verification before finishing
+
+Run a full, real end-to-end test with a disposable test account:
+1. Complete concept 1 entirely (all 5 touches, real submission)
+2. Start a new session — confirm it selects concept 2 (not concept 1 again)
+3. Complete concept 2 entirely
+4. Start another new session — confirm it selects concept 3
+5. Confirm Dashboard's challenge card matches whatever the next session 
+   will actually teach (no mismatch)
+6. Run the full existing automated test suite (backend + frontend) and 
+   confirm all still pass
+7. Run a production build and confirm it succeeds
+8. Delete the disposable test account and any test data afterward
+
+## Hard boundaries — do not touch
+
+- Do NOT modify Touch 4 UI, drag-order/fill-blank/free-write rendering, 
+  Code Validation (Levels 1-3), Hints content/unlock logic, Confidence 
+  Check, Pride Moment, Connect the Thread content, Reality Check Mode, 
+  or Try Any Field — these are confirmed working and out of scope tonight
+- Do NOT change onboarding fields, tech-stack dropdown lists, or any UI 
+  styling anywhere
+- Do NOT restructure the learning_map table schema — work within the 
+  existing structure (concept status, mastery_score, encounterCount fields 
+  already exist)
+- Do NOT delete or modify any real user's existing data — test only with 
+  a fresh disposable account
+- Do NOT deploy/publish automatically — leave that decision for the user 
+  to do manually after reviewing your summary in the morning
+
+## Final summary format
+
+End with a clear, concise report:
+1. What was the actual root cause (in plain terms)
+2. What was changed (files/functions touched)
+3. Results of the step-by-step verification above (pass/fail for each step)
+4. Any remaining concerns or edge cases you noticed but did not fix 
+   (list them, don't fix anything outside tonight's scope)
+5. Confirm: "Ready for manual review and publish" or explain what's blocking
+
+## Budget guidance
+Target: $8-15 for this task. If you hit unexpected complexity requiring 
+significantly more, stop, summarize what you've found so far, and wait 
+for the user rather than continuing to spend unboundedly.
