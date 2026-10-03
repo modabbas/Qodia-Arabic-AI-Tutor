@@ -5,6 +5,7 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+import type { GeneratedConnectThread } from './generatedConnectThread';
 import type { GeneratedSessionSource } from './generatedSessionSource';
 import type { GeneratedTouch1 } from './generatedTouch1';
 import type { GeneratedTouch2 } from './generatedTouch2';
@@ -45,4 +46,5 @@ export interface GeneratedSession {
   touch3_explore: GeneratedTouch3;
   touch4_build: GeneratedTouch4;
   touch5_defend: GeneratedTouch5;
+  connect_thread?: GeneratedConnectThread;
 }

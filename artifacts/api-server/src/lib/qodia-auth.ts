@@ -78,6 +78,7 @@ export function publicUser(user: User) {
     name: user.name,
     project_name: user.projectName,
     tech_stack: user.techStack,
+    secondary_tech_stack: user.secondaryTechStack ?? null,
     created_at: user.createdAt.toISOString(),
   };
 }

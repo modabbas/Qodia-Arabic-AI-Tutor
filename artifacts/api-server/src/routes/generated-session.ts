@@ -30,6 +30,7 @@ import {
 import { hint3TeachingInstruction, parseTouch4HintBundle } from "../lib/touch4-support-rules";
 import { completedConceptEncounters, scaffoldingFor, withFirstMoveFallback } from "../lib/touch4-scaffolding";
 import { getTouch4Mode, prepareTouch4Interaction } from "../lib/touch4-interactions";
+import { connectThreadInstruction, secondaryStackContext, withConnectThreadFallback } from "../lib/connect-thread";
 
 const router: IRouter = Router();
 const primaryModel = "gemini-3.1-flash-lite";
@@ -249,6 +250,7 @@ function assertExactShape(input: unknown, parsed: unknown): void {
 }
 
 export function validateGeneratedPayload(input: unknown, allowLegacyHints = false): GeneratedSession {
+  input = withConnectThreadFallback(input);
   input = withFirstMoveFallback(input).input;
   const parsed = GetGeneratedSessionResponse.parse(input);
   assertExactShape(input, parsed);
@@ -385,9 +387,21 @@ async function requestFromGemini(
   buildContext: ProjectBuildContext,
   req: Request,
   encounterCount = 0,
+  secondaryTechStack: string | null = null,
 ): Promise<GeneratedSession> {
   const touch4Mode = getTouch4Mode(encounterCount);
   const responseSchema = structuredClone(generatedSessionResponseSchema);
+  const secondary = secondaryStackContext(secondaryTechStack);
+  if (secondary) {
+    responseSchema.properties!.connect_thread = objectSchema({
+      intro_ar: stringSchema(500),
+      integration_snippet: stringSchema(1800),
+      comprehension_question_ar: stringSchema(500),
+      options: { type: Type.ARRAY, minItems: "2", maxItems: "3", items: objectSchema({
+        text_ar: stringSchema(300), correct: { type: Type.BOOLEAN },
+      }, ["text_ar", "correct"]) },
+    }, ["intro_ar", "integration_snippet", "comprehension_question_ar", "options"]);
+  }
   const buildSchema = responseSchema.properties!.touch4_build;
   buildSchema.required = [...(buildSchema.required ?? []).filter(key => key !== "first_move_choice"),
     "fixed_code", ...(touch4Mode === "drag-order" ? ["drag_order_lines"] : touch4Mode === "fill-blank" ? ["first_move_choice"] : [])];
@@ -401,6 +415,7 @@ async function requestFromGemini(
   const projectData = JSON.stringify({
     project_name: projectName.slice(0, 120),
     tech_stack: techStack,
+    ...(secondary ? { secondary_tech_stack: secondary } : {}),
     excluded_concepts: excludedConcepts,
     project_summary: buildContext.plan.project_summary,
     ordered_plan: buildContext.plan.files.map(({ path, day, concept, description }) => ({ path, day, concept, description })),
@@ -498,7 +513,14 @@ async function requestFromGemini(
     },
   };
   const { first_move_choice: firstMoveSkeleton, ...baseBuildSkeleton } = outputSkeleton.touch4_build;
-  const modeSkeleton = { ...outputSkeleton, touch4_build: {
+  const modeSkeleton = { ...outputSkeleton,
+    ...(secondary ? { connect_thread: {
+      intro_ar: `مثال توضيحي لربط ${secondary} بكود المفهوم الأساسي في هذا المشروع`,
+      integration_snippet: "مثال توضيحي مرتبط بالمشروع والمفهوم، 5–8 أسطر بلغة التقنية الثانوية، وليس ملفاً محفوظاً أو مهمة بناء",
+      comprehension_question_ar: "سؤال فهم عن العلاقة بين الكود الأساسي والمثال",
+      options: [{ text_ar: "العلاقة الصحيحة", correct: true }, { text_ar: "علاقة بديلة منطقية لكنها خاطئة", correct: false }],
+    } } : {}),
+    touch4_build: {
     ...baseBuildSkeleton,
     ...(touch4Mode === "fill-blank" ? { first_move_choice: firstMoveSkeleton } : {}),
   } };
@@ -517,6 +539,7 @@ async function requestFromGemini(
     "أضف touch4_build.hints ثلاثة عناصر بالترتيب guidance ثم similar_example ثم partial_solution. المستوى 1 يحتوي code_example غير فارغ: كود صغير حقيقي للصيغة العامة مع شرح، بأسماء وقيم مختلفة، وليس جواب المهمة. المستوى 2 مثال syntax مختلف قريب مع شرح أعمق، لا تكرر مثال الأول. المستوى 3 يبقى توجيه وظيفي وسؤال بلا كود. أضف reference_solution كحل كامل صحيح يظهر فقط بعد التلميحات الثلاثة.",
     `وضع Touch4 حصراً: ${touch4Mode}. fixed_code بادئة حرفية للحل النموذجي لا مثالاً ولا TODO. الطالب يكتب/يرتب الإضافة فقط بعدها. في drag-order أعد 3–6 أجزاء حقيقية غير فارغة بترتيبها الصحيح في drag_order_lines؛ fixed_code + drag_order_lines.join("\\n") يساوي reference_solution حرفياً. يمكن أن يحوي الجزء عدة أسطر. في fill-blank أعد first_move_choice واجعل scaffold_code_on_correct بادئة حرفية للحل. في free-write احذف first_move_choice وdrag_order_lines؛ fixed_code يحوي الكود الأساسي فقط لا إجابة الإضافة.`,
     hint3TeachingInstruction,
+    ...connectThreadInstruction(secondary),
     "استعمل السكيما لتقييد أطوال النصوص: concept_name_en 100، concept_name_ar 140، intro 400؛ options نصوص حتى 300 في اللمسات 1-3 وحتى 400 في الدفاع؛ القيم 2-6؛ كلمات الحل 1-8 وكل واحدة حتى 80. أطوال بقية النصوص ملتزمة بقيود السكيما.",
     "يجب أن تكون source هي gemini. القيم الصحيحة متطابقة مع خياراتها وليست مجرد ضمن الحد الأقصى العام.",
     `الهيكل المطلوب (القيم أمثلة شكلية يجب استبدالها بمحتوى فعلي): ${JSON.stringify(modeSkeleton)}`,
@@ -557,6 +580,7 @@ async function requestFromGemini(
         if (!text) throw new Error("Gemini returned an empty response");
         step = "json_parse";
         const decoded = JSON.parse(cleanModelJson(text));
+        if (!secondary && decoded && typeof decoded === "object") delete decoded.connect_thread;
         step = "payload_validation";
         const scaffoldCheck = withFirstMoveFallback(decoded);
         if (scaffoldCheck.reason) {
@@ -660,7 +684,7 @@ async function attachReviewDraft(
 
 async function generateOrLoadLesson(
   userId: string,
-  profile: { projectName: string; techStack: TechStack },
+   profile: { projectName: string; techStack: TechStack; secondaryTechStack?: string | null },
   req: Request,
 ): Promise<GeneratedSession> {
   let step = "learning_map";
@@ -788,6 +812,7 @@ async function generateOrLoadLesson(
         req,
         Math.max(selected.concept.encounter_count ?? 0,
           completedConceptEncounters(progressRows, selected.concept.id, selected.concept.name_en, undefined)),
+        profile.secondaryTechStack ?? null,
       );
     } catch (error) {
       req.log.warn({ tech_stack: profile.techStack, concept_id: selected.concept.id, reason: safeErrorKind(error) },
@@ -851,6 +876,7 @@ async function handleGenerateSession(req: Request, res: import("express").Respon
     const payload = await generateOrLoadLesson(user.id, {
       projectName: projectName.slice(0, 120),
       techStack: user.techStack as TechStack,
+      secondaryTechStack: secondaryStackContext(user.secondaryTechStack),
     }, req);
     res.json(publicLesson(GetGeneratedSessionResponse.parse(payload)));
   } catch (error) {

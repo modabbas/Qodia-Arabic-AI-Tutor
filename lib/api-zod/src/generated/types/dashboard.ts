@@ -14,4 +14,6 @@ export interface Dashboard {
   progress: Progress;
   recent_sessions: LearningSession[];
   onboarding_complete: boolean;
+  /** @minimum 0 */
+  completed_sessions_count?: number;
 }

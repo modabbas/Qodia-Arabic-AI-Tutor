@@ -1,0 +1,90 @@
+# "Connect the Thread" — Lightweight Full-Stack Integration Awareness
+
+## Context
+Real graduation projects are almost always full-stack (e.g., Django backend + React frontend), but Qodia's Learning Path, Cumulative Project, and Touch 4 system are all built around a SINGLE primary tech stack. This task does NOT rebuild any of that — it adds a lightweight, optional secondary-stack context field plus an occasional extra "integration" touch that shows how the backend code being built connects to a frontend (or vice versa).
+
+Do not touch Learning Path concept selection, Cumulative Project file structure, Validation levels, Hints, Touch 4 modes, Confidence Check, or Pride Moment logic — this is purely additive.
+
+## Part 1: Onboarding — Optional Secondary Stack Field
+
+Add ONE optional field to the existing onboarding form (where student already picks project name + primary tech stack):
+
+```
+هل مشروعك فيه جزء تاني بتقنية مختلفة؟ (اختياري)
+[dropdown: لا يوجد / React / Vue / Flutter / Django / Node.js / غيره]
+```
+
+- If selected, store as `secondary_tech_stack` on the user's profile/project record (simple field addition, same table as existing project info — no new table needed)
+- If left as "لا يوجد" or skipped, nothing changes — behaves exactly as the current system does today
+
+## Part 2: Periodic "وصل الخيط" (Connect the Thread) Touch
+
+Only applies to users who set a `secondary_tech_stack`. For these users, every 3rd-4th completed session (e.g., session count % 4 === 0), after the normal 5 touches are done, show ONE additional lightweight screen before the celebration:
+
+```
+┌───────────────────────────────────────┐
+│  🔗 وصل الخيط                          │
+│                                         │
+│  شفت الـ API/الكود يلي بنيته هلق؟       │
+│  هيك {secondary_tech_stack} رح يستخدمه: │
+│                                         │
+│  fetch('/api/flights')                  │
+│    .then(res => res.json())             │
+│    .then(data => setFlights(data));     │
+│                                         │
+│  شو العلاقة بين الكود يلي كتبته هلق     │
+│  وهاد الكود؟                            │
+│                                         │
+│  [اختيار من متعدد بسيط، 2-3 خيارات]      │
+└───────────────────────────────────────┘
+```
+
+### Content Generation
+
+Add to the existing Gemini session-generation prompt (reuse the same call that already generates the session, do not add a new API call) a conditional field, only requested when the user has a secondary_tech_stack:
+
+```
+إذا كان عند الطالب secondary_tech_stack = {value}، أضف حقل اختياري:
+
+"connect_thread": {
+  "intro_ar": "شفت الـ API/الكود يلي بنيته هلق؟ هيك {secondary_tech_stack} رح يستخدمه:",
+  "integration_snippet": "كود قصير (5-8 أسطر) بلغة secondary_tech_stack يوضح كيف يستهلك/يتفاعل مع الكود الأساسي المبني بهالجلسة",
+  "comprehension_question_ar": "سؤال فهم بسيط عن العلاقة بين الكودين",
+  "options": [
+    { "text_ar": "خيار صح", "correct": true },
+    { "text_ar": "خيار غلط منطقي", "correct": false },
+    { "text_ar": "خيار غلط منطقي تاني", "correct": false }
+  ]
+}
+
+قواعد:
+- الكود البسيط يوضح العلاقة فقط، مش مهمة بناء (الطالب ما بيكتب كود هون، بس يفهم ويجاوب سؤال اختيار)
+- لغة بسيطة، مثال واقعي مرتبط بمشروع الطالب تحديداً
+```
+
+### Interaction
+
+- Student reads the snippet, picks an answer from the multiple-choice options
+- Instant local feedback (correct/incorrect), no XP penalty either way — this is comprehension reinforcement, not graded work
+- No code validation involved (Levels 1/2/3 untouched) — this is a separate, simple multiple-choice screen
+- After answering (correct or not), proceed to the normal session-completion celebration as already built
+
+## What NOT to Do
+- Do NOT build a parallel Learning Path, Cumulative Project structure, or session flow for the secondary stack — it exists only as context for this lightweight touch
+- Do NOT make this touch mandatory or block session completion if skipped/closed
+- Do NOT add a new Gemini API call — connect_thread is generated as part of the existing session-generation response, only when secondary_tech_stack is set
+- Do NOT change onboarding's existing required fields or flow — this is one new OPTIONAL field only
+- Do NOT touch Validation, Hints, Touch 4 modes, Confidence Check, or Pride Moment logic
+
+## Testing
+- [ ] Onboarding shows the new optional secondary-stack field, defaults to "لا يوجد"
+- [ ] Users who skip it see zero change in behavior (no connect-thread touch ever appears)
+- [ ] Users who set a secondary stack see the "وصل الخيط" screen every 4th session, after normal completion
+- [ ] The integration snippet and question are relevant to both the primary session's content and the chosen secondary stack
+- [ ] No XP impact, no validation call triggered by this touch
+- [ ] No additional Gemini API call introduced (verify same call count as before per session)
+
+## Cost & Time
+- Extended Thinking: recommended (touches onboarding schema + session generation + a new conditional UI screen together)
+- Time: 25-35 minutes
+- Cost: $10-14

@@ -859,6 +859,9 @@ components:
     TechStack:
       type: string
       enum: [Django, Node.js, React, Flutter]
+    SecondaryTechStack:
+      type: string
+      enum: [React, Vue, Flutter, Django, Node.js, Other]
     User:
       type: object
       properties:
@@ -874,6 +877,10 @@ components:
         tech_stack:
           anyOf:
             - $ref: "#/components/schemas/TechStack"
+            - type: "null"
+        secondary_tech_stack:
+          anyOf:
+            - $ref: "#/components/schemas/SecondaryTechStack"
             - type: "null"
         created_at:
           type: string
@@ -922,6 +929,10 @@ components:
           maxLength: 120
         tech_stack:
           $ref: "#/components/schemas/TechStack"
+        secondary_tech_stack:
+          anyOf:
+            - $ref: "#/components/schemas/SecondaryTechStack"
+            - type: "null"
       required: [project_name, tech_stack]
     SessionInput:
       type: object
@@ -1060,6 +1071,9 @@ components:
             $ref: "#/components/schemas/LearningSession"
         onboarding_complete:
           type: boolean
+        completed_sessions_count:
+          type: integer
+          minimum: 0
       required: [user, progress, recent_sessions, onboarding_complete]
     GeneratedSession:
       type: object
@@ -1097,7 +1111,30 @@ components:
           $ref: "#/components/schemas/GeneratedTouch4"
         touch5_defend:
           $ref: "#/components/schemas/GeneratedTouch5"
+        connect_thread:
+          $ref: "#/components/schemas/GeneratedConnectThread"
       required: [concept_name_en, concept_name_ar, concept_intro, source, touch1_provoke, touch2_reveal, touch3_explore, touch4_build, touch5_defend]
+    GeneratedConnectThread:
+      type: object
+      additionalProperties: false
+      properties:
+        intro_ar: { type: string, minLength: 1, maxLength: 500 }
+        integration_snippet: { type: string, minLength: 1, maxLength: 1800 }
+        comprehension_question_ar: { type: string, minLength: 1, maxLength: 500 }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/ConnectThreadOption"
+      required: [intro_ar, integration_snippet, comprehension_question_ar, options]
+    ConnectThreadOption:
+      type: object
+      additionalProperties: false
+      properties:
+        text_ar: { type: string, minLength: 1, maxLength: 300 }
+        correct: { type: boolean }
+      required: [text_ar, correct]
     GeneratedTouch1:
       type: object
       additionalProperties: false

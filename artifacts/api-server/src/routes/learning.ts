@@ -155,6 +155,7 @@ router.patch("/onboarding", async (req, res): Promise<void> => {
   const [updated] = await db.update(usersTable).set({
     projectName: parsed.data.project_name.trim(),
     techStack: parsed.data.tech_stack,
+    secondaryTechStack: parsed.data.secondary_tech_stack ?? null,
   }).where(eq(usersTable.id, user.id)).returning();
   if (updated?.projectName && isProjectTechStack(updated.techStack)) {
     try {
@@ -544,9 +545,11 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const user = await requireUser(req, res);
   if (!user) return;
 
-  const [[progress], sessions] = await Promise.all([
+  const [[progress], sessions, [completionCount]] = await Promise.all([
     db.select().from(progressTable).where(eq(progressTable.userId, user.id)).limit(1),
     db.select().from(sessionsTable).where(eq(sessionsTable.userId, user.id)).orderBy(desc(sessionsTable.timestamp)).limit(6),
+    db.select({ count: sql<number>`count(*)::int` }).from(sessionsTable)
+      .where(and(eq(sessionsTable.userId, user.id), eq(sessionsTable.touchesCompleted, 5))),
   ]);
 
   res.json(GetDashboardResponse.parse({
@@ -559,6 +562,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     },
     recent_sessions: sessions.map(sessionResponse),
     onboarding_complete: Boolean(user.projectName && user.techStack),
+    completed_sessions_count: completionCount?.count ?? 0,
   }));
 });
 

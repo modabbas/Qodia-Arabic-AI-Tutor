@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Code2 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { getGetCurrentUserQueryKey, getGetDashboardQueryKey, useCompleteOnboarding, type TechStack } from '@workspace/api-client-react';
+import { getGetCurrentUserQueryKey, getGetDashboardQueryKey, useCompleteOnboarding, type TechStack, type SecondaryTechStack } from '@workspace/api-client-react';
 import { Brand } from '@/components/qodia-ui';
 import { firstChallengePreview } from './onboarding-preview';
 
@@ -14,13 +14,14 @@ export default function Onboarding() {
   const mutation = useCompleteOnboarding();
   const [project, setProject] = useState('');
   const [stack, setStack] = useState<TechStack | ''>('');
+  const [secondaryStack, setSecondaryStack] = useState<SecondaryTechStack | ''>('');
   const preview = firstChallengePreview(stack);
   const [error, setError] = useState('');
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!stack || !project.trim()) return;
     setError('');
-    mutation.mutate({ data: { project_name: project.trim(), tech_stack: stack } }, {
+    mutation.mutate({ data: { project_name: project.trim(), tech_stack: stack, secondary_tech_stack: secondaryStack || null } }, {
       onSuccess: async (user) => {
         queryClient.setQueryData(getGetCurrentUserQueryKey(), { user });
         await queryClient.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
@@ -39,6 +40,12 @@ export default function Onboarding() {
         <label className="field-label" htmlFor="stack">التقنية الأساسية</label>
         <select id="stack" className="field" value={stack} onChange={e => setStack(e.target.value as TechStack)} required data-testid="select-tech-stack"><option value="" disabled>اختر التقنية</option>{stacks.map(item => <option key={item} value={item}>{item}</option>)}</select>
         <p className="muted" style={{ fontSize: 12, lineHeight: 1.8, marginTop: 13 }}>هاي معاينة حسب التقنية. التحدّي الفعلي بيتحضّر حسب مشروعك.</p>
+        <label className="field-label" htmlFor="secondary-stack" style={{ marginTop: 24 }}>هل مشروعك فيه جزء تاني بتقنية مختلفة؟ (اختياري)</label>
+        <select id="secondary-stack" className="field" value={secondaryStack} onChange={e => setSecondaryStack(e.target.value as SecondaryTechStack | '')} data-testid="select-secondary-tech-stack">
+          <option value="">لا يوجد</option>
+          {(['React', 'Vue', 'Flutter', 'Django', 'Node.js', 'Other'] as const).map(item => <option key={item} value={item}>{item === 'Other' ? 'غيره' : item}</option>)}
+        </select>
+        <p className="muted" style={{ fontSize: 12, lineHeight: 1.8, marginTop: 10 }}>السؤال الإضافي بس لربط الأفكار؛ تدريبك ومشروعك بيضلّوا بالتقنية الأساسية.</p>
         {error && <div className="error-note" role="alert" style={{ marginTop: 20 }} data-testid="status-onboarding-error">{error}</div>}
         <button className="btn btn-primary" style={{ width: '100%', marginTop: 26 }} disabled={mutation.isPending || !stack || !project.trim()} data-testid="button-save-project">{mutation.isPending ? 'عم نحفظ مشروعك...' : 'جهّز مساحتي'} <ArrowLeft size={17} /></button>
       </form>

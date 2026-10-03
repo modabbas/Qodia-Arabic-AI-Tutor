@@ -9,6 +9,7 @@ export const usersTable = pgTable("users", {
   name: text("name").notNull(),
   projectName: text("project_name"),
   techStack: text("tech_stack"),
+  secondaryTechStack: text("secondary_tech_stack"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

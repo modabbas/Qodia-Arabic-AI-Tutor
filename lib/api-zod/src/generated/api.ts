@@ -42,6 +42,7 @@ export const SignUpResponse = zod.object({
   "name": zod.string(),
   "project_name": zod.string().nullable(),
   "tech_stack": zod.union([zod.enum(['Django', 'Node.js', 'React', 'Flutter']),zod.null()]),
+  "secondary_tech_stack": zod.union([zod.enum(['React', 'Vue', 'Flutter', 'Django', 'Node.js', 'Other']),zod.null()]).optional(),
   "created_at": zod.coerce.date()
 })
 })
@@ -69,6 +70,7 @@ export const LogInResponse = zod.object({
   "name": zod.string(),
   "project_name": zod.string().nullable(),
   "tech_stack": zod.union([zod.enum(['Django', 'Node.js', 'React', 'Flutter']),zod.null()]),
+  "secondary_tech_stack": zod.union([zod.enum(['React', 'Vue', 'Flutter', 'Django', 'Node.js', 'Other']),zod.null()]).optional(),
   "created_at": zod.coerce.date()
 })
 })
@@ -92,6 +94,7 @@ export const GetCurrentUserResponse = zod.object({
   "name": zod.string(),
   "project_name": zod.string().nullable(),
   "tech_stack": zod.union([zod.enum(['Django', 'Node.js', 'React', 'Flutter']),zod.null()]),
+  "secondary_tech_stack": zod.union([zod.enum(['React', 'Vue', 'Flutter', 'Django', 'Node.js', 'Other']),zod.null()]).optional(),
   "created_at": zod.coerce.date()
 })
 })
@@ -106,7 +109,8 @@ export const completeOnboardingBodyProjectNameMax = 120;
 
 export const CompleteOnboardingBody = zod.object({
   "project_name": zod.string().min(1).max(completeOnboardingBodyProjectNameMax),
-  "tech_stack": zod.enum(['Django', 'Node.js', 'React', 'Flutter'])
+  "tech_stack": zod.enum(['Django', 'Node.js', 'React', 'Flutter']),
+  "secondary_tech_stack": zod.union([zod.enum(['React', 'Vue', 'Flutter', 'Django', 'Node.js', 'Other']),zod.null()]).optional()
 })
 
 export const CompleteOnboardingResponse = zod.object({
@@ -115,6 +119,7 @@ export const CompleteOnboardingResponse = zod.object({
   "name": zod.string(),
   "project_name": zod.string().nullable(),
   "tech_stack": zod.union([zod.enum(['Django', 'Node.js', 'React', 'Flutter']),zod.null()]),
+  "secondary_tech_stack": zod.union([zod.enum(['React', 'Vue', 'Flutter', 'Django', 'Node.js', 'Other']),zod.null()]).optional(),
   "created_at": zod.coerce.date()
 })
 
@@ -312,6 +317,8 @@ export const getDashboardResponseRecentSessionsItemTouchesCorrectMax = 5;
 
 export const getDashboardResponseRecentSessionsItemCompletionTimeMin = 0;
 
+export const getDashboardResponseCompletedSessionsCountMin = 0;
+
 
 
 export const GetDashboardResponse = zod.object({
@@ -321,6 +328,7 @@ export const GetDashboardResponse = zod.object({
   "name": zod.string(),
   "project_name": zod.string().nullable(),
   "tech_stack": zod.union([zod.enum(['Django', 'Node.js', 'React', 'Flutter']),zod.null()]),
+  "secondary_tech_stack": zod.union([zod.enum(['React', 'Vue', 'Flutter', 'Django', 'Node.js', 'Other']),zod.null()]).optional(),
   "created_at": zod.coerce.date()
 }),
   "progress": zod.object({
@@ -343,7 +351,8 @@ export const GetDashboardResponse = zod.object({
   "completion_time": zod.number().min(getDashboardResponseRecentSessionsItemCompletionTimeMin).nullish(),
   "is_review": zod.boolean().optional()
 })),
-  "onboarding_complete": zod.boolean()
+  "onboarding_complete": zod.boolean(),
+  "completed_sessions_count": zod.number().int().min(getDashboardResponseCompletedSessionsCountMin).optional()
 })
 
 
@@ -639,6 +648,17 @@ export const getGeneratedSessionResponseTouch5DefendFollowupExplanationMax = 800
 
 export const getGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax = 400;
 
+export const getGeneratedSessionResponseConnectThreadIntroArMax = 500;
+
+export const getGeneratedSessionResponseConnectThreadIntegrationSnippetMax = 1800;
+
+export const getGeneratedSessionResponseConnectThreadComprehensionQuestionArMax = 500;
+
+export const getGeneratedSessionResponseConnectThreadOptionsItemTextArMax = 300;
+
+export const getGeneratedSessionResponseConnectThreadOptionsMin = 2;
+export const getGeneratedSessionResponseConnectThreadOptionsMax = 3;
+
 
 
 export const GetGeneratedSessionResponse = zod.object({
@@ -735,7 +755,16 @@ export const GetGeneratedSessionResponse = zod.object({
   "followup_correct_index": zod.number().int().min(getGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMin).max(getGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMax),
   "followup_explanation": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendFollowupExplanationMax),
   "followup_feedback_wrong": zod.string().min(1).max(getGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax)
-})
+}),
+  "connect_thread": zod.object({
+  "intro_ar": zod.string().min(1).max(getGeneratedSessionResponseConnectThreadIntroArMax),
+  "integration_snippet": zod.string().min(1).max(getGeneratedSessionResponseConnectThreadIntegrationSnippetMax),
+  "comprehension_question_ar": zod.string().min(1).max(getGeneratedSessionResponseConnectThreadComprehensionQuestionArMax),
+  "options": zod.array(zod.object({
+  "text_ar": zod.string().min(1).max(getGeneratedSessionResponseConnectThreadOptionsItemTextArMax),
+  "correct": zod.boolean()
+})).min(getGeneratedSessionResponseConnectThreadOptionsMin).max(getGeneratedSessionResponseConnectThreadOptionsMax)
+}).optional()
 })
 
 
@@ -901,6 +930,17 @@ export const createGeneratedSessionResponseTouch5DefendFollowupExplanationMax = 
 
 export const createGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax = 400;
 
+export const createGeneratedSessionResponseConnectThreadIntroArMax = 500;
+
+export const createGeneratedSessionResponseConnectThreadIntegrationSnippetMax = 1800;
+
+export const createGeneratedSessionResponseConnectThreadComprehensionQuestionArMax = 500;
+
+export const createGeneratedSessionResponseConnectThreadOptionsItemTextArMax = 300;
+
+export const createGeneratedSessionResponseConnectThreadOptionsMin = 2;
+export const createGeneratedSessionResponseConnectThreadOptionsMax = 3;
+
 
 
 export const CreateGeneratedSessionResponse = zod.object({
@@ -997,7 +1037,16 @@ export const CreateGeneratedSessionResponse = zod.object({
   "followup_correct_index": zod.number().int().min(createGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMin).max(createGeneratedSessionResponseTouch5DefendFollowupCorrectIndexMax),
   "followup_explanation": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupExplanationMax),
   "followup_feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch5DefendFollowupFeedbackWrongMax)
-})
+}),
+  "connect_thread": zod.object({
+  "intro_ar": zod.string().min(1).max(createGeneratedSessionResponseConnectThreadIntroArMax),
+  "integration_snippet": zod.string().min(1).max(createGeneratedSessionResponseConnectThreadIntegrationSnippetMax),
+  "comprehension_question_ar": zod.string().min(1).max(createGeneratedSessionResponseConnectThreadComprehensionQuestionArMax),
+  "options": zod.array(zod.object({
+  "text_ar": zod.string().min(1).max(createGeneratedSessionResponseConnectThreadOptionsItemTextArMax),
+  "correct": zod.boolean()
+})).min(createGeneratedSessionResponseConnectThreadOptionsMin).max(createGeneratedSessionResponseConnectThreadOptionsMax)
+}).optional()
 })
 
 

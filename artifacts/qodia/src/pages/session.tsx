@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type MouseEvent, type ReactNode } from 'react';
+import ConnectThread from './connect-thread';
+import { shouldShowConnectThread } from './connect-thread-rules';
 import { LoaderCircle, Volume2, VolumeX } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
@@ -182,6 +184,8 @@ export default function Session() {
   const [seconds, setSeconds] = useState(30);
   const [confidence, setConfidence] = useState(100);
   const [complete, setComplete] = useState(false);
+  const [threadPending, setThreadPending] = useState(false);
+  const celebrationStarted = useRef(false);
   const [completedSessionId, setCompletedSessionId] = useState<string | undefined>();
   const prideParams = complete ? { session_id: completedSessionId } : {};
   const pride = useGetPrideMoment(prideParams, { query: {
@@ -417,6 +421,17 @@ export default function Session() {
     setFeedback(null);
     setGain(0);
   }
+  function celebrate() {
+    if (celebrationStarted.current) return;
+    celebrationStarted.current = true;
+    const w = window.innerWidth; const h = window.innerHeight;
+    fx.confetti(w * .2, h * .35, 16); fx.confetti(w * .5, h * .25, 22); fx.confetti(w * .8, h * .35, 16);
+    playTone('big', soundRef.current);
+  }
+  function finishThread() {
+    setThreadPending(false);
+    celebrate();
+  }
   function save(payload: SessionInput) {
     if (savingRef.current) return;
     savingRef.current = true;
@@ -428,6 +443,12 @@ export default function Session() {
         // is the whole lesson total, not an additional award on that baseline.
         const synced = await dashboard.refetch();
         if (!synced.isError && synced.data) baselineRef.current = synced.data.progress.total_xp - saved.xp_earned;
+        const showThread = shouldShowConnectThread({
+          secondaryStack: synced.data?.user.secondary_tech_stack,
+          completedCount: synced.isError ? undefined : synced.data?.completed_sessions_count,
+          thread: session?.connect_thread,
+        });
+        setThreadPending(showThread);
         setComplete(true);
         void queryClient.invalidateQueries({ queryKey: getGetPrideMomentQueryKey({}), refetchType: 'none' });
         void queryClient.invalidateQueries({ queryKey: getGetSessionsQueryKey() });
@@ -435,9 +456,7 @@ export default function Session() {
         void queryClient.invalidateQueries({ queryKey: getGetLearningMapQueryKey() });
         // Keep the completed lesson on screen; refetch the next planned file on navigation.
         void queryClient.invalidateQueries({ queryKey: getGetGeneratedSessionQueryKey(), refetchType: 'none' });
-        const w = window.innerWidth; const h = window.innerHeight;
-        fx.confetti(w * .2, h * .35, 16); fx.confetti(w * .5, h * .25, 22); fx.confetti(w * .8, h * .35, 16);
-        playTone('big', soundRef.current);
+        if (!showThread) celebrate();
       },
       onError: () => { savingRef.current = false; },
     });
@@ -567,6 +586,7 @@ export default function Session() {
     setFileSaved(false); setFileSaveError(false); saveFile.reset();
     setBuildValidation(null); codeCheckLock.current = false;
     setSeconds(30); setConfidence(100); setComplete(false); setCompletedSessionId(undefined); setResults([]);
+    setThreadPending(false); celebrationStarted.current = false;
     setSavePayload(null); timedOutRef.current = false; savingRef.current = false;
     restoredFileRef.current = null;
     baselineRef.current = null; create.reset();
@@ -719,7 +739,8 @@ export default function Session() {
                 : choices(defense.followup_options, defense.followup_correct_index, defense.followup_explanation, defense.followup_feedback_wrong)}
               {feedbackNode}{seconds === 0 && !correct && <button className={`${s.btn} ${s.ghost}`} style={{ marginTop: 16 }} onClick={() => { setSeconds(30); setSelected(null); setFeedback(null); timedOutRef.current = false; }} data-testid="button-retry-defense">جرّب مرة ثانية</button>}{nextNode}</section>}
             {!complete && create.isError && savePayload && <div className={s.error} role="alert" data-testid="status-save-error">خلصت التدريب، بس ما قدرنا نحفظ نتيجتك. <button className={`${s.btn} ${s.ghost}`} onClick={() => save(savePayload)} data-testid="button-retry-save">إعادة المحاولة</button></div>}
-            {complete && <section className={s.end}><div className={`${s.endtitle} ${s.drop} ${perfect ? s.perfect : ''}`} data-testid="text-session-complete">{perfect ? 'جلسة مثالية! خمس من خمس بلا ولا غلطة 🎉' : 'خلّصت جلستك 🎉'}</div><div className={s.small} data-testid="text-completed-concept">{session.concept_name_ar} · {session.concept_name_en}</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div>
+            {complete && threadPending && session.connect_thread && <ConnectThread thread={session.connect_thread} secondaryStack={dashboard.data.user.secondary_tech_stack === 'Other' ? 'غيره' : dashboard.data.user.secondary_tech_stack ?? ''} onContinue={finishThread} />}
+            {complete && !threadPending && <section className={s.end}><div className={`${s.endtitle} ${s.drop} ${perfect ? s.perfect : ''}`} data-testid="text-session-complete">{perfect ? 'جلسة مثالية! خمس من خمس بلا ولا غلطة 🎉' : 'خلّصت جلستك 🎉'}</div><div className={s.small} data-testid="text-completed-concept">{session.concept_name_ar} · {session.concept_name_en}</div><div className={s.endnum}><span className={s.from}>{arabic(readinessStart)}٪</span><span className={s.arrow}>←</span><span data-testid="text-readiness">{arabic(readiness)}٪</span></div><div className={s.small}>جاهزيتك ليوم المناقشة</div>
               {pride.data && <PrideMoment key={completedSessionId} data={pride.data} reduced={reduced} renderCode={highlightCode} onUnlock={() => playTone('unlock', soundRef.current)} />}
               {pride.isError && <p className={s.small} role="alert">تقدمك محفوظ، بس ما قدرنا نحمّل مقارنة الكود. <button type="button" className={s.btn} onClick={() => { void pride.refetch(); }}>حاول مرة ثانية</button></p>}
               <div className={s.stats}><div className={s.stat} style={{ animationDelay: '.4s' }} data-testid="text-earned-xp">+<b><CountUp value={earned} reduced={reduced} delay={400} /></b> نقطة</div><div className={s.stat} style={{ animationDelay: '.7s' }}>متتاليتك: <b>{arabic(dashboard.data.progress.streak_days)}</b> يوم 🔥</div><div className={s.stat} style={{ animationDelay: '1s' }}>مستوى <b>{arabic(Math.floor(hudXP / 100) + 1)}</b> · <b>{arabic(hudXP % 100)}٪</b> للتالي</div></div><ul className={s.results}>{results.map((result, i) => <li key={i} className={result.passed ? s.pass : s.soft} data-testid={`row-touch-result-${i + 1}`}><span className={s.ri}>{result.passed ? '✓' : '↺'}</span><span className={s.name}>{result.name}</span><span className={s.concept}>{result.concept}</span></li>)}</ul><Link href="/my-project" className={s.projectLink} data-testid="link-view-project">شاهد مشروعك ←</Link><button className={`${s.btn} ${s.big} ${s.pulsebtn}`} style={{ background: 'transparent', color: '#22c55e', border: '1px solid #22c55e' }} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-new-session">{freshPending ? 'عم نحضّر جلستك...' : 'جلسة جديدة بمفهوم آخر ↺'}</button>{freshError && <div className={s.error} role="alert" data-testid="status-fresh-error">ما قدرنا نحمّل جلسة جديدة. تقدمك محفوظ؛ حاول مرة ثانية.</div>}{freshError && <button className={`${s.btn} ${s.ghost}`} disabled={freshPending} onClick={() => { void startFresh(); }} data-testid="button-retry-fresh">إعادة المحاولة</button>}<Link href="/dashboard" className={s.small} style={{ marginTop: 10 }} data-testid="link-return-dashboard">ارجع للوحتي ←</Link></section>}

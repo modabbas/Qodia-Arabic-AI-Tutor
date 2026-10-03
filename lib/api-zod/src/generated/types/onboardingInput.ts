@@ -5,6 +5,7 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+import type { SecondaryTechStack } from './secondaryTechStack';
 import type { TechStack } from './techStack';
 
 export interface OnboardingInput {
@@ -14,4 +15,5 @@ export interface OnboardingInput {
      */
   project_name: string;
   tech_stack: TechStack;
+  secondary_tech_stack?: SecondaryTechStack | null;
 }

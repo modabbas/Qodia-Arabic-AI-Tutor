@@ -104,6 +104,18 @@ export const TechStack = {
   Flutter: 'Flutter',
 } as const;
 
+export type SecondaryTechStack = typeof SecondaryTechStack[keyof typeof SecondaryTechStack];
+
+
+export const SecondaryTechStack = {
+  React: 'React',
+  Vue: 'Vue',
+  Flutter: 'Flutter',
+  Django: 'Django',
+  Nodejs: 'Node.js',
+  Other: 'Other',
+} as const;
+
 export interface User {
   id: string;
   email: string;
@@ -111,6 +123,7 @@ export interface User {
   /** @nullable */
   project_name: string | null;
   tech_stack: TechStack | null;
+  secondary_tech_stack?: SecondaryTechStack | null;
   created_at: string;
 }
 
@@ -150,6 +163,7 @@ export interface OnboardingInput {
      */
   project_name: string;
   tech_stack: TechStack;
+  secondary_tech_stack?: SecondaryTechStack | null;
 }
 
 export interface SessionInput {
@@ -333,6 +347,8 @@ export interface Dashboard {
   progress: Progress;
   recent_sessions: LearningSession[];
   onboarding_complete: boolean;
+  /** @minimum 0 */
+  completed_sessions_count?: number;
 }
 
 export type GeneratedSessionSource = typeof GeneratedSessionSource[keyof typeof GeneratedSessionSource];
@@ -726,6 +742,38 @@ export interface GeneratedTouch5 {
   followup_feedback_wrong: string;
 }
 
+export interface ConnectThreadOption {
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  text_ar: string;
+  correct: boolean;
+}
+
+export interface GeneratedConnectThread {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  intro_ar: string;
+  /**
+     * @minLength 1
+     * @maxLength 1800
+     */
+  integration_snippet: string;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  comprehension_question_ar: string;
+  /**
+     * @minItems 2
+     * @maxItems 3
+     */
+  options: ConnectThreadOption[];
+}
+
 export interface GeneratedSession {
   /**
      * @minLength 1
@@ -759,6 +807,7 @@ export interface GeneratedSession {
   touch3_explore: GeneratedTouch3;
   touch4_build: GeneratedTouch4;
   touch5_defend: GeneratedTouch5;
+  connect_thread?: GeneratedConnectThread;
 }
 
 export type Touch4SupportFirstTryBonus = typeof Touch4SupportFirstTryBonus[keyof typeof Touch4SupportFirstTryBonus];
