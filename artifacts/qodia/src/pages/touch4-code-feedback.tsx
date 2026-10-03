@@ -25,16 +25,16 @@ export function Touch4CodeMirror({ code, file, completed, highlight, lockedPrefi
   })}</code>;
 }
 
-export function Touch4DiffFeedback({ diff }: { diff: CodeDiffResult }) {
-  return <section className={s.diff} aria-label="مراجعة أسطر الكود" data-testid="touch4-code-diff">
-    <h4>راجع هالأسطر:</h4>
-    <p className={s.note}>مقارنة مساعدة، مو شرط تكتب نفس الحل حرفياً. فحص الصياغة والبنية هو اللي يحدد الخطأ.</p>
+export function Touch4DiffFeedback({ diff, syntaxError = false }: { diff: CodeDiffResult; syntaxError?: boolean }) {
+  return <section className={s.diff} aria-label="مراجعة أسطر الكود" role={syntaxError ? 'alert' : undefined} data-testid="touch4-code-diff">
+    <h4>{syntaxError ? 'مكان خطأ الصياغة:' : 'راجع هالأسطر:'}</h4>
+    <p className={s.note}>{syntaxError ? 'أصلح الموضع المحدد أولاً. الأسطر المجاورة للسياق فقط، مو أخطاء إضافية.' : 'مقارنة مساعدة، مو شرط تكتب نفس الحل حرفياً. فحص الصياغة والبنية هو اللي يحدد الخطأ.'}</p>
     <ol>
       {diff.lines.map((line, index) => <li key={index} className={`${s.line} ${s[line.status]}`}
         data-line-number={line.lineNumber} data-diff-status={line.status}>
         <div className={s.source}><span className={s.number}>{line.lineNumber.toLocaleString('ar-EG')}</span>
           <code>{line.status === 'missing' ? '…' : line.studentContent || ' '}</code>
-          <span className={s.label} dir="rtl">{line.status === 'match' ? 'مطابق' : line.status === 'missing' ? 'ناقص هون' : line.status === 'extra' ? 'سطر إضافي' : 'راجع السطر'}</span>
+          <span className={s.label} dir="rtl">{line.status === 'match' ? syntaxError ? 'السياق' : 'مطابق' : line.status === 'missing' ? 'ناقص هون' : line.status === 'extra' ? 'سطر إضافي' : 'راجع السطر'}</span>
         </div>
         {line.hint && <p>{line.hint}</p>}
       </li>)}

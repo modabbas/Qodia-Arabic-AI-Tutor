@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Request } from "express";
-import { codeDiff, normalizeForChecks, normalizeForComparison } from "./student-code-comparison.ts";
+import { codeDiff, normalizeForChecks, normalizeForComparison, syntaxErrorDiff } from "./student-code-comparison.ts";
 import { syntaxCheck } from "./student-code-syntax.ts";
 import { validateStudentCode } from "./student-code-validation.ts";
 
@@ -78,4 +78,52 @@ test("large comparisons are bounded and retain an exact late error location", ()
   assert.ok(result.lines.length <= 80);
   assert.ok(result.truncated);
   assert.ok(result.lines.some(line => line.lineNumber === 999 && line.hint === "راجع هالسطر."));
+});
+
+test("one unclosed parenthesis produces one diagnostic at its opening, not missing-reference boxes", async () => {
+  const code = "const setup = true;\nconst value = call(\n  42,\n  setup\n;\nconst after = 1;\nconst last = 2;";
+  const reference = "const setup = true;\nconst value = call(42, setup);\nconst after = 1;\nconst last = 2;";
+  const result = await validateStudentCode(input(code, reference, "a.js", "Node.js"), req, assessment);
+  assert.equal(result.level, 1);
+  assert.equal(result.valid, false);
+  const diagnostics = result.diff!.lines.filter(row => row.hint);
+  assert.equal(diagnostics.length, 1);
+  assert.equal(diagnostics[0].lineNumber, 2);
+  assert.ok(diagnostics[0].hint!.includes("الحرف 19"));
+  assert.ok(diagnostics[0].hint!.includes("«(»"));
+  assert.ok(!result.diff!.lines.some(row => row.status === "missing" || row.status === "extra"));
+  assert.ok(!JSON.stringify(result.diff).includes("ناقص هون"));
+});
+
+test("nested bracket mismatch points to its opening; unexpected closing bracket points to itself", async () => {
+  const mismatch = await syntaxCheck("const value = call(\n  42\n];", "Node.js", "a.js");
+  assert.equal(mismatch.lineNumber, 1);
+  assert.equal(mismatch.columnNumber, 19);
+  const extra = await syntaxCheck("const value = 42;\n);", "Node.js", "a.js");
+  assert.equal(extra.lineNumber, 2);
+  assert.equal(extra.columnNumber, 1);
+});
+
+test("quoted/comment brackets stay ignored and native syntax locations include the character", async () => {
+  assert.equal((await syntaxCheck('const text = "(";\n// (\nconst x = 1;', "Node.js", "a.js")).pass, true);
+  const quote = await syntaxCheck("const a = 1;\nconst b = 'oops;\nconst c = 3;", "Node.js", "a.js");
+  assert.equal(quote.lineNumber, 2);
+  assert.equal(quote.columnNumber, 11);
+  const native = await syntaxCheck("const a = 1;\nconst b = ;\nconst c = 3;", "Node.js", "a.js");
+  assert.equal(native.lineNumber, 2);
+  assert.equal(native.columnNumber, 11);
+  const python = await syntaxCheck("def run():\n    return (42\n", "Django", "a.py");
+  assert.equal(python.lineNumber, 2);
+  assert.equal(python.columnNumber, 12);
+  const json = await syntaxCheck('{\n  "items": [\n    1,\n    2', "Node.js", "a.json");
+  assert.equal(json.pass, false);
+  assert.equal(json.lineNumber, 2);
+  assert.equal(json.columnNumber, 12);
+});
+
+test("syntax-only context is bounded near a late error and never contains reference source", () => {
+  const code = Array.from({ length: 1000 }, (_, n) => `const var${n} = ${n};`).join("\n");
+  const result = syntaxErrorDiff(code, "راجع الصياغة.", 999, 10);
+  assert.deepEqual(result.lines.map(row => row.lineNumber), [998, 999, 1000]);
+  assert.equal(result.lines.filter(row => row.hint).length, 1);
 });

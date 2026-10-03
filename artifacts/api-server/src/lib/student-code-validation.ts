@@ -3,7 +3,7 @@ import type { Request } from "express";
 import type { CodeValidationResult } from "@workspace/api-zod";
 import { syntaxCheck } from "./student-code-syntax.ts";
 import { structureCheck, type BuildTask } from "./student-code-structure.ts";
-import { codeDiff, normalizeForChecks } from "./student-code-comparison.ts";
+import { codeDiff, normalizeForChecks, syntaxErrorDiff } from "./student-code-comparison.ts";
 
 export type SemanticAssessment = {
   is_valid: boolean;
@@ -100,7 +100,7 @@ export async function validateStudentCode(
   if (!syntax.pass) return report({
     valid: false, level: 1, score: null, feedback_ar: syntax.reason!,
     suggestions: [], can_retry: true, semantic_status: "not_run",
-    diff: diff(syntax.reason!, syntax.lineNumber),
+    diff: syntaxErrorDiff(input.code, syntax.reason!, syntax.lineNumber, syntax.columnNumber),
   });
   const structure = structureCheck(checkCode, input.concept, checkTask, input.techStack);
   if (!structure.pass) return report({

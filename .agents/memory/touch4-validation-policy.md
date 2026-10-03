@@ -24,3 +24,9 @@ The user permits formatting tolerance, compact rejection diffs, and 500ms local 
 **Why:** Harmless formatting rejections discourage students, but whitespace inside strings and Python/YAML nesting can change what their code means.
 
 **How to apply:** Native parsers retain meaningful source whitespace; canonical whitespace is only a comparison view. Preserve raw submitted/saved code and actual indentation errors. YAML indentation widths may vary while nesting remains equivalent; Python consistent tabs/spaces remain subject to its parser. Diff feedback is diagnostic, never an exact-reference acceptance gate, and must not reveal gated solution lines. Live cues stay local, debounced, and non-blocking.
+
+Syntax feedback must show one diagnostic at the source problem, not reference-diff annotations for subsequent lines.
+
+**Why:** A single missing parenthesis can disrupt reference alignment and generate many identical “missing” boxes, misleading the student about how many errors exist.
+
+**How to apply:** Use the unmatched opening bracket or native parser location, include the character position when available, and show nearby lines as neutral context. Keep reference comparison for structural feedback and do not change acceptance rules.

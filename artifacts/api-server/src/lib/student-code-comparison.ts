@@ -36,6 +36,28 @@ function comparisonLines(code: string, indentationMatters: boolean): string[] {
 
 type Change = { student?: number; reference?: number };
 
+/** Syntax diagnostics describe the student's source, not a reference-solution diff. */
+export function syntaxErrorDiff(
+  code: string, reason: string, errorLine?: number, errorColumn?: number,
+): CodeDiffResult {
+  const raw = normalizeForChecks(code).split("\n");
+  const line = Math.min(raw.length, Math.max(1, errorLine ?? 1));
+  const column = errorColumn === undefined ? undefined
+    : Math.min(raw[line - 1].length + 1, Math.max(1, errorColumn));
+  const location = errorLine === undefined ? ""
+    : `السطر ${line}${column === undefined ? "" : `، الحرف ${column}`}: `;
+  // Show nearby source only; precisely one row owns the diagnostic.
+  return {
+    lines: raw.slice(Math.max(0, line - 2), Math.min(raw.length, line + 1)).map((studentContent, index) => {
+      const lineNumber = Math.max(0, line - 2) + index + 1;
+      return lineNumber === line
+        ? { lineNumber, studentContent, status: "mismatch" as const, hint: location + reason }
+        : { lineNumber, studentContent, status: "match" as const };
+    }),
+    truncated: false,
+  };
+}
+
 // Bounded LCS for short lessons; a bounded lookahead for large existing files.
 function align(student: string[], reference: string[]): Change[] {
   const out: Change[] = [];

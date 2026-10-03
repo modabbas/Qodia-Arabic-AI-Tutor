@@ -4,7 +4,12 @@ import { extname } from "node:path";
 import { transform } from "esbuild";
 import { parseDocument } from "yaml";
 
-export type Check = { pass: boolean; reason?: string; lineNumber?: number };
+export type Check = { pass: boolean; reason?: string; lineNumber?: number; columnNumber?: number };
+
+function sourcePosition(code: string, offset: number) {
+  return { lineNumber: code.slice(0, offset).split("\n").length,
+    columnNumber: offset - code.lastIndexOf("\n", offset - 1) };
+}
 
 // A lexer, not a compiler: comments/quoted text cannot masquerade as executable
 // widget structure. Preserve offsets so balanced-call inspection stays safe.
@@ -17,7 +22,7 @@ export function codeEvidence(code: string, python = false, keepStrings = false, 
       result += " ".repeat(next - i); i = next;
     } else if (code.startsWith("/*", i)) {
       const end = code.indexOf("*/", i + 2);
-      if (end < 0) throw Object.assign(new Error("unterminated_comment"), { lineNumber: code.slice(0, i).split("\n").length });
+      if (end < 0) throw Object.assign(new Error("unterminated_comment"), sourcePosition(code, i));
       const next = end < 0 ? code.length : end + 2;
       result += code.slice(i, next).replace(/[^\n]/g, " "); i = next;
     } else if (javascript && code[i] === "/" &&
@@ -44,7 +49,7 @@ export function codeEvidence(code: string, python = false, keepStrings = false, 
         if (code.startsWith(delimiter, i)) { i += delimiter.length; closed = true; break; }
         i++;
       }
-      if (!closed) throw Object.assign(new Error("unterminated_string"), { lineNumber: code.slice(0, start).split("\n").length });
+      if (!closed) throw Object.assign(new Error("unterminated_string"), sourcePosition(code, start));
       const text = code.slice(start, i);
       result += keepStrings ? text : text.replace(/[^\n]/g, " ");
     } else { result += code[i]; i++; }
@@ -53,17 +58,28 @@ export function codeEvidence(code: string, python = false, keepStrings = false, 
 }
 
 function balanced(code: string): Check {
-  const stack: { char: string; line: number }[] = [];
+  const stack: { char: string; line: number; column: number }[] = [];
   let line = 1;
+  let column = 0;
   const pairs: Record<string, string> = { ")": "(", "]": "[", "}": "{" };
-  for (const character of code) {
-    if (character === "\n") line++;
-    if ("([{".includes(character)) stack.push({ char: character, line });
-    else if (")]}".includes(character) && stack.pop()?.char !== pairs[character]) {
-      return { pass: false, lineNumber: line, reason: "الأقواس مو متوازنة أو ترتيبها مو صحيح. راجع مكان فتحها وإغلاقها." };
+  for (let index = 0; index < code.length; index++) {
+    const character = code[index];
+    column++;
+    if (character === "\n") { line++; column = 0; }
+    if ("([{".includes(character)) stack.push({ char: character, line, column });
+    else if (")]}".includes(character)) {
+      const opening = stack.pop();
+      if (opening?.char !== pairs[character]) {
+        return { pass: false, lineNumber: opening?.line ?? line, columnNumber: opening?.column ?? column,
+          reason: opening
+            ? `القوس «${opening.char}» المفتوح هون ما إله إغلاق مطابق؛ راجع القوس «${character}» في السطر ${line}، الحرف ${column}.`
+            : `قوس الإغلاق «${character}» هون ما إله قوس فتح مطابق.` };
+      }
     }
   }
-  return stack.length ? { pass: false, lineNumber: stack[stack.length - 1].line, reason: "في قوس مفتوح لسه ما سكّرته. راجع الأقواس وجرب مرة ثانية." } : { pass: true };
+  const opening = stack.at(-1);
+  return opening ? { pass: false, lineNumber: opening.line, columnNumber: opening.column,
+    reason: `القوس «${opening.char}» مفتوح هون ولسه ما سكّرته.` } : { pass: true };
 }
 
 export async function syntaxCheck(code: string, techStack: string, targetFile: string): Promise<Check> {
@@ -73,7 +89,7 @@ export async function syntaxCheck(code: string, techStack: string, targetFile: s
     if (extension === ".yaml" || extension === ".yml") {
       const document = parseDocument(code, { uniqueKeys: true });
       if (document.errors.length) return { pass: false,
-        lineNumber: code.slice(0, document.errors[0].pos[0]).split("\n").length,
+        ...sourcePosition(code, document.errors[0].pos[0]),
         reason: "صياغة YAML مو جاهزة. راجع المسافات والنقطتين بعد أسماء الحقول." };
       const data: unknown = document.toJS({ maxAliasCount: 20 });
       if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -91,7 +107,7 @@ export async function syntaxCheck(code: string, techStack: string, targetFile: s
     if (extension === ".py" || techStack === "Django") {
       // Parse only. Never execute, import, or compile student programs.
       await promisify(execFile)("python3", ["-I", "-c",
-        "import ast,sys; ast.parse(sys.argv[1])", code], { timeout: 1000, maxBuffer: 4096 });
+        "import ast,sys\ntry: ast.parse(sys.argv[1])\nexcept SyntaxError as e:\n print('KODIA_SYNTAX_POSITION:%s:%s' % (e.lineno or 1, e.offset or 1), file=sys.stderr)\n raise", code], { timeout: 1000, maxBuffer: 4096 });
       if (!/\b(?:def|class|return|import|from|if|for|while|with|raise|assert)\b|=|\w\s*\(/.test(evidence)) {
         return { pass: false, reason: "استخدم الكلمات ضمن تعليمة أو دالة فعلية، مو كأسماء منفصلة." };
       }
@@ -121,15 +137,37 @@ export async function syntaxCheck(code: string, techStack: string, targetFile: s
     if (/=\s*;|,\s*,/.test(evidence)) return { pass: false, reason: "في تعليمة ناقصة. راجع القيم والفواصل بالمقطع اللي كتبته." };
     return { pass: true };
   } catch (error) {
-    const details = error as { stderr?: string; message?: string; lineNumber?: number; errors?: { location?: { line?: number } }[] };
+    const details = error as { stderr?: string; message?: string; lineNumber?: number; columnNumber?: number;
+      errors?: { location?: { line?: number; column?: number } }[] };
     const pythonLine = /line (\d+)/.exec(details.stderr ?? "");
-    return { pass: false, lineNumber: details.lineNumber ?? details.errors?.[0]?.location?.line
-      ?? (pythonLine ? Number(pythonLine[1]) : undefined), reason: details.message === "unterminated_string"
+    const pythonPosition = /KODIA_SYNTAX_POSITION:(\d+):(\d+)/.exec(details.stderr ?? "");
+    const native = details.errors?.[0]?.location;
+    const jsonPosition = /position (\d+)/.exec(details.message ?? "");
+    const jsonLocation = jsonPosition ? sourcePosition(code, Number(jsonPosition[1])) : undefined;
+    let jsonBracket: Check | undefined;
+    if (extension === ".json") {
+      // JSON reports an unclosed container at EOF; locate its opening for display
+      // without replacing or bypassing the native JSON rejection.
+      try {
+        const bracket = balanced(codeEvidence(code));
+        if (!bracket.pass) jsonBracket = bracket;
+      } catch (lexicalError) {
+        const position = lexicalError as { lineNumber?: number; columnNumber?: number };
+        jsonBracket = { pass: false, ...position };
+      }
+    }
+    const lineNumber = details.lineNumber ?? jsonBracket?.lineNumber ?? native?.line ?? jsonLocation?.lineNumber
+      ?? (pythonPosition ? Number(pythonPosition[1]) : pythonLine ? Number(pythonLine[1]) : undefined);
+    // esbuild uses zero-based UTF-8 byte columns; source display uses UTF-16 positions.
+    const columnNumber = details.columnNumber ?? jsonBracket?.columnNumber ?? (native?.column !== undefined && native.line !== undefined
+      ? Buffer.from(code.split("\n")[native.line - 1] ?? "").subarray(0, native.column).toString("utf8").length + 1
+      : jsonLocation?.columnNumber ?? (pythonPosition ? Number(pythonPosition[2]) : undefined));
+    return { pass: false, lineNumber, columnNumber, reason: jsonBracket?.reason ?? (details.message === "unterminated_string"
       ? "النص بهالسطر مفتوح. سكّر علامة الاقتباس اللي بدأت فيها."
       : details.message === "unterminated_comment"
       ? "التعليق بهالسطر مفتوح. سكّره بعلامة */."
       : techStack === "Django"
       ? "الصياغة مو جاهزة. راجع المسافات البادئة والنقطتين : والأقواس."
-      : "الصياغة مو جاهزة. راجع التعريفات والأقواس والقيم الناقصة وجرب من جديد." };
+      : "الصياغة مو جاهزة. راجع التعريفات والأقواس والقيم الناقصة وجرب من جديد.") };
   }
 }
