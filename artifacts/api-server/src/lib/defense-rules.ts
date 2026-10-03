@@ -1,9 +1,11 @@
+import { FINAL_DEFENSE_MIN_COMPLETED_CONCEPTS } from "../../../../lib/api-zod/src/judge-demo-config.ts";
+
 export const DEFENSE_QUESTION_COUNT = 5;
 export const DEFENSE_QUESTION_SECONDS = 60;
 export const DEFENSE_START_DELAY_MS = 4_000;
 // Bounded transport grace accepts a timer-edge payload, but elapsed time still clamps at 60 seconds.
 export const DEFENSE_DELIVERY_GRACE_MS = 2_000;
-export const MIN_DEFENSE_CONCEPTS = 10;
+export const MIN_DEFENSE_CONCEPTS = FINAL_DEFENSE_MIN_COMPLETED_CONCEPTS;
 
 export type DefenseConcept = {
   status: string;
@@ -58,7 +60,7 @@ export function summarizeEligibility(concepts: DefenseConcept[], files: DefenseF
       : []);
   const eligible = completed.length >= MIN_DEFENSE_CONCEPTS && savedFiles.length > 0;
   const warning = completed.length < MIN_DEFENSE_CONCEPTS
-    ? "تحتاج إكمال ١٠ مفاهيم مدروسة على الأقل."
+    ? `تحتاج إكمال ${String(MIN_DEFENSE_CONCEPTS).replace(/\d/g, digit => "٠١٢٣٤٥٦٧٨٩"[Number(digit)])} مفاهيم مدروسة على الأقل.`
     : savedFiles.length === 0
       ? "لا توجد ملفات مشروع مكتملة ومحفوظة بكود فعلي بعد؛ أكمل ملفاً واحداً على الأقل."
       : completed.length < 20

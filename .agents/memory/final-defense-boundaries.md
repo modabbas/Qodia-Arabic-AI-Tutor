@@ -20,3 +20,9 @@ Gemini may put both linked concepts into question four's metadata even when aske
 **Why:** A live generation was otherwise valid but rejected solely because its question-four metadata combined two known studied names.
 
 **How to apply:** Accept unambiguous Arabic or English studied aliases, independently check both concepts in the actual question, and keep committee identities and ordered difficulty server-owned.
+
+Temporary eligibility reductions must also remain compatible with the deterministic question bank, not just the eligibility check.
+
+**Why:** A judge-demo threshold of one concept would unlock the UI, but linked-concept questions need two studied concepts in the existing fallback. A provider outage could then make an apparently eligible discussion impossible to start.
+
+**How to apply:** Use at least two completed concepts for a reduced demo threshold without changing generation, saved-file requirements, or grading.

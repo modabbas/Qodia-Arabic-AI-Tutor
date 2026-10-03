@@ -1,3 +1,4 @@
+import { FINAL_DEFENSE_MIN_COMPLETED_CONCEPTS } from '../../../../lib/api-zod/src/judge-demo-config.ts';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, LoaderCircle, Play } from 'lucide-react';
@@ -67,10 +68,10 @@ export default function FinalDefense() {
       <div className="fd-fact"><span>المحاولات / أفضل نتيجة</span><strong>{ar(s.total_attempts)} / {s.best_score === null ? '—' : ar(s.best_score)}</strong></div>
     </div>
     <div className="fd-rules"><span>٥ أسئلة</span><span>٦٠ ثانية لكل سؤال</span><span>لا تلميحات</span><span>لا إعادة</span></div>
-    {(s.warning || !s.eligible || s.no_saved_files) && <p className="fd-note" data-testid="text-defense-warning">{s.warning ?? (s.no_saved_files ? 'لا توجد ملفات مشروع محفوظة بعد.' : 'تحتاج إكمال ١٠ مفاهيم على الأقل.')}</p>}
+    {(s.warning || !s.eligible || s.no_saved_files) && <p className="fd-note" data-testid="text-defense-warning">{s.warning ?? (s.no_saved_files ? 'لا توجد ملفات مشروع محفوظة بعد.' : `تحتاج إكمال ${ar(FINAL_DEFENSE_MIN_COMPLETED_CONCEPTS)} مفاهيم على الأقل.`)}</p>}
     {error && <p className="fd-error" role="alert" data-testid="text-start-error">{error}</p>}
     <div className="fd-actions">
-      <button className="btn btn-primary" onClick={begin} disabled={!s.eligible || start.isPending} title={s.eligible ? undefined : 'تحتاج إكمال ١٠ مفاهيم على الأقل'} data-testid="button-start-defense">{start.isPending ? <LoaderCircle size={17} className="animate-spin" /> : <Play size={17} />} ابدأ المناقشة</button>
+      <button className="btn btn-primary" onClick={begin} disabled={!s.eligible || start.isPending} title={s.eligible ? undefined : `تحتاج إكمال ${ar(FINAL_DEFENSE_MIN_COMPLETED_CONCEPTS)} مفاهيم على الأقل.`} data-testid="button-start-defense">{start.isPending ? <LoaderCircle size={17} className="animate-spin" /> : <Play size={17} />} ابدأ المناقشة</button>
       <Link href="/dashboard" className="btn btn-outline" data-testid="link-postpone">أجّل حتى أكمل المفاهيم <ArrowLeft size={16} /></Link>
     </div>
     <div style={{ maxWidth: 560 }}><Disclaimer source="gemini" /></div>

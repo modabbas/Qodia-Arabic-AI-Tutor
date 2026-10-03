@@ -13,6 +13,7 @@ import {
   questionElapsedSeconds,
   questionRemainingSeconds,
   summarizeEligibility,
+  MIN_DEFENSE_CONCEPTS,
   validGeneratedQuestion,
 } from "./defense-rules.ts";
 import { buildCuratedQuestions, curatedQuestionTemplates } from "./defense-question-bank.ts";
@@ -37,12 +38,23 @@ test("eligibility counts only completed concepts and actual nonempty complete fi
     { status: "planned", mastery_score: 100, name_en: "Planned", name_ar: "مخطط" },
   ], completedFiles);
   assert.equal(summary.completedConcepts, 9);
-  assert.equal(summary.eligible, false);
+  assert.equal(summary.eligible, summary.completedConcepts >= MIN_DEFENSE_CONCEPTS);
   assert.equal(summary.averageMastery, 20);
   const missingCode = summarizeEligibility(completedConcepts, [{ ...completedFiles[0]!, content: "" }]);
   assert.equal(missingCode.eligible, false);
   assert.match(missingCode.warning ?? "", /ملفات مشروع مكتملة/);
   assert.equal(summarizeEligibility(completedConcepts, [{ ...completedFiles[0]!, status: "in_progress" }]).eligible, false);
+});
+test("configured eligibility still requires enough completed concepts and a real saved file", () => {
+  assert.equal(summarizeEligibility([], completedFiles).eligible, false);
+  assert.equal(summarizeEligibility(completedConcepts.slice(0, MIN_DEFENSE_CONCEPTS - 1), completedFiles).eligible, false);
+  assert.equal(summarizeEligibility(completedConcepts.slice(0, MIN_DEFENSE_CONCEPTS), completedFiles).eligible, true);
+  assert.equal(summarizeEligibility(completedConcepts.slice(0, MIN_DEFENSE_CONCEPTS), []).eligible, false);
+  assert.equal(summarizeEligibility([
+    { ...completedConcepts[0]!, status: "needs_review" },
+  ], completedFiles).eligible, false);
+  assert.equal(buildCuratedQuestions("React", completedConcepts.slice(0, MIN_DEFENSE_CONCEPTS),
+    completedFiles, new Set()).length, 5);
 });
 
 test("question generation rotation and metadata require exact studied concepts and owned saved paths", () => {
