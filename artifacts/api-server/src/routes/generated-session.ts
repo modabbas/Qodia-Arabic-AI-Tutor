@@ -28,7 +28,7 @@ import {
   type LearningConcept,
 } from "../lib/learning-path";
 import { hint3TeachingInstruction, parseTouch4HintBundle } from "../lib/touch4-support-rules";
-import { completedConceptEncounters, scaffoldingFor, validFirstMove } from "../lib/touch4-scaffolding";
+import { completedConceptEncounters, scaffoldingFor, withFirstMoveFallback } from "../lib/touch4-scaffolding";
 
 const router: IRouter = Router();
 const primaryModel = "gemini-3.1-flash-lite";
@@ -246,6 +246,7 @@ function assertExactShape(input: unknown, parsed: unknown): void {
 }
 
 export function validateGeneratedPayload(input: unknown, allowLegacyHints = false): GeneratedSession {
+  input = withFirstMoveFallback(input).input;
   const parsed = GetGeneratedSessionResponse.parse(input);
   assertExactShape(input, parsed);
   if (
@@ -259,10 +260,6 @@ export function validateGeneratedPayload(input: unknown, allowLegacyHints = fals
   }
   const hints = parsed.touch4_build.hints;
   const referenceSolution = parsed.touch4_build.reference_solution;
-  const firstMove = parsed.touch4_build.first_move_choice;
-  if ((!allowLegacyHints && !firstMove) || (firstMove && !validFirstMove(firstMove, referenceSolution))) {
-    throw new Error("Touch 4 first move must have one correct option and an incomplete exact reference prefix");
-  }
   if (
     (hints === undefined) !== (referenceSolution === undefined)
     || (hints !== undefined && !parseTouch4HintBundle({ hints, reference_solution: referenceSolution }, allowLegacyHints))
@@ -545,6 +542,12 @@ async function requestFromGemini(
         step = "json_parse";
         const decoded = JSON.parse(cleanModelJson(text));
         step = "payload_validation";
+        const scaffoldCheck = withFirstMoveFallback(decoded);
+        if (scaffoldCheck.reason) {
+          req.log.warn({
+            step: "first_move_fallback", reason: scaffoldCheck.reason, concept_id: selectedConcept.id,
+          }, "Optional first-move scaffold omitted; continuing with direct code input");
+        }
         const validated = validateGeneratedPayload(decoded);
         step = "build_target_validation";
         validateBuildTarget(validated, buildContext);

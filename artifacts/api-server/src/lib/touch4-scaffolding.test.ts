@@ -1,12 +1,45 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { completedConceptEncounters, scaffoldingFor, validFirstMove } from "./touch4-scaffolding.ts";
+import { completedConceptEncounters, scaffoldingFor, validFirstMove, withFirstMoveFallback } from "./touch4-scaffolding.ts";
 
 const choice = {
   question_ar: "شو أول خطوة؟",
   options: [{ id: "a", text_ar: "تعريف الحالة", correct: true }, { id: "b", text_ar: "تحميل البيانات", correct: false }],
   scaffold_code_on_correct: "const [open, setOpen] = useState(",
 };
+test("missing, malformed and unsafe first moves fall back without changing the rest of the lesson", () => {
+  const base = { concept_id: "c1", touch1_provoke: { question: "keep" }, touch4_build: {
+    reference_solution: `${choice.scaffold_code_on_correct}false);`, hints: ["unchanged"],
+    task_description: "keep", target_file: "src/test.tsx",
+  } };
+  for (const first_move_choice of [
+    undefined, null, "invalid", {}, { ...choice, options: "invalid" },
+    { ...choice, options: [{ id: "a", text_ar: "one", correct: "true" }] },
+    { ...choice, scaffold_code_on_correct: "unrelated" },
+    { ...choice, scaffold_code_on_correct: base.touch4_build.reference_solution },
+    { ...choice, options: choice.options.map(option => ({ ...option, correct: true })) },
+    { ...choice, question_ar: "" },
+    { ...choice, extra_field: "unsupported" },
+  ]) {
+    const input = { ...base, touch4_build: { ...base.touch4_build, first_move_choice } };
+    const result = withFirstMoveFallback(input);
+    assert.ok(result.reason);
+    assert.deepEqual(result.input, base);
+    assert.ok("first_move_choice" in input.touch4_build, "does not mutate the model/cache input");
+    assert.equal(scaffoldingFor(undefined, null, 0, false).tier, "none");
+  }
+});
+test("valid two/three-option variations preserve scaffolding with the correct answer in any position", () => {
+  for (const options of [
+    choice.options, [...choice.options].reverse(),
+    [choice.options[1], { id: "c", text_ar: "خطوة لاحقة", correct: false }, choice.options[0]],
+  ]) {
+    const input = { touch4_build: { first_move_choice: { ...choice, options },
+      reference_solution: `${choice.scaffold_code_on_correct}false);` } };
+    assert.equal(withFirstMoveFallback(input).reason, null);
+    assert.equal(withFirstMoveFallback(input).input, input);
+  }
+});
 test("exactly one answer, unique options and incomplete reference prefix", () => {
   assert.ok(validFirstMove(choice, `${choice.scaffold_code_on_correct}false);`));
   assert.ok(!validFirstMove(choice, choice.scaffold_code_on_correct));

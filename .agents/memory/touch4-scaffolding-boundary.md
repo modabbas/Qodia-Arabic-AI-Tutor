@@ -14,3 +14,9 @@ Generate first-move content within the existing lesson-generation response only.
 **Why:** Extra generation violates the requested no-new-AI-call boundary; regenerating unfinished lessons also discards lesson identity and practice evidence.
 
 **How to apply:** Preserve existing drafts over a suggested prefix and keep legacy compatibility explicit. Mastery and completed encounter history are read-only inputs to support levels, not new learning-progress writes.
+
+First-move scaffolding is optional even in newly generated lessons. Missing or malformed questions, ambiguous answers, and unsafe code prefixes must fall back to ordinary direct code input, not reject the entire lesson.
+
+**Why:** Structured Gemini output can satisfy the JSON shape but fail the exact-reference prefix constraints, blocking session generation with HTTP 503. The user explicitly prioritizes usable lessons over optional scaffolding.
+
+**How to apply:** Discard only the invalid first-move block before lesson parsing. Keep valid scaffolds, reference solutions, hints, lesson identity, and every non-scaffold validation rule intact; log a reason without logging private code.
