@@ -5,8 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getGetCurrentUserQueryKey, getGetDashboardQueryKey, useCompleteOnboarding, type TechStack, type SecondaryTechStack } from '@workspace/api-client-react';
 import { Brand } from '@/components/qodia-ui';
 import { firstChallengePreview } from './onboarding-preview';
-
-const stacks: TechStack[] = ['Django', 'Node.js', 'React', 'Flutter'];
+import { onboardingStacks, secondaryStackOptions, secondaryAfterPrimaryChange } from './onboarding-stacks';
 
 export default function Onboarding() {
   const [, navigate] = useLocation();
@@ -38,12 +37,16 @@ export default function Onboarding() {
         <span className="eyebrow">بطاقة المشروع</span><h2 style={{ fontSize: 27, letterSpacing: '-.04em', margin: '15px 0 29px' }}>عن شو مشروع تخرّجك؟</h2>
         <div style={{ marginBottom: 27 }}><label htmlFor="project" className="field-label">اسم المشروع</label><input id="project" className="field" placeholder="مثلاً: نظام إدارة عيادة" required minLength={1} maxLength={120} value={project} onChange={e => setProject(e.target.value)} data-testid="input-project-name" /></div>
         <label className="field-label" htmlFor="stack">التقنية الأساسية</label>
-        <select id="stack" className="field" value={stack} onChange={e => setStack(e.target.value as TechStack)} required data-testid="select-tech-stack"><option value="" disabled>اختر التقنية</option>{stacks.map(item => <option key={item} value={item}>{item}</option>)}</select>
+        <select id="stack" className="field" value={stack} onChange={e => {
+          const nextStack = e.target.value as TechStack;
+          setStack(nextStack);
+          setSecondaryStack(current => secondaryAfterPrimaryChange(nextStack, current));
+        }} required data-testid="select-tech-stack"><option value="" disabled>اختر التقنية</option>{onboardingStacks.map(item => <option key={item} value={item}>{item}</option>)}</select>
         <p className="muted" style={{ fontSize: 12, lineHeight: 1.8, marginTop: 13 }}>هاي معاينة حسب التقنية. التحدّي الفعلي بيتحضّر حسب مشروعك.</p>
         <label className="field-label" htmlFor="secondary-stack" style={{ marginTop: 24 }}>هل مشروعك فيه جزء تاني بتقنية مختلفة؟ (اختياري)</label>
         <select id="secondary-stack" className="field" value={secondaryStack} onChange={e => setSecondaryStack(e.target.value as SecondaryTechStack | '')} data-testid="select-secondary-tech-stack">
           <option value="">لا يوجد</option>
-          {(['React', 'Vue', 'Flutter', 'Django', 'Node.js', 'Other'] as const).map(item => <option key={item} value={item}>{item === 'Other' ? 'غيره' : item}</option>)}
+          {secondaryStackOptions(stack).map(item => <option key={item} value={item}>{item}</option>)}
         </select>
         <p className="muted" style={{ fontSize: 12, lineHeight: 1.8, marginTop: 10 }}>السؤال الإضافي بس لربط الأفكار؛ تدريبك ومشروعك بيضلّوا بالتقنية الأساسية.</p>
         {error && <div className="error-note" role="alert" style={{ marginTop: 20 }} data-testid="status-onboarding-error">{error}</div>}
