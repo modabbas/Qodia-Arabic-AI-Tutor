@@ -27,6 +27,7 @@ import {
   SaveProjectFileResponse,
 } from "@workspace/api-zod";
 import { publicUser, requireUser } from "../lib/qodia-auth";
+import { composeTouch4Submission } from "../lib/touch4-interactions";
 import {
   ensureProjectPlan,
   getProjectStructureData,
@@ -274,6 +275,13 @@ router.post("/save-file", async (req, res): Promise<void> => {
     step: "touch4_attempt", concept_id: ownedSession.data.concept_id,
     attempt_number: parsed.data.attempt_number ?? null,
   }, "Student submitted code for progressive validation");
+  try {
+    parsed.data.content = composeTouch4Submission(ownedSession.data.touch4_build, parsed.data);
+    if (Buffer.byteLength(parsed.data.content, "utf8") > 30_720) throw new Error("TOUCH4_COMBINED_CODE_TOO_LARGE");
+  } catch {
+    res.status(400).json({ error: "منطقة الكود تغيرت أو ترتيب الأسطر غير مكتمل. أعد تحميل الجلسة قبل الإرسال." });
+    return;
+  }
   const reservedAttemptIndex = await reserveTouch4Attempt(
     user.id,
     ownedSession.data.lesson_id,
@@ -762,6 +770,7 @@ router.post("/sessions", async (req, res): Promise<void> => {
             mastery_score: masteryEarned,
             last_reviewed: saved.timestamp.toISOString(),
             session_id: saved.id,
+            encounter_count: (item.encounter_count ?? 0) + 1,
           }
           : item);
         await tx.update(learningMapsTable).set({ concepts, updatedAt: new Date() })

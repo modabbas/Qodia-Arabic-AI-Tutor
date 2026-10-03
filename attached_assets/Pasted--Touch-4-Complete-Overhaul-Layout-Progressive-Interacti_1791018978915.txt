@@ -1,0 +1,135 @@
+# Touch 4 Complete Overhaul: Layout + Progressive Interaction Modes
+
+## Context
+Touch 4 (Build) already has: Code Validation (Levels 1/2/3), Progressive Hints (3 tiers, XP penalty), and a Scaffold flow (multiple-choice first-move + prefix) from an earlier task. This task REPLACES/extends that scaffold work with a more complete redesign. Do not touch Level 1/2/3 validation logic itself, or the Hints XP penalty system — only the layout and the task-interaction-type logic change.
+
+## Problem Summary (from user testing)
+1. Starter code and student's typing currently share the same editable area — when the student types, the placeholder/reference code shifts or disappears, feeling disorienting ("مثل عم بنقل" / like they're being watched copying).
+2. Hints and the reference solution appear BELOW the code, forcing repeated up/down eye travel.
+3. Hint 1 currently gives only general verbal guidance with no concrete code example, so struggling students have to burn through hints 2-3 just to see any real syntax.
+4. Even with hints, writing code from scratch on the FIRST encounter of a brand new concept is too big a jump for beginners — causes abandonment (closing the page without attempting).
+
+## Fix 1: Fixed Starter Code + Separate Typing Area (not shared/overlapping)
+
+Restructure the code area into two visually distinct, stacked blocks:
+
+```
+┌─────────────────────────────────┐
+│  الكود الأساسي (ثابت، read-only) │
+│  import { BrowserRouter... }      │
+│  export default function App() {  │
+│    return (                       │
+│      <div className="...">        │
+└─────────────────────────────────┘
+┌─────────────────────────────────┐
+│  اكتب هون 👇 (منطقة الطالب فقط)   │
+│  [empty editable textarea/editor] │
+└─────────────────────────────────┘
+```
+
+- Top block: the starter/reference code, always visible, never shifts, read-only, syntax-highlighted
+- Bottom block: a separate, empty editable area where ONLY the student's new code goes
+- On submit, backend concatenates/merges top block + bottom block content before running Level 1/2/3 validation (same validation logic as already built, just fed the combined string)
+- Remove any current implementation where starter code and student input share one editable container
+
+## Fix 2: Side Panel Layout for Hints/Solution (not below)
+
+Restructure Touch 4 into two side-by-side columns on desktop/tablet:
+
+```
+┌─────────────────────┬─────────────────────┐
+│  Code area            │  Side panel          │
+│  (Fix 1 structure      │  (hints/solution      │
+│   goes here)           │   appear here)         │
+└─────────────────────┴─────────────────────┘
+```
+
+- Side panel shows ONE thing at a time: idle state → Hint 1 → Hint 2 → Hint 3 → reference solution, each REPLACING the previous content (not stacked/accumulating)
+- Small breadcrumb at top of panel (e.g., "١/٣") indicates current tier
+- Mobile (narrow viewport): stack side panel below code as fallback — acceptable only on mobile
+
+## Fix 3: Hints Available From the Start (not gated behind submit)
+
+- Hint 1: available immediately when Touch 4 loads, no submit/failed-attempt required
+- Hint 2: unlocks after EITHER 30-45s of inactivity since Hint 1 was opened, OR a failed submit attempt — whichever first
+- Hint 3: unlocks the same way following Hint 2
+- Reference solution: still requires Hint 3 opened first
+- XP penalty per hint stays exactly as already built (-10 per hint, cumulative) — only the unlock TRIGGER changes
+
+## Fix 4: Hint 1 Must Contain a Concrete Code Example (not just verbal guidance)
+
+Update the Gemini prompt generating hints so Hint 1 always includes a short, real code snippet demonstrating the GENERAL pattern/syntax (not the task's specific answer) — e.g., for useState, Hint 1 shows a generic `const [x, setX] = useState(initialValue);` pattern with explanation, not just "فكر بالصيغة". Hints 2 and 3 remain as already designed (similar example, then partial solution) — only Hint 1's content requirement changes to guarantee a visible code example at the earliest tier.
+
+## Fix 5: Progressive Interaction Mode Based on Concept Familiarity
+
+This is the biggest change: HOW the student interacts with Touch 4 changes based on whether this is their first or a later encounter with the specific concept being taught (read from existing Learning Path `learning_map` data — concept status and whether this is a repeat/review).
+
+### Mode A — "رتّب الكود" (Drag-to-Order): First encounter of a brand-new concept
+
+When `learning_map` shows this concept has never been completed before (status was "planned", now being taught for the first time):
+
+- Present the task's required code as 3-6 individual lines/chunks, shuffled/scrambled
+- Student drags them into the correct order in the bottom typing-area block (replacing free-text typing entirely for this mode)
+- No character-level typing required — pure sequencing/logic exercise
+- On submit, reconstruct the ordered lines into a code string and run through the SAME Level 1/2/3 validation as already built (order mistakes should surface naturally as Level 2/3 failures using existing logic — no new validation needed, just a different input mechanism feeding the same pipeline)
+
+Implementation note: use a simple drag-and-drop library compatible with the existing stack (e.g., `@dnd-kit/core` or native HTML5 drag events) — keep it lightweight, no heavy new dependencies.
+
+### Mode B — "عبّي الفراغ" (Fill-in-Blank / Scaffold): Concept being reviewed again (already encountered once before, regardless of prior mastery_score)
+
+This is the EXISTING scaffold flow already built (multiple-choice first-move + prefix shown, student completes the rest) — keep as-is, just confirm it now specifically triggers for "concept seen before, this is a repeat encounter" rather than always triggering for every first build task.
+
+### Mode C — Free write (current/default): Concept has been encountered 2+ times before (third+ repeat)
+
+Standard blank bottom-typing-area (per Fix 1's structure — still has the fixed starter code block above it, just no scaffold/drag assistance) — student writes the full addition from scratch, as already built originally.
+
+### Mode Selection Logic
+
+```typescript
+function getTouch4Mode(concept: LearningMapConcept): 'drag-order' | 'fill-blank' | 'free-write' {
+  const timesEncountered = concept.encounterCount ?? 0; // how many sessions have taught/reviewed this concept
+  if (timesEncountered === 0) return 'drag-order';
+  if (timesEncountered === 1) return 'fill-blank';
+  return 'free-write';
+}
+```
+
+If `encounterCount` doesn't already exist as a field on the learning_map concept record, add it (increment each time a session teaches/reviews that concept) — this is a small schema addition, not a new table.
+
+### Gemini Generation Requirements Per Mode
+
+Extend the existing touch4_build generation prompt so Gemini also returns mode-appropriate content:
+
+```
+أضف لـ touch4_build حسب الوضع:
+
+لوضع drag-order:
+"drag_order_lines": ["سطر 1", "سطر 2", "سطر 3", ...] (بالترتيب الصحيح؛ الفرونت إند بيعمل shuffle)
+
+لوضع fill-blank: استخدم نفس "first_move_choice" الموجود أصلاً
+
+لوضع free-write: لا حاجة لحقول إضافية
+```
+
+## What NOT to Do
+- Do NOT change Level 1/2/3 validation logic itself — all three modes feed the same validation pipeline after reconstructing the final code string
+- Do NOT change the XP penalty amounts for hints
+- Do NOT add a new Gemini API call — all mode-specific content (drag_order_lines, first_move_choice) is generated in the SAME existing session-generation call
+- Do NOT touch Touch 1, 2, 3, 5, Pride Moment, Dashboard, or other pages
+- Do NOT remove the existing 15s-idle mentor encouragement from Micro-wins — ensure it doesn't visually collide with the side panel
+
+## Testing
+- [ ] Starter code block stays fixed/visible; student typing happens in a separate area below it
+- [ ] Side panel shows hints/solution beside code (desktop), stacks below on mobile
+- [ ] Hint 1 available immediately, contains a concrete code example
+- [ ] Hint 2/3 unlock via inactivity timer OR failed attempt
+- [ ] First encounter of a new concept shows drag-to-order interface
+- [ ] Second encounter of same concept shows fill-in-blank (existing scaffold)
+- [ ] Third+ encounter shows free-write (blank area, no assistance)
+- [ ] All three modes correctly feed combined code into existing Level 1/2/3 validation
+- [ ] No additional Gemini API calls introduced beyond the existing per-session call
+
+## Cost & Time
+- Extended Thinking: Yes (significant restructuring touching layout, interaction modes, and generation schema together)
+- Time: 50-65 minutes
+- Cost: $14-19

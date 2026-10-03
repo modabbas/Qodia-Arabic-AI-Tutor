@@ -5,8 +5,17 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProjectFileInputInputKind } from './projectFileInputInputKind';
 
 export interface ProjectFileInput {
+  input_kind?: ProjectFileInputInputKind;
+  /**
+     * @minItems 3
+     * @maxItems 6
+     * @items.minimum 0
+     * @items.maximum 5
+     */
+  chunk_order?: number[];
   /**
      * @minLength 1
      * @maxLength 240

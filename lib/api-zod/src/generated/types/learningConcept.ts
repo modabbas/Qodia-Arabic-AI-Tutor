@@ -9,6 +9,11 @@ import type { LearningConceptStatus } from './learningConceptStatus';
 
 export interface LearningConcept {
   /**
+     * Completed teaching or review encounters; unfinished lessons do not increment this count.
+     * @minimum 0
+     */
+  encounter_count?: number;
+  /**
      * @minLength 1
      * @maxLength 100
      */

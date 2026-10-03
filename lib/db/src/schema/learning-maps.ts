@@ -17,6 +17,7 @@ export type StoredLearningConcept = {
   mastery_score: number | null;
   last_reviewed: string | null;
   session_id: string | null;
+  encounter_count?: number;
 };
 
 export const learningMapsTable = pgTable("learning_map", {

@@ -17,7 +17,7 @@ import {
 
 const bundle = {
   hints: [
-    { level: 1, type: "guidance", text_ar: "فكر بمكان إعداد العنصر", example: "قسم الإعدادات" },
+    { level: 1, type: "guidance", text_ar: "فكر بمكان إعداد العنصر", example: "قسم الإعدادات", code_example: "dependency: generic-example" },
     { level: 2, type: "similar_example", text_ar: "شوف مثال قريب لمكتبة ثانية", code_example: "library: other" },
     { level: 3, type: "partial_solution", text_ar: "حدد القسم اللي بيجمع المكتبات المستخدمة. كيف بتوصل المكتبة المطلوبة ببيئة المشروع؟" },
   ],
@@ -72,10 +72,10 @@ test("hint schema distinguishes exactly three ordered levels and their content",
     ...bundle,
     hints: [bundle.hints[0], { ...bundle.hints[1], code_example: "ع".repeat(2001) }, bundle.hints[2]],
   }), null);
-  assert.equal(parseTouch4HintBundle({
+  assert.ok(parseTouch4HintBundle({
     ...bundle,
     hints: [{ ...bundle.hints[0], code_example: "dependency: real syntax" }, ...bundle.hints.slice(1)],
-  }), null);
+  }));
   assert.equal(parseTouch4HintBundle({
     ...bundle,
     hints: [bundle.hints[0], bundle.hints[1], { ...bundle.hints[2], code_example: "dependency: full solution" }],
@@ -89,6 +89,13 @@ test("hint schema distinguishes exactly three ordered levels and their content",
     hints: [bundle.hints[0], bundle.hints[1], { ...bundle.hints[2], code_example: bundle.hints[1].code_example }],
   }), null);
   assert.equal(parseTouch4HintBundle({ ...bundle, reference_solution: "ع".repeat(4001) }), null);
+});
+
+test("historical hint 1 gains its existing generic syntax without regeneration or changing later tiers", () => {
+  const { code_example: _oldCode, ...oldHint } = bundle.hints[0];
+  const upgraded = parseTouch4HintBundle({ ...bundle, hints: [oldHint, ...bundle.hints.slice(1)] });
+  assert.equal(upgraded?.hints[0].code_example, bundle.hints[1].code_example);
+  assert.deepEqual(upgraded?.hints.slice(1), bundle.hints.slice(1));
 });
 
 test("third hint is functional prose plus a question, never executable code or a blank template", () => {

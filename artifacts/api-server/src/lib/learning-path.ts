@@ -15,11 +15,12 @@ export type LearningConcept = {
   mastery_score: number | null;
   last_reviewed: string | null;
   session_id: string | null;
+  encounter_count?: number;
 };
 
 export type CurriculumConceptInput = Omit<
   LearningConcept,
-  "status" | "mastery_score" | "last_reviewed" | "session_id"
+  "status" | "mastery_score" | "last_reviewed" | "session_id" | "encounter_count"
 >;
 
 export type HistoricalConcept = {
@@ -227,6 +228,9 @@ export function seedHistoricalConcepts(
       mastery_score: masteryScore,
       last_reviewed: historical?.timestamp.toISOString() ?? (savedFile?.updatedAt.toISOString() ?? null),
       session_id: historical?.sessionId ?? null,
+      encounter_count: Math.max(isCompleted ? 1 : 0, new Set(completedHistory
+        .filter(session => normalizeConceptName(session.concept.split(" — ", 1)[0] ?? session.concept) === normalizeConceptName(concept.name_en))
+        .map(session => session.sessionId)).size),
     };
   });
 }

@@ -122,6 +122,8 @@ export const CompleteOnboardingResponse = zod.object({
 /**
  * @summary Get or lazily create the authenticated student's learning map
  */
+export const getLearningMapResponseConceptsItemEncounterCountMin = 0;
+
 export const getLearningMapResponseConceptsItemIdMax = 100;
 
 export const getLearningMapResponseConceptsItemNameEnMax = 100;
@@ -153,6 +155,7 @@ export const GetLearningMapResponse = zod.object({
   "project_name": zod.string(),
   "tech_stack": zod.enum(['Django', 'Node.js', 'React', 'Flutter']),
   "concepts": zod.array(zod.object({
+  "encounter_count": zod.number().int().min(getLearningMapResponseConceptsItemEncounterCountMin).optional().describe('Completed teaching or review encounters; unfinished lessons do not increment this count.'),
   "id": zod.string().min(1).max(getLearningMapResponseConceptsItemIdMax),
   "name_en": zod.string().min(1).max(getLearningMapResponseConceptsItemNameEnMax),
   "name_ar": zod.string().min(1).max(getLearningMapResponseConceptsItemNameArMax),
@@ -178,6 +181,8 @@ export const GetLearningMapResponse = zod.object({
 /**
  * @summary Ensure the authenticated student has an idempotently generated learning map
  */
+export const generateLearningMapResponseConceptsItemEncounterCountMin = 0;
+
 export const generateLearningMapResponseConceptsItemIdMax = 100;
 
 export const generateLearningMapResponseConceptsItemNameEnMax = 100;
@@ -209,6 +214,7 @@ export const GenerateLearningMapResponse = zod.object({
   "project_name": zod.string(),
   "tech_stack": zod.enum(['Django', 'Node.js', 'React', 'Flutter']),
   "concepts": zod.array(zod.object({
+  "encounter_count": zod.number().int().min(generateLearningMapResponseConceptsItemEncounterCountMin).optional().describe('Completed teaching or review encounters; unfinished lessons do not increment this count.'),
   "id": zod.string().min(1).max(generateLearningMapResponseConceptsItemIdMax),
   "name_en": zod.string().min(1).max(generateLearningMapResponseConceptsItemNameEnMax),
   "name_ar": zod.string().min(1).max(generateLearningMapResponseConceptsItemNameArMax),
@@ -238,6 +244,8 @@ export const GenerateLearningMapResponse = zod.object({
 export const UpdateMasteryBody = zod.object({
   "session_id": zod.string().uuid()
 })
+
+export const updateMasteryResponseConceptsItemEncounterCountMin = 0;
 
 export const updateMasteryResponseConceptsItemIdMax = 100;
 
@@ -270,6 +278,7 @@ export const UpdateMasteryResponse = zod.object({
   "project_name": zod.string(),
   "tech_stack": zod.enum(['Django', 'Node.js', 'React', 'Flutter']),
   "concepts": zod.array(zod.object({
+  "encounter_count": zod.number().int().min(updateMasteryResponseConceptsItemEncounterCountMin).optional().describe('Completed teaching or review encounters; unfinished lessons do not increment this count.'),
   "id": zod.string().min(1).max(updateMasteryResponseConceptsItemIdMax),
   "name_en": zod.string().min(1).max(updateMasteryResponseConceptsItemNameEnMax),
   "name_ar": zod.string().min(1).max(updateMasteryResponseConceptsItemNameArMax),
@@ -534,6 +543,13 @@ export const getGeneratedSessionResponseTouch3ExploreFeedbackCorrectMax = 400;
 
 export const getGeneratedSessionResponseTouch3ExploreFeedbackWrongMax = 400;
 
+export const getGeneratedSessionResponseTouch4BuildFixedCodeMax = 30720;
+
+export const getGeneratedSessionResponseTouch4BuildDragOrderLinesItemMax = 4000;
+
+export const getGeneratedSessionResponseTouch4BuildDragOrderLinesMin = 3;
+export const getGeneratedSessionResponseTouch4BuildDragOrderLinesMax = 6;
+
 export const getGeneratedSessionResponseTouch4BuildFirstMoveChoiceQuestionArMax = 300;
 
 export const getGeneratedSessionResponseTouch4BuildFirstMoveChoiceOptionsItemIdMax = 20;
@@ -662,6 +678,10 @@ export const GetGeneratedSessionResponse = zod.object({
   "feedback_wrong": zod.string().min(1).max(getGeneratedSessionResponseTouch3ExploreFeedbackWrongMax)
 }),
   "touch4_build": zod.object({
+  "interaction_mode": zod.enum(['drag-order', 'fill-blank', 'free-write']).optional(),
+  "fixed_code": zod.string().max(getGeneratedSessionResponseTouch4BuildFixedCodeMax).optional().describe('Server-owned read-only prefix concatenated with the student\'s continuation.'),
+  "drag_order_lines": zod.array(zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildDragOrderLinesItemMax)).min(getGeneratedSessionResponseTouch4BuildDragOrderLinesMin).max(getGeneratedSessionResponseTouch4BuildDragOrderLinesMax).optional(),
+  "drag_order_separator": zod.enum(['', '\n']).optional().describe('Server-owned join separator; empty for exact lexical chunks from a single-line reference.'),
   "first_move_choice": zod.object({
   "question_ar": zod.string().min(1).max(getGeneratedSessionResponseTouch4BuildFirstMoveChoiceQuestionArMax),
   "options": zod.array(zod.object({
@@ -784,6 +804,13 @@ export const createGeneratedSessionResponseTouch3ExploreCorrectIndexMax = 2;
 export const createGeneratedSessionResponseTouch3ExploreFeedbackCorrectMax = 400;
 
 export const createGeneratedSessionResponseTouch3ExploreFeedbackWrongMax = 400;
+
+export const createGeneratedSessionResponseTouch4BuildFixedCodeMax = 30720;
+
+export const createGeneratedSessionResponseTouch4BuildDragOrderLinesItemMax = 4000;
+
+export const createGeneratedSessionResponseTouch4BuildDragOrderLinesMin = 3;
+export const createGeneratedSessionResponseTouch4BuildDragOrderLinesMax = 6;
 
 export const createGeneratedSessionResponseTouch4BuildFirstMoveChoiceQuestionArMax = 300;
 
@@ -913,6 +940,10 @@ export const CreateGeneratedSessionResponse = zod.object({
   "feedback_wrong": zod.string().min(1).max(createGeneratedSessionResponseTouch3ExploreFeedbackWrongMax)
 }),
   "touch4_build": zod.object({
+  "interaction_mode": zod.enum(['drag-order', 'fill-blank', 'free-write']).optional(),
+  "fixed_code": zod.string().max(createGeneratedSessionResponseTouch4BuildFixedCodeMax).optional().describe('Server-owned read-only prefix concatenated with the student\'s continuation.'),
+  "drag_order_lines": zod.array(zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildDragOrderLinesItemMax)).min(createGeneratedSessionResponseTouch4BuildDragOrderLinesMin).max(createGeneratedSessionResponseTouch4BuildDragOrderLinesMax).optional(),
+  "drag_order_separator": zod.enum(['', '\n']).optional().describe('Server-owned join separator; empty for exact lexical chunks from a single-line reference.'),
   "first_move_choice": zod.object({
   "question_ar": zod.string().min(1).max(createGeneratedSessionResponseTouch4BuildFirstMoveChoiceQuestionArMax),
   "options": zod.array(zod.object({
@@ -1228,6 +1259,12 @@ export const ExportProjectResponse = zod.unknown()
 /**
  * @summary Save a built project file
  */
+export const saveProjectFileBodyChunkOrderItemMin = 0;
+export const saveProjectFileBodyChunkOrderItemMax = 5;
+
+export const saveProjectFileBodyChunkOrderMin = 3;
+export const saveProjectFileBodyChunkOrderMax = 6;
+
 export const saveProjectFileBodyFilePathMax = 240;
 
 
@@ -1241,6 +1278,8 @@ export const saveProjectFileBodyAttemptNumberMax = 10000;
 
 
 export const SaveProjectFileBody = zod.object({
+  "input_kind": zod.enum(['full-file', 'continuation', 'chunk-order']).optional(),
+  "chunk_order": zod.array(zod.number().int().min(saveProjectFileBodyChunkOrderItemMin).max(saveProjectFileBodyChunkOrderItemMax)).min(saveProjectFileBodyChunkOrderMin).max(saveProjectFileBodyChunkOrderMax).optional(),
   "file_path": zod.string().min(1).max(saveProjectFileBodyFilePathMax).regex(saveProjectFileBodyFilePathRegExp),
   "content": zod.string().max(saveProjectFileBodyContentMax),
   "concept_name_en": zod.string().min(1).max(saveProjectFileBodyConceptNameEnMax),

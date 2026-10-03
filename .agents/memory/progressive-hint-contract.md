@@ -11,8 +11,8 @@ When changing pedagogical constraints on hints, update both fresh-lesson generat
 
 ## Strict unlocks and a teaching-only third hint
 
-Unlock levels in order after failed submissions, with a new failure between unlocks. Previously unlocked hints remain freely reviewable. Keep the current XP deduction visible directly above the controls. Hint 3 explains the required function and asks a guiding question; it must not contain code, partial answer syntax, or fill-in-the-blank templates. Do not change hints 1/2 or student-code validation for this behavior.
+Hint 1 is available immediately. Later tiers unlock in order after either 35 seconds of inactivity since opening the preceding tier or a new failed submission. Previously unlocked hints remain freely reviewable; each newly opened hint still costs 10 XP. Hint 1 must include concrete generic syntax, not the task answer. Hint 3 explains the required function and asks a guiding question; it must not contain code, partial answer syntax, or fill-in-the-blank templates.
 
 **Why:** The user reported out-of-order hint access and a third hint that gave away near-complete answers rather than teaching.
 
-**How to apply:** Keep the legacy `partial_solution` identifier for compatibility, but enforce text-only functional guidance for delivery. Older lesson metadata must remain loadable; upgrade an outdated third hint on demand without changing already-opened hints 1/2, the reference solution, unlock checkpoints, or XP charges.
+**How to apply:** Keep the legacy `partial_solution` identifier for compatibility, but enforce text-only functional guidance for delivery. Update both fresh and lazy hint prompts. Older hint 1 can reuse the lesson's existing different-task syntax example without another model call or charge. Preserve hint 2/3 content, reference solutions, unlock checkpoints, and existing payments during that upgrade.

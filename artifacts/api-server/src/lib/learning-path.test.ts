@@ -40,6 +40,17 @@ function learningFixture(overrides: Partial<LearningConcept> = {}): LearningConc
 }
 
 describe("learning-path validation and selection", () => {
+  it("backfills encounters from unique completed sessions independently of mastery and unfinished checkpoints", () => {
+    const concepts = curriculumFixture();
+    const first = { concept: "Concept 1 — تجربة", sessionId: "first", timestamp: new Date("2026-10-01"),
+      touchesCompleted: 5, masteryEarned: 0 };
+    assert.equal(seedHistoricalConcepts(concepts, [])[0].encounter_count, 0);
+    const once = seedHistoricalConcepts(concepts, [first, first, { ...first, sessionId: "unfinished", touchesCompleted: 3 }]);
+    assert.equal(once[0].encounter_count, 1);
+    assert.equal(once[0].status, "needs_review");
+    const twice = seedHistoricalConcepts(concepts, [first, { ...first, sessionId: "second", masteryEarned: 100 }]);
+    assert.equal(twice[0].encounter_count, 2);
+  });
   it("accepts a complete curriculum bound to its 30 planned files", () => {
     const files = curriculumFixture().map((concept) => ({
       path: concept.target_file,

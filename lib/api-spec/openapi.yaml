@@ -972,6 +972,7 @@ components:
       type: object
       additionalProperties: false
       properties:
+        encounter_count: { type: integer, minimum: 0, description: Completed teaching or review encounters; unfinished lessons do not increment this count. }
         id: { type: string, minLength: 1, maxLength: 100 }
         name_en: { type: string, minLength: 1, maxLength: 100 }
         name_ar: { type: string, minLength: 1, maxLength: 140 }
@@ -1143,6 +1144,22 @@ components:
       type: object
       additionalProperties: false
       properties:
+        interaction_mode:
+          type: string
+          enum: [drag-order, fill-blank, free-write]
+        fixed_code:
+          type: string
+          maxLength: 30720
+          description: Server-owned read-only prefix concatenated with the student's continuation.
+        drag_order_lines:
+          type: array
+          minItems: 3
+          maxItems: 6
+          items: { type: string, minLength: 1, maxLength: 4000 }
+        drag_order_separator:
+          type: string
+          enum: ["", "\n"]
+          description: Server-owned join separator; empty for exact lexical chunks from a single-line reference.
         first_move_choice:
           $ref: "#/components/schemas/Touch4FirstMove"
         scaffolding:
@@ -1309,6 +1326,14 @@ components:
     ProjectFileInput:
       type: object
       properties:
+        input_kind:
+          type: string
+          enum: [full-file, continuation, chunk-order]
+        chunk_order:
+          type: array
+          minItems: 3
+          maxItems: 6
+          items: { type: integer, minimum: 0, maximum: 5 }
         file_path:
           type: string
           minLength: 1

@@ -62,9 +62,6 @@ export function touch4HintBundleFailureReason(value: unknown, allowLegacyLevel3 
       && (typeof item.code_example !== "string" || Array.from(item.code_example).length > 2000)) {
       return "hint_code_example_invalid";
     }
-    if (i === 0 && typeof item.code_example === "string" && item.code_example.trim()) {
-      return "level1_code_example_forbidden";
-    }
     if ((i === 1 || i === 2 && allowLegacyLevel3 && hint3TeachingFailureReason(item))
       && (typeof item.code_example !== "string" || !item.code_example.trim())) {
       return "hint_code_example_required";
@@ -105,7 +102,6 @@ export function parseTouch4HintBundle(value: unknown, allowLegacyLevel3 = false)
     if (item.example !== undefined && (typeof item.example !== "string" || Array.from(item.example).length > 700)) return null;
     if (item.code_example !== undefined
       && (typeof item.code_example !== "string" || Array.from(item.code_example).length > 2000)) return null;
-    if (i === 0 && typeof item.code_example === "string" && item.code_example.trim()) return null;
     hints.push({
       level: (i + 1) as Touch4HintLevel,
       type: expectedTypes[i],
@@ -118,6 +114,11 @@ export function parseTouch4HintBundle(value: unknown, allowLegacyLevel3 = false)
   const level2Code = hints[1].code_example?.normalize("NFKC").replace(/\s+/g, " ").trim();
   const level3Code = hints[2].code_example?.normalize("NFKC").replace(/\s+/g, " ").trim();
   if (level2Code && level2Code === level3Code) return null;
+  // Existing lessons already contain a safe, different-task syntax example in
+  // hint 2. Reuse it at the earliest tier without another model call or charges.
+  if (!hints[0].code_example?.trim() && hints[1].code_example?.trim()) {
+    hints[0] = { ...hints[0], code_example: hints[1].code_example };
+  }
   return {
     hints: hints as Touch4HintBundle["hints"],
     reference_solution: data.reference_solution,

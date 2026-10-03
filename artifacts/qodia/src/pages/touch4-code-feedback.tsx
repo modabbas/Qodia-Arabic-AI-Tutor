@@ -3,16 +3,21 @@ import type { CodeDiffResult } from '@workspace/api-client-react';
 import { liveSyntaxIssues, type LiveSyntaxIssue } from './touch4-live-syntax';
 import s from './Touch4Feedback.module.css';
 
-export function Touch4CodeMirror({ code, file, completed, highlight, lockedPrefix = '' }: {
-  code: string; file: string; completed: boolean; highlight: (value: string) => ReactNode; lockedPrefix?: string;
+export function Touch4CodeMirror({ code, file, completed, highlight, lockedPrefix = '', validationPrefix = '' }: {
+  code: string; file: string; completed: boolean; highlight: (value: string) => ReactNode; lockedPrefix?: string; validationPrefix?: string;
 }) {
   const [issues, setIssues] = useState<LiveSyntaxIssue[]>([]);
   useEffect(() => {
     setIssues([]);
-    if (completed || (lockedPrefix && code === lockedPrefix)) return;
-    const timer = window.setTimeout(() => setIssues(liveSyntaxIssues(code, file)), 500);
+    if (completed || !code.trim() || (lockedPrefix && code === lockedPrefix)) return;
+    const timer = window.setTimeout(() => {
+      const offset = validationPrefix.split('\n').length - 1;
+      setIssues(liveSyntaxIssues(validationPrefix + code, file)
+        .filter(issue => issue.lineNumber > offset)
+        .map(issue => ({ ...issue, lineNumber: issue.lineNumber - offset })));
+    }, 500);
     return () => window.clearTimeout(timer);
-  }, [code, file, completed, lockedPrefix]);
+  }, [code, file, completed, lockedPrefix, validationPrefix]);
   const lines = code.split('\n');
   let offset = 0;
   return <code data-testid="touch4-live-mirror">{lines.map((line, index) => {

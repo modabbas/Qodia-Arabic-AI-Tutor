@@ -204,6 +204,11 @@ export const LearningConceptStatus = {
 
 export interface LearningConcept {
   /**
+     * Completed teaching or review encounters; unfinished lessons do not increment this count.
+     * @minimum 0
+     */
+  encounter_count?: number;
+  /**
      * @minLength 1
      * @maxLength 100
      */
@@ -450,6 +455,26 @@ export interface GeneratedTouch3 {
   feedback_wrong: string;
 }
 
+export type GeneratedTouch4InteractionMode = typeof GeneratedTouch4InteractionMode[keyof typeof GeneratedTouch4InteractionMode];
+
+
+export const GeneratedTouch4InteractionMode = {
+  'drag-order': 'drag-order',
+  'fill-blank': 'fill-blank',
+  'free-write': 'free-write',
+} as const;
+
+/**
+ * Server-owned join separator; empty for exact lexical chunks from a single-line reference.
+ */
+export type GeneratedTouch4DragOrderSeparator = typeof GeneratedTouch4DragOrderSeparator[keyof typeof GeneratedTouch4DragOrderSeparator];
+
+
+export const GeneratedTouch4DragOrderSeparator = {
+  '': '',
+  '\n': '\n',
+} as const;
+
 export interface Touch4FirstMoveOption {
   /**
      * @minLength 1
@@ -565,6 +590,21 @@ export interface Touch4Hint {
 }
 
 export interface GeneratedTouch4 {
+  interaction_mode?: GeneratedTouch4InteractionMode;
+  /**
+     * Server-owned read-only prefix concatenated with the student's continuation.
+     * @maxLength 30720
+     */
+  fixed_code?: string;
+  /**
+     * @minItems 3
+     * @maxItems 6
+     * @items.minLength 1
+     * @items.maxLength 4000
+     */
+  drag_order_lines?: string[];
+  /** Server-owned join separator; empty for exact lexical chunks from a single-line reference. */
+  drag_order_separator?: GeneratedTouch4DragOrderSeparator;
   first_move_choice?: Touch4FirstMove;
   scaffolding?: Touch4Scaffolding;
   /**
@@ -859,7 +899,24 @@ export interface ProjectVerification {
   issues: ProjectVerificationIssuesItem[];
 }
 
+export type ProjectFileInputInputKind = typeof ProjectFileInputInputKind[keyof typeof ProjectFileInputInputKind];
+
+
+export const ProjectFileInputInputKind = {
+  'full-file': 'full-file',
+  continuation: 'continuation',
+  'chunk-order': 'chunk-order',
+} as const;
+
 export interface ProjectFileInput {
+  input_kind?: ProjectFileInputInputKind;
+  /**
+     * @minItems 3
+     * @maxItems 6
+     * @items.minimum 0
+     * @items.maximum 5
+     */
+  chunk_order?: number[];
   /**
      * @minLength 1
      * @maxLength 240

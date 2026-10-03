@@ -6,12 +6,29 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { BuildValidation } from './buildValidation';
+import type { GeneratedTouch4DragOrderSeparator } from './generatedTouch4DragOrderSeparator';
 import type { GeneratedTouch4FileAction } from './generatedTouch4FileAction';
+import type { GeneratedTouch4InteractionMode } from './generatedTouch4InteractionMode';
 import type { Touch4FirstMove } from './touch4FirstMove';
 import type { Touch4Hint } from './touch4Hint';
 import type { Touch4Scaffolding } from './touch4Scaffolding';
 
 export interface GeneratedTouch4 {
+  interaction_mode?: GeneratedTouch4InteractionMode;
+  /**
+     * Server-owned read-only prefix concatenated with the student's continuation.
+     * @maxLength 30720
+     */
+  fixed_code?: string;
+  /**
+     * @minItems 3
+     * @maxItems 6
+     * @items.minLength 1
+     * @items.maxLength 4000
+     */
+  drag_order_lines?: string[];
+  /** Server-owned join separator; empty for exact lexical chunks from a single-line reference. */
+  drag_order_separator?: GeneratedTouch4DragOrderSeparator;
   first_move_choice?: Touch4FirstMove;
   scaffolding?: Touch4Scaffolding;
   /**
