@@ -14,3 +14,17 @@ mtime_ms = 1790678467770
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:66777f32-6886-4ed3-9640-b1843113b369/2ad8aa47-c33a-4b63-9102-d26da9b582b4/2b0e3e23-2b6b-4dc7-9a94-2252fee77962"
 storage_version_token = "1790678474436494"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "b05HOrYkExuCYo9qY3KH4"
+uri = "file://docs/store-phase-one.md"
+type = "text"
+title = "Store phase 1 — implementation notes and complete file list"
+description = "All created/changed files, PostgreSQL storage, placeholder assumptions, and protected-admin setup instructions."
+logical_id = "81ee1d7f-a130-4e1e-9003-c7443e3ee27f"
+content_hash = "sha256:3e3f30625b88a695aca3abcaed05d0a89ccd1a0aa8196f6055aaa2a71a01c5fa"
+size = 4692
+mtime_ms = 1792933460437
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:66777f32-6886-4ed3-9640-b1843113b369/81ee1d7f-a130-4e1e-9003-c7443e3ee27f/4bbe6961-bb0e-4b43-a46c-2c259b434200"
+storage_version_token = "1792933727227786"
+content_type = "text/markdown"

@@ -29,3 +29,52 @@ The protected API is `GET /api/admin/store-interest?key=...`. Application reques
 - Both coming-soon and future available listings use interest capture only; there is no Buy or Download action in phase 1.
 - The three purchase/explanation/defense steps describe the planned pack experience, not a currently working checkout or automatic understanding-card integration.
 - Institute prices are starting prices; contact capture does not constitute a purchase, paid reservation, or guaranteed availability.
+
+## File-by-file implementation list
+
+### Backend and database
+
+- `artifacts/api-server/src/routes/store.ts` (new)
+- `artifacts/api-server/src/routes/index.ts` (store-router registration)
+- `artifacts/api-server/src/lib/store-rules.ts` (new)
+- `artifacts/api-server/src/lib/store-rules.test.ts` (new)
+- `artifacts/api-server/src/lib/store-seeds.ts` (new)
+- `lib/db/src/schema/store-projects.ts` (new)
+- `lib/db/src/schema/store-interest.ts` (new)
+- `lib/db/src/schema/index.ts` (table exports)
+
+### Frontend
+
+- `artifacts/qodia/src/pages/store.tsx` (new)
+- `artifacts/qodia/src/pages/store-detail.tsx` (new)
+- `artifacts/qodia/src/pages/store-admin.tsx` (new)
+- `artifacts/qodia/src/pages/store.css` (new, scoped styles)
+- `artifacts/qodia/src/components/store/StoreChrome.tsx` (new)
+- `artifacts/qodia/src/components/store/ProjectBits.tsx` (new)
+- `artifacts/qodia/src/components/store/InterestForm.tsx` (new)
+- `artifacts/qodia/src/components/store/store-utils.ts` (new)
+- `artifacts/qodia/src/App.tsx` (store routes and metadata)
+- `artifacts/qodia/src/pages/landing.tsx` (store navigation links only)
+
+### API contract and generated files
+
+- `lib/api-spec/openapi.yaml`
+- `lib/api-client-react/src/generated/api.ts`
+- `lib/api-client-react/src/generated/api.schemas.ts`
+- `lib/api-zod/src/generated/api.ts`
+- `lib/api-zod/src/generated/types/index.ts`
+- `lib/api-zod/src/generated/types/getStoreInterestParams.ts`
+- `lib/api-zod/src/generated/types/storeInterestConfirmation.ts`
+- `lib/api-zod/src/generated/types/storeInterestEntry.ts`
+- `lib/api-zod/src/generated/types/storeInterestEntryType.ts`
+- `lib/api-zod/src/generated/types/storeInterestInput.ts`
+- `lib/api-zod/src/generated/types/storeInterestInputType.ts`
+- `lib/api-zod/src/generated/types/storeProject.ts`
+- `lib/api-zod/src/generated/types/storeProjectDifficulty.ts`
+- `lib/api-zod/src/generated/types/storeProjectStatus.ts`
+
+### Documentation and project constraints
+
+- `docs/store-phase-one.md` (this file)
+- `.agents/memory/store-phase-one-boundary.md`
+- `.agents/memory/MEMORY.md` (pointer to the store boundary)
