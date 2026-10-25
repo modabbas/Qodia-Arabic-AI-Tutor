@@ -5,6 +5,91 @@
  * Qodia account, onboarding, progress, and learning-session API
  * OpenAPI spec version: 0.1.0
  */
+export type StoreProjectDifficulty = typeof StoreProjectDifficulty[keyof typeof StoreProjectDifficulty];
+
+
+export const StoreProjectDifficulty = {
+  مبتدئ: 'مبتدئ',
+  متوسط: 'متوسط',
+  متقدم: 'متقدم',
+} as const;
+
+export type StoreProjectStatus = typeof StoreProjectStatus[keyof typeof StoreProjectStatus];
+
+
+export const StoreProjectStatus = {
+  coming_soon: 'coming_soon',
+  available: 'available',
+} as const;
+
+export interface StoreProject {
+  id: string;
+  slug: string;
+  title_ar: string;
+  title_en: string;
+  description_ar: string;
+  tech_stack: string;
+  difficulty: StoreProjectDifficulty;
+  /**
+     * @minimum 150
+     * @maximum 350
+     */
+  price_student_usd: number;
+  /** @minimum 200 */
+  price_institute_usd: number;
+  includes: string[];
+  images: string[];
+  status: StoreProjectStatus;
+  created_at: string;
+}
+
+export type StoreInterestInputType = typeof StoreInterestInputType[keyof typeof StoreInterestInputType];
+
+
+export const StoreInterestInputType = {
+  student: 'student',
+  institute: 'institute',
+} as const;
+
+export interface StoreInterestInput {
+  /**
+     * @minLength 2
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * @minLength 6
+     * @maxLength 200
+     */
+  email_or_phone: string;
+  type: StoreInterestInputType;
+  /** @maxLength 1000 */
+  note?: string;
+}
+
+export interface StoreInterestConfirmation {
+  message: string;
+}
+
+export type StoreInterestEntryType = typeof StoreInterestEntryType[keyof typeof StoreInterestEntryType];
+
+
+export const StoreInterestEntryType = {
+  student: 'student',
+  institute: 'institute',
+} as const;
+
+export interface StoreInterestEntry {
+  id: string;
+  project_id: string;
+  project_title: string;
+  name: string;
+  email_or_phone: string;
+  type: StoreInterestEntryType;
+  note: string;
+  created_at: string;
+}
+
 export interface AnyFieldInput {
   /**
      * @minLength 2
@@ -1358,6 +1443,14 @@ export interface DefenseSummary {
   last_attempt_at: string | null;
   latest_active: DefenseSimulation | null;
 }
+
+export type GetStoreInterestParams = {
+/**
+ * @minLength 16
+ * @maxLength 512
+ */
+key: string;
+};
 
 export type GetPrideMomentParams = {
 session_id?: string;

@@ -34,6 +34,7 @@ import type {
   ErrorResponse,
   GeneratedSession,
   GetPrideMomentParams,
+  GetStoreInterestParams,
   GetTouch4SupportParams,
   HealthStatus,
   LearningMap,
@@ -49,6 +50,10 @@ import type {
   ProjectVerification,
   SessionInput,
   SignUpInput,
+  StoreInterestConfirmation,
+  StoreInterestEntry,
+  StoreInterestInput,
+  StoreProject,
   Touch4ActivityInput,
   Touch4Support,
   Touch4SupportRevealInput,
@@ -81,6 +86,309 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetStoreProjectsUrl = () => {
+
+
+
+
+  return `/api/store/projects`
+}
+
+export const getStoreProjects = async ( options?: Parameters<typeof customFetch>[1]): Promise<StoreProject[]> => {
+
+  return customFetch<StoreProject[]>(getGetStoreProjectsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStoreProjectsQueryKey = () => {
+    return [
+    `/api/store/projects`
+    ] as const;
+    }
+
+
+export const getGetStoreProjectsQueryOptions = <TData = Awaited<ReturnType<typeof getStoreProjects>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreProjectsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreProjects>>> = ({ signal }) => getStoreProjects({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreProjects>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStoreProjectsQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreProjects>>>
+export type GetStoreProjectsQueryError = ErrorType<unknown>
+
+
+
+export function useGetStoreProjects<TData = Awaited<ReturnType<typeof getStoreProjects>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreProjects>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStoreProjectsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetStoreProjectUrl = (slug: string,) => {
+
+
+
+
+  return `/api/store/projects/${slug}`
+}
+
+export const getStoreProject = async (slug: string, options?: Parameters<typeof customFetch>[1]): Promise<StoreProject> => {
+
+  return customFetch<StoreProject>(getGetStoreProjectUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStoreProjectQueryKey = (slug: string,) => {
+    return [
+    `/api/store/projects/${slug}`
+    ] as const;
+    }
+
+
+export const getGetStoreProjectQueryOptions = <TData = Awaited<ReturnType<typeof getStoreProject>>, TError = ErrorType<void>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreProjectQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreProject>>> = ({ signal }) => getStoreProject(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: slug !== null && slug !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreProject>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStoreProjectQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreProject>>>
+export type GetStoreProjectQueryError = ErrorType<void>
+
+
+
+export function useGetStoreProject<TData = Awaited<ReturnType<typeof getStoreProject>>, TError = ErrorType<void>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreProject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStoreProjectQueryOptions(slug,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStoreInterestUrl = (id: string,) => {
+
+
+
+
+  return `/api/store/projects/${id}/interest`
+}
+
+export const createStoreInterest = async (id: string,
+    storeInterestInput: StoreInterestInput, options?: Parameters<typeof customFetch>[1]): Promise<StoreInterestConfirmation> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StoreInterestConfirmation>(getCreateStoreInterestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(storeInterestInput)
+  }
+);}
+
+
+
+
+
+export const getCreateStoreInterestMutationKey = () => ['createStoreInterest'] as const;
+
+export const getCreateStoreInterestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreInterest>>, TError,CreateStoreInterestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStoreInterest>>, TError,CreateStoreInterestMutationVariables, TContext> => {
+
+const mutationKey = getCreateStoreInterestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStoreInterest>>, CreateStoreInterestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createStoreInterest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStoreInterestMutationResult = NonNullable<Awaited<ReturnType<typeof createStoreInterest>>>
+    export type CreateStoreInterestMutationBody = BodyType<StoreInterestInput>
+    export type CreateStoreInterestMutationError = ErrorType<void>
+    export type CreateStoreInterestMutationVariables = {id: string;data: BodyType<StoreInterestInput>}
+
+    export const useCreateStoreInterest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStoreInterest>>, TError,CreateStoreInterestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStoreInterest>>,
+        TError,
+        CreateStoreInterestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateStoreInterestMutationOptions(options));
+    }
+
+export const getGetStoreInterestUrl = (params: GetStoreInterestParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/store-interest?${stringifiedParams}` : `/api/admin/store-interest`
+}
+
+export const getStoreInterest = async (params: GetStoreInterestParams, options?: Parameters<typeof customFetch>[1]): Promise<StoreInterestEntry[]> => {
+
+  return customFetch<StoreInterestEntry[]>(getGetStoreInterestUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStoreInterestQueryKey = (params?: GetStoreInterestParams,) => {
+    return [
+    `/api/admin/store-interest`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStoreInterestQueryOptions = <TData = Awaited<ReturnType<typeof getStoreInterest>>, TError = ErrorType<void>>(params: GetStoreInterestParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreInterest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoreInterestQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStoreInterest>>> = ({ signal }) => getStoreInterest(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStoreInterest>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStoreInterestQueryResult = NonNullable<Awaited<ReturnType<typeof getStoreInterest>>>
+export type GetStoreInterestQueryError = ErrorType<void>
+
+
+
+export function useGetStoreInterest<TData = Awaited<ReturnType<typeof getStoreInterest>>, TError = ErrorType<void>>(
+ params: GetStoreInterestParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStoreInterest>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStoreInterestQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGenerateAnyFieldSessionUrl = () => {
 

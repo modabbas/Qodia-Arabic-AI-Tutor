@@ -8,6 +8,111 @@
 import * as zod from 'zod';
 
 
+export const getStoreProjectsResponsePriceStudentUsdMin = 150;
+export const getStoreProjectsResponsePriceStudentUsdMax = 350;
+
+export const getStoreProjectsResponsePriceInstituteUsdMin = 200;
+
+
+
+export const GetStoreProjectsResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "slug": zod.string(),
+  "title_ar": zod.string(),
+  "title_en": zod.string(),
+  "description_ar": zod.string(),
+  "tech_stack": zod.string(),
+  "difficulty": zod.enum(['مبتدئ', 'متوسط', 'متقدم']),
+  "price_student_usd": zod.number().min(getStoreProjectsResponsePriceStudentUsdMin).max(getStoreProjectsResponsePriceStudentUsdMax),
+  "price_institute_usd": zod.number().min(getStoreProjectsResponsePriceInstituteUsdMin),
+  "includes": zod.array(zod.string()),
+  "images": zod.array(zod.string().url()),
+  "status": zod.enum(['coming_soon', 'available']),
+  "created_at": zod.coerce.date()
+})
+export const GetStoreProjectsResponse = zod.array(GetStoreProjectsResponseItem)
+
+
+export const getStoreProjectPathSlugMax = 100;
+
+
+
+export const GetStoreProjectParams = zod.object({
+  "slug": zod.coerce.string().max(getStoreProjectPathSlugMax)
+})
+
+export const getStoreProjectResponsePriceStudentUsdMin = 150;
+export const getStoreProjectResponsePriceStudentUsdMax = 350;
+
+export const getStoreProjectResponsePriceInstituteUsdMin = 200;
+
+
+
+export const GetStoreProjectResponse = zod.object({
+  "id": zod.string().uuid(),
+  "slug": zod.string(),
+  "title_ar": zod.string(),
+  "title_en": zod.string(),
+  "description_ar": zod.string(),
+  "tech_stack": zod.string(),
+  "difficulty": zod.enum(['مبتدئ', 'متوسط', 'متقدم']),
+  "price_student_usd": zod.number().min(getStoreProjectResponsePriceStudentUsdMin).max(getStoreProjectResponsePriceStudentUsdMax),
+  "price_institute_usd": zod.number().min(getStoreProjectResponsePriceInstituteUsdMin),
+  "includes": zod.array(zod.string()),
+  "images": zod.array(zod.string().url()),
+  "status": zod.enum(['coming_soon', 'available']),
+  "created_at": zod.coerce.date()
+})
+
+
+export const CreateStoreInterestParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createStoreInterestBodyNameMin = 2;
+export const createStoreInterestBodyNameMax = 100;
+
+export const createStoreInterestBodyEmailOrPhoneMin = 6;
+export const createStoreInterestBodyEmailOrPhoneMax = 200;
+
+export const createStoreInterestBodyNoteMax = 1000;
+
+
+
+export const CreateStoreInterestBody = zod.object({
+  "name": zod.string().min(createStoreInterestBodyNameMin).max(createStoreInterestBodyNameMax),
+  "email_or_phone": zod.string().min(createStoreInterestBodyEmailOrPhoneMin).max(createStoreInterestBodyEmailOrPhoneMax),
+  "type": zod.enum(['student', 'institute']),
+  "note": zod.string().max(createStoreInterestBodyNoteMax).optional()
+})
+
+export const CreateStoreInterestResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const getStoreInterestQueryKeyMin = 16;
+export const getStoreInterestQueryKeyMax = 512;
+
+
+
+export const GetStoreInterestQueryParams = zod.object({
+  "key": zod.coerce.string().min(getStoreInterestQueryKeyMin).max(getStoreInterestQueryKeyMax)
+})
+
+export const GetStoreInterestResponseItem = zod.object({
+  "id": zod.string().uuid(),
+  "project_id": zod.string().uuid(),
+  "project_title": zod.string(),
+  "name": zod.string(),
+  "email_or_phone": zod.string(),
+  "type": zod.enum(['student', 'institute']),
+  "note": zod.string(),
+  "created_at": zod.coerce.date()
+})
+export const GetStoreInterestResponse = zod.array(GetStoreInterestResponseItem)
+
+
 /**
  * @summary Generate a public ephemeral five-touch demonstration
  */

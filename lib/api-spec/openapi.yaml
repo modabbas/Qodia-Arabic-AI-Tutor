@@ -17,6 +17,64 @@ tags:
   - name: defense
     description: Final-defense simulations and readiness summaries
 paths:
+  /store/projects:
+    get:
+      operationId: getStoreProjects
+      tags: [store]
+      responses:
+        "200":
+          description: Public catalog; drafts excluded
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/StoreProject" } }
+  /store/projects/{slug}:
+    get:
+      operationId: getStoreProject
+      tags: [store]
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string, maxLength: 100 } }
+      responses:
+        "200":
+          description: Public project
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StoreProject" }
+        "404": { description: Project not found }
+  /store/projects/{id}/interest:
+    post:
+      operationId: createStoreInterest
+      tags: [store]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StoreInterestInput" }
+      responses:
+        "201":
+          description: Interest saved, no purchase or reservation created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StoreInterestConfirmation" }
+        "400": { description: Invalid input }
+        "404": { description: Project not found }
+        "409": { description: Contact already registered for this project or project unavailable for interest }
+        "429": { description: Too many submissions }
+  /admin/store-interest:
+    get:
+      operationId: getStoreInterest
+      tags: [store]
+      parameters:
+        - { name: key, in: query, required: true, schema: { type: string, minLength: 16, maxLength: 512 } }
+      responses:
+        "200":
+          description: Protected interest list; never publicly cached
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/StoreInterestEntry" } }
+        "401": { description: Admin key missing or incorrect }
+        "503": { description: Admin access not configured }
   /try-any-field/session:
     post:
       operationId: generateAnyFieldSession
@@ -849,6 +907,49 @@ paths:
               schema: { $ref: "#/components/schemas/ErrorResponse" }
 components:
   schemas:
+    StoreProject:
+      type: object
+      required: [id, slug, title_ar, title_en, description_ar, tech_stack, difficulty, price_student_usd, price_institute_usd, includes, images, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        title_ar: { type: string }
+        title_en: { type: string }
+        description_ar: { type: string }
+        tech_stack: { type: string }
+        difficulty: { type: string, enum: [مبتدئ, متوسط, متقدم] }
+        price_student_usd: { type: number, minimum: 150, maximum: 350 }
+        price_institute_usd: { type: number, minimum: 200 }
+        includes: { type: array, items: { type: string } }
+        images: { type: array, items: { type: string, format: uri } }
+        status: { type: string, enum: [coming_soon, available] }
+        created_at: { type: string, format: date-time }
+    StoreInterestInput:
+      type: object
+      additionalProperties: false
+      required: [name, email_or_phone, type]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+        email_or_phone: { type: string, minLength: 6, maxLength: 200 }
+        type: { type: string, enum: [student, institute] }
+        note: { type: string, maxLength: 1000 }
+    StoreInterestConfirmation:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    StoreInterestEntry:
+      type: object
+      required: [id, project_id, project_title, name, email_or_phone, type, note, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        project_title: { type: string }
+        name: { type: string }
+        email_or_phone: { type: string }
+        type: { type: string, enum: [student, institute] }
+        note: { type: string }
+        created_at: { type: string, format: date-time }
     AnyFieldInput:
       type: object
       required: [field, topic]

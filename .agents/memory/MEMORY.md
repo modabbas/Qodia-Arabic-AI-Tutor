@@ -19,3 +19,4 @@
 - [Touch 4 confidence boundary](touch4-confidence-boundary.md) — ungraded, local predictions supplement results; skips and transport errors are not fabricated confidence or wrong answers.
 - [Secondary-stack boundary](secondary-stack-boundary.md) — optional integration awareness, not a second learning path or scored touch; preserve cached attempts and avoid extra Gemini calls.
 - [Any-field demo boundary](any-field-demo-boundary.md) — public, ephemeral Five Touches demonstration beyond programming; never attach it to accounts, progress, or grading.
+- [Store phase-one boundary](store-phase-one-boundary.md) — catalog and interest only; packs promise understanding, with payment, delivery, and defense integration deferred.

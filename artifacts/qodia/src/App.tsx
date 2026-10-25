@@ -14,6 +14,9 @@ import MyProject from '@/pages/my-project';
 import Session from '@/pages/session';
 import FinalDefense from '@/pages/final-defense';
 import TryAnyField from '@/pages/try-any-field';
+import StoreCatalog from '@/pages/store';
+import StoreDetail from '@/pages/store-detail';
+import StoreAdmin from '@/pages/store-admin';
 import UniversityDashboard from '@/pages/university-dashboard';
 import CompanyDashboard from '@/pages/company-dashboard';
 import NotFound from '@/pages/not-found';
@@ -29,6 +32,8 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
   '/session': { title: 'تدريب المناقشة | كوديا', description: 'طبّق مفاهيم التقنية التي اخترتها ودافع عن قراراتك عبر خمس لمسات تفاعلية.' },
   '/final-defense': { title: 'المناقشة النهائية | كوديا', description: 'محاكاة مناقشة افتراضية من خمسة أسئلة عن ملفات مشروعك ومفاهيمك المتعلَّمة.' },
   '/try-any-field': { title: 'جرّب أي مجال | كوديا', description: 'جرّب منهجية الخمس لمسات بالعربية في الطب والهندسة وأي مجال جامعي، دون حساب أو حفظ تقدّم.' },
+  '/store': { title: 'المتجر | كوديا', description: 'مشاريع جاهزة، مع شرح كامل واختبار فهم. استعرض الحزم القادمة وسجّل اهتمامك دون دفع.' },
+  '/admin/store-interest': { title: 'اهتمام المتجر — إدارة | كوديا', description: 'قائمة محمية لطلبات الاهتمام بحزم مشاريع كوديا.' },
   '/university-dashboard': { title: 'لوحة الجامعة | كوديا', description: 'نظرة تجريبية على تقدم الطلاب وجاهزيتهم للتوظيف في كوديا.' },
   '/company-dashboard': { title: 'لوحة الشركات | كوديا', description: 'استكشف مرشحين تجريبيين ومؤشرات Talent Bridge في كوديا.' },
 };
@@ -36,7 +41,7 @@ const pageMetadata: Record<string, { title: string; description: string }> = {
 function RouteMetadata() {
   const [location] = useLocation();
   useEffect(() => {
-    const details = pageMetadata[location] ?? { title: 'الصفحة غير موجودة | كوديا', description: 'ارجع إلى كوديا لتبدأ تدريبك على مناقشة مشروع التخرج.' };
+    const details = pageMetadata[location] ?? (location.startsWith('/store/') ? { title: 'تفاصيل المشروع | كوديا', description: 'تفاصيل حزمة مشروع التخرج وشرح الملفات وأسئلة المناقشة. تسجيل اهتمام فقط، دون دفع أو تنزيل.' } : { title: 'الصفحة غير موجودة | كوديا', description: 'ارجع إلى كوديا لتبدأ تدريبك على مناقشة مشروع التخرج.' });
     document.title = details.title;
     for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
       document.querySelector(selector)?.setAttribute('content', details.description);
@@ -79,6 +84,9 @@ function AppRoutes() {
     <Route path="/session">{() => <Guard><Session /></Guard>}</Route>
     <Route path="/final-defense">{() => <Guard><FinalDefense /></Guard>}</Route>
     <Route path="/try-any-field" component={TryAnyField} />
+    <Route path="/store" component={StoreCatalog} />
+    <Route path="/store/:slug" component={StoreDetail} />
+    <Route path="/admin/store-interest" component={StoreAdmin} />
     {/* Demo only: before connecting real student data, restrict access to university_admin. */}
     <Route path="/university-dashboard" component={UniversityDashboard} />
     {/* Demo only: require authorized company access before showing real candidate data. */}

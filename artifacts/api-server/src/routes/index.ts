@@ -8,6 +8,7 @@ import touch4SupportRouter from "./touch4-support";
 import defenseRouter from "./defense";
 import prideMomentRouter from "./pride-moment";
 import tryAnyFieldRouter from "./try-any-field";
+import storeRouter from "./store";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(touch4SupportRouter);
 router.use(defenseRouter);
 router.use(prideMomentRouter);
 router.use(tryAnyFieldRouter);
+router.use(storeRouter);
 
 export default router;

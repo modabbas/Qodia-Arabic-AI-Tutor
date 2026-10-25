@@ -166,6 +166,7 @@ function Landing() {
             <a href="#method" data-testid="link-method-nav">الطريقة</a>
             <a href="#audiences" data-testid="link-audiences-nav">لمن كوديا؟</a>
             <a href="#stories" data-testid="link-stories-nav">أمثلة</a>
+            <Link href="/store" data-testid="link-store-nav">المتجر</Link>
           </nav>
           <div className="qp-header-actions">
             <Link className="qp-login" href="/login" data-testid="link-login-header">عندك حساب؟ ادخل <ArrowUpLeft size={15} /></Link>
@@ -185,6 +186,7 @@ function Landing() {
               <a className="qp-button qp-button-quiet" href="#method" data-testid="link-method-hero"><span className="qp-play" aria-hidden="true">▶</span> شوف كيف نشتغل</a>
             </div>
             <Link href="/try-any-field" data-testid="link-try-any-field-hero" style={{ display: 'inline-block', marginTop: 16, color: '#a2a5a0', fontSize: 14, textDecoration: 'underline', textUnderlineOffset: 4 }}>جرّب منهجية كوديا بأي مجال</Link>
+            <Link href="/store" data-testid="link-store-hero" style={{ display: 'inline-block', marginTop: 16, marginInlineStart: 20, color: '#a2a5a0', fontSize: 14, textDecoration: 'underline', textUnderlineOffset: 4 }}>استكشف المتجر</Link>
             <ul className="qp-trust-list" aria-label="مزايا تجربة كوديا">
               <li><Check size={15} /> تجربة توضيحية دون تسجيل</li>
               <li><Check size={15} /> عربي بلهجات محلية</li>
